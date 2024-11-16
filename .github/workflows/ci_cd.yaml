@@ -1,0 +1,69 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+
+jobs:
+  ci:
+    strategy:
+      matrix:
+        command:
+          - "run pytest"
+          - "run ruff check --output-format=github ."
+          - "build"
+    name: Run '${{ matrix.command }}'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
+      - name: Run '${{ matrix.command }}'
+        run: uv ${{ matrix.command }}
+
+      - name: Upload package
+        if: |
+          github.event_name == 'push' &&
+          matrix.command == 'build'
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  cd:
+    name: Publish wheels
+    runs-on: ubuntu-latest
+    needs: [ci]
+    if: startsWith(github.ref, 'refs/tags/')
+    environment:
+      name: pypi
+      url: https://pypi.org/p/shumbboleth
+    permissions:
+      id-token: write
+    steps:
+      - name: Download dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: 📦 Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
