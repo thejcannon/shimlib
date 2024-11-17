@@ -15,11 +15,17 @@ jobs:
   ci:
     strategy:
       matrix:
-        command:
-          - "run pytest"
-          - "run ruff check --output-format=github ."
-          - "build"
-    name: Run '${{ matrix.command }}'
+        include:
+          - id: test
+            name: Test
+            command: run pytest
+          - id: lint
+            name: Lint
+            command: run ruff check --output-format=github .
+          - id: build
+            name: Build
+            command: build
+    name: "${{ matrix.name }}"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,11 +44,11 @@ jobs:
       - name: Install the project
         run: uv sync --all-extras --dev
 
-      - name: Run '${{ matrix.command }}'
+      - name: "${{ matrix.name }}"
         run: uv ${{ matrix.command }}
 
       - name: Upload package
-        if: matrix.command == 'build'
+        if: matrix.id == 'build'
         uses: actions/upload-artifact@v4
         with:
           name: python-package-distributions
