@@ -9,6 +9,7 @@ on:
       - main
     tags:
       - "v*"
+  workflow_dispatch:
 
 jobs:
   ci:
@@ -41,9 +42,7 @@ jobs:
         run: uv ${{ matrix.command }}
 
       - name: Upload package
-        if: |
-          github.event_name == 'push' &&
-          matrix.command == 'build'
+        if: matrix.command == 'build'
         uses: actions/upload-artifact@v4
         with:
           name: python-package-distributions
@@ -56,7 +55,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     environment:
       name: pypi
-      url: https://pypi.org/p/shumbboleth
+      url: https://pypi.org/p/shimbboleth
     permissions:
       id-token: write
     steps:
