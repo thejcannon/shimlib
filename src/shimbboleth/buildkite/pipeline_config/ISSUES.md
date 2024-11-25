@@ -1,0 +1,5 @@
+- `env` is just `object`?
+- for nested types, shouldn't their prop be required?
+- WaitStep.continue_on_failure should default to False
+- WHy is groupstep type allowed to be null?
+- COmmandStep.notify doesn't use BuildNotify?

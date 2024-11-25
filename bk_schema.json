@@ -1,0 +1,1608 @@
+{
+  "definitions": {
+    "agents": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/agentsObject"
+        },
+        {
+          "$ref": "#/definitions/agentsList"
+        }
+      ]
+    },
+    "agentsList": {
+      "description": "Query rules to target specific agents in k=v format",
+      "examples": [
+        "queue=default",
+        "xcode=true"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "agentsObject": {
+      "description": "Query rules to target specific agents",
+      "examples": [
+        {
+          "queue": "deploy"
+        },
+        {
+          "ruby": "2*"
+        }
+      ],
+      "type": "object"
+    },
+    "allowDependencyFailure": {
+      "default": false,
+      "description": "Whether to proceed with this step and further steps if a step named in the depends_on attribute fails",
+      "type": "boolean"
+    },
+    "automaticRetry": {
+      "additionalProperties": false,
+      "properties": {
+        "exit_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "*"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "The exit status number that will cause this job to retry"
+        },
+        "limit": {
+          "description": "The number of times this job can be retried",
+          "maximum": 10,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "signal": {
+          "description": "The exit signal, if any, that may be retried",
+          "examples": [
+            "*",
+            "none",
+            "SIGKILL",
+            "term"
+          ],
+          "type": "string"
+        },
+        "signal_reason": {
+          "description": "The exit signal reason, if any, that may be retried",
+          "enum": [
+            "*",
+            "none",
+            "agent_refused",
+            "agent_stop",
+            "cancel",
+            "process_run_error",
+            "signature_rejected"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "blockStep": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_dependency_failure": {
+          "$ref": "#/definitions/allowDependencyFailure"
+        },
+        "block": {
+          "description": "The label of the block step",
+          "type": "string"
+        },
+        "blocked_state": {
+          "description": "The state that the build is set to when the build is blocked by this block step",
+          "enum": [
+            "passed",
+            "failed",
+            "running"
+          ],
+          "type": "string"
+        },
+        "branches": {
+          "$ref": "#/definitions/branches"
+        },
+        "depends_on": {
+          "$ref": "#/definitions/dependsOn"
+        },
+        "fields": {
+          "$ref": "#/definitions/fields"
+        },
+        "id": {
+          "$ref": "#/definitions/blockStep/key"
+        },
+        "identifier": {
+          "$ref": "#/definitions/blockStep/key"
+        },
+        "if": {
+          "$ref": "#/definitions/if"
+        },
+        "key": {
+          "$ref": "#/definitions/key"
+        },
+        "label": {
+          "$ref": "#/definitions/label"
+        },
+        "name": {
+          "$ref": "#/definitions/label"
+        },
+        "prompt": {
+          "$ref": "#/definitions/prompt"
+        },
+        "type": {
+          "enum": [
+            "block"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "branches": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      ],
+      "description": "Which branches will include this step in their builds",
+      "examples": [
+        "master",
+        [
+          "feature/*",
+          "chore/*"
+        ]
+      ]
+    },
+    "buildNotify": {
+      "description": "Array of notification options for this step",
+      "items": {
+        "oneOf": [
+          {
+            "enum": [
+              "github_check",
+              "github_commit_status"
+            ],
+            "type": "string"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "email": {
+                "type": "string"
+              },
+              "if": {
+                "$ref": "#/definitions/if"
+              }
+            },
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "basecamp_campfire": {
+                "type": "string"
+              },
+              "if": {
+                "$ref": "#/definitions/if"
+              }
+            },
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "if": {
+                "$ref": "#/definitions/if"
+              },
+              "slack": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "properties": {
+                      "channels": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "message": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  }
+                ]
+              }
+            },
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "if": {
+                "$ref": "#/definitions/if"
+              },
+              "webhook": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "if": {
+                "$ref": "#/definitions/if"
+              },
+              "pagerduty_change_event": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "github_commit_status": {
+                "properties": {
+                  "context": {
+                    "description": "GitHub commit status name",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "if": {
+                "$ref": "#/definitions/if"
+              }
+            },
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "github_check": {
+                "properties": {
+                  "context": {
+                    "description": "GitHub commit status name",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "if": {
+                "$ref": "#/definitions/if"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "cache": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "paths": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              ]
+            },
+            "size": {
+              "pattern": "^\\d+g$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "paths"
+          ],
+          "type": "object"
+        }
+      ],
+      "description": "The paths for the caches to be used in the step",
+      "examples": [
+        "dist/",
+        [
+          ".build/*",
+          "assets/*"
+        ],
+        {
+          "name": "cool-cache",
+          "paths": [
+            "/path/one",
+            "/path/two"
+          ],
+          "size": "20g"
+        }
+      ]
+    },
+    "cancelOnBuildFailing": {
+      "default": false,
+      "description": "Whether to cancel the job as soon as the build is marked as failing",
+      "type": "boolean"
+    },
+    "commandStep": {
+      "additionalProperties": false,
+      "properties": {
+        "agents": {
+          "$ref": "#/definitions/agents"
+        },
+        "allow_dependency_failure": {
+          "$ref": "#/definitions/allowDependencyFailure"
+        },
+        "artifact_paths": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "The glob path/s of artifacts to upload once this step has finished running",
+          "examples": [
+            [
+              "screenshots/*"
+            ],
+            [
+              "dist/myapp.zip",
+              "dist/myapp.tgz"
+            ]
+          ]
+        },
+        "branches": {
+          "$ref": "#/definitions/branches"
+        },
+        "cache": {
+          "$ref": "#/definitions/cache"
+        },
+        "cancel_on_build_failing": {
+          "$ref": "#/definitions/cancelOnBuildFailing"
+        },
+        "command": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "The commands to run on the agent"
+        },
+        "commands": {
+          "$ref": "#/definitions/commandStep/properties/command",
+          "description": "The commands to run on the agent"
+        },
+        "concurrency": {
+          "description": "The maximum number of jobs created from this step that are allowed to run at the same time. If you use this attribute, you must also define concurrency_group.",
+          "examples": [
+            1
+          ],
+          "type": "integer"
+        },
+        "concurrency_group": {
+          "description": "A unique name for the concurrency group that you are creating with the concurrency attribute",
+          "examples": [
+            "my-pipeline/deploy"
+          ],
+          "type": "string"
+        },
+        "concurrency_method": {
+          "description": "Control command order, allowed values are 'ordered' (default) and 'eager'.  If you use this attribute, you must also define concurrency_group and concurrency.",
+          "enum": [
+            "ordered",
+            "eager"
+          ],
+          "examples": [
+            "ordered"
+          ],
+          "type": "string"
+        },
+        "depends_on": {
+          "$ref": "#/definitions/dependsOn"
+        },
+        "env": {
+          "$ref": "#/definitions/env"
+        },
+        "id": {
+          "$ref": "#/definitions/commandStep/key"
+        },
+        "identifier": {
+          "$ref": "#/definitions/commandStep/key"
+        },
+        "if": {
+          "$ref": "#/definitions/if"
+        },
+        "key": {
+          "$ref": "#/definitions/key"
+        },
+        "label": {
+          "$ref": "#/definitions/label"
+        },
+        "matrix": {
+          "oneOf": [
+            {
+              "description": "List of elements for simple single-dimension Build Matrix",
+              "examples": [
+                [
+                  "linux",
+                  "freebsd"
+                ]
+              ],
+              "items": {
+                "$ref": "#/definitions/matrixElement"
+              },
+              "type": "array"
+            },
+            {
+              "description": "Configuration for multi-dimension Build Matrix",
+              "properties": {
+                "adjustments": {
+                  "description": "List of Build Matrix adjustments",
+                  "items": {
+                    "description": "An adjustment to a Build Matrix",
+                    "properties": {
+                      "skip": {
+                        "$ref": "#/definitions/skip"
+                      },
+                      "soft_fail": {
+                        "$ref": "#/definitions/softFail"
+                      },
+                      "with": {
+                        "oneOf": [
+                          {
+                            "description": "List of existing or new elements for single-dimension Build Matrix",
+                            "items": {
+                              "$ref": "#/definitions/matrixElement"
+                            },
+                            "type": "array"
+                          },
+                          {
+                            "additionalProperties": {
+                              "description": "Build Matrix dimension element",
+                              "type": "string"
+                            },
+                            "description": "Specification of a new or existing Build Matrix combination",
+                            "examples": [
+                              {
+                                "arch": "arm64",
+                                "os": "linux"
+                              }
+                            ],
+                            "propertyNames": {
+                              "description": "Build Matrix dimension name",
+                              "type": "string"
+                            },
+                            "type": "object"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "with"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "setup": {
+                  "oneOf": [
+                    {
+                      "description": "List of elements for single-dimension Build Matrix",
+                      "examples": [
+                        [
+                          "linux",
+                          "freebsd"
+                        ]
+                      ],
+                      "items": {
+                        "$ref": "#/definitions/matrixElement"
+                      },
+                      "type": "array"
+                    },
+                    {
+                      "additionalProperties": {
+                        "description": "List of elements for this Build Matrix dimension",
+                        "items": {
+                          "$ref": "#/definitions/matrixElement"
+                        },
+                        "type": "array"
+                      },
+                      "description": "Mapping of Build Matrix dimension names to their lists of elements",
+                      "examples": [
+                        {
+                          "arch": [
+                            "arm64",
+                            "riscv"
+                          ],
+                          "os": [
+                            "linux",
+                            "freebsd"
+                          ]
+                        }
+                      ],
+                      "propertyNames": {
+                        "description": "Build Matrix dimension name",
+                        "pattern": "^[a-zA-Z0-9_]+$",
+                        "type": "string"
+                      },
+                      "type": "object"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "setup"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "name": {
+          "$ref": "#/definitions/label"
+        },
+        "notify": {
+          "description": "Array of notification options for this step",
+          "items": {
+            "oneOf": [
+              {
+                "enum": [
+                  "github_check",
+                  "github_commit_status"
+                ],
+                "type": "string"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "basecamp_campfire": {
+                    "type": "string"
+                  },
+                  "if": {
+                    "$ref": "#/definitions/if"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "if": {
+                    "$ref": "#/definitions/if"
+                  },
+                  "slack": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "properties": {
+                          "channels": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      }
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "github_commit_status": {
+                    "properties": {
+                      "context": {
+                        "description": "GitHub commit status name",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "if": {
+                    "$ref": "#/definitions/if"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "github_check": {
+                    "properties": {
+                      "context": {
+                        "description": "GitHub commit status name",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "if": {
+                    "$ref": "#/definitions/if"
+                  }
+                },
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "parallelism": {
+          "description": "The number of parallel jobs that will be created based on this step",
+          "examples": [
+            42
+          ],
+          "type": "integer"
+        },
+        "plugins": {
+          "anyOf": [
+            {
+              "description": "Array of plugins for this step",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "examples": [
+                      {
+                        "docker-compose#v1.0.0": {
+                          "run": "app"
+                        }
+                      }
+                    ],
+                    "maxProperties": 1,
+                    "type": "object"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "description": "A map of plugins for this step. Deprecated: please use the array syntax.",
+              "type": "object"
+            }
+          ]
+        },
+        "priority": {
+          "description": "Priority of the job, higher priorities are assigned to agents",
+          "examples": [
+            -1,
+            1
+          ],
+          "type": "integer"
+        },
+        "retry": {
+          "description": "The conditions for retrying this step.",
+          "properties": {
+            "automatic": {
+              "anyOf": [
+                {
+                  "pattern": "^(true|false)$",
+                  "type": [
+                    "boolean",
+                    "string"
+                  ]
+                },
+                {
+                  "$ref": "#/definitions/automaticRetry"
+                },
+                {
+                  "items": {
+                    "$ref": "#/definitions/automaticRetry"
+                  },
+                  "type": "array"
+                }
+              ],
+              "default": [
+                {
+                  "exit_status": "*",
+                  "limit": 2
+                }
+              ],
+              "description": "Whether to allow a job to retry automatically. If set to true, the retry conditions are set to the default value."
+            },
+            "manual": {
+              "anyOf": [
+                {
+                  "pattern": "^(true|false)$",
+                  "type": [
+                    "boolean",
+                    "string"
+                  ]
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "allowed": {
+                      "default": true,
+                      "description": "Whether or not this job can be retried manually",
+                      "pattern": "^(true|false)$",
+                      "type": [
+                        "boolean",
+                        "string"
+                      ]
+                    },
+                    "permit_on_passed": {
+                      "default": true,
+                      "description": "Whether or not this job can be retried after it has passed",
+                      "pattern": "^(true|false)$",
+                      "type": [
+                        "boolean",
+                        "string"
+                      ]
+                    },
+                    "reason": {
+                      "description": "A string that will be displayed in a tooltip on the Retry button in Buildkite. This will only be displayed if the allowed attribute is set to false.",
+                      "examples": [
+                        "No retries allowed on deploy steps"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              ],
+              "description": "Whether to allow a job to be retried manually"
+            }
+          },
+          "type": "object"
+        },
+        "signature": {
+          "description": "The signature of the command step, generally injected by agents at pipeline upload",
+          "properties": {
+            "algorithm": {
+              "description": "The algorithm used to generate the signature",
+              "examples": [
+                "HS512",
+                "EdDSA",
+                "PS256"
+              ],
+              "type": "string"
+            },
+            "signed_fields": {
+              "description": "The fields that were signed to form the signature value",
+              "examples": [
+                [
+                  "command",
+                  "matrix",
+                  "plugins",
+                  "env::SOME_ENV_VAR"
+                ]
+              ],
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "value": {
+              "description": "The signature value, a JWS compact signature with a detached body",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "skip": {
+          "$ref": "#/definitions/skip"
+        },
+        "soft_fail": {
+          "$ref": "#/definitions/softFail"
+        },
+        "timeout_in_minutes": {
+          "description": "The number of minutes to time out a job",
+          "examples": [
+            60
+          ],
+          "minimum": 1,
+          "type": "integer"
+        },
+        "type": {
+          "enum": [
+            "script",
+            "command",
+            "commands"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "dependsOn": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "allow_failure": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "step": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      ],
+      "description": "The step keys for a step to depend on"
+    },
+    "env": {
+      "description": "Environment variables for this step",
+      "examples": [
+        {
+          "NODE_ENV": "test"
+        }
+      ],
+      "type": "object"
+    },
+    "fields": {
+      "description": "A list of input fields required to be filled out before unblocking the step",
+      "items": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "default": {
+                "description": "The value that is pre-filled in the text field",
+                "examples": [
+                  "Flying Dolphin"
+                ],
+                "type": "string"
+              },
+              "format": {
+                "description": "The format must be a regular expression implicitly anchored to the beginning and end of the input and is functionally equivalent to the HTML5 pattern attribute.",
+                "examples": [
+                  "[0-9a-f]+"
+                ],
+                "format": "regex",
+                "type": "string"
+              },
+              "hint": {
+                "description": "The explanatory text that is shown after the label",
+                "examples": [
+                  "What\u2019s the code name for this release? :name_badge:"
+                ],
+                "type": "string"
+              },
+              "key": {
+                "description": "The meta-data key that stores the field's input",
+                "examples": [
+                  "release-name"
+                ],
+                "pattern": "^[a-zA-Z0-9-_]+$",
+                "type": "string"
+              },
+              "required": {
+                "default": true,
+                "description": "Whether the field is required for form submission",
+                "type": "boolean"
+              },
+              "text": {
+                "description": "The text input name",
+                "examples": [
+                  "Release Name"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "key"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "default": {
+                "description": "The value of the option(s) that will be pre-selected in the dropdown",
+                "examples": [
+                  "beta",
+                  [
+                    "alpha",
+                    "beta"
+                  ]
+                ],
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                ]
+              },
+              "hint": {
+                "description": "The explanatory text that is shown after the label",
+                "examples": [
+                  "What\u2019s the code name for this release? :name_badge:"
+                ],
+                "type": "string"
+              },
+              "key": {
+                "description": "The meta-data key that stores the field's input",
+                "examples": [
+                  "release-stream"
+                ],
+                "pattern": "^[a-zA-Z0-9-_]+$",
+                "type": "string"
+              },
+              "multiple": {
+                "default": false,
+                "description": "Whether more than one option may be selected",
+                "type": "boolean"
+              },
+              "options": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "hint": {
+                      "description": "The text displayed directly under the select field\u2019s label",
+                      "examples": [
+                        "Which release stream does this belong in? :fork:"
+                      ],
+                      "type": "string"
+                    },
+                    "label": {
+                      "description": "The text displayed on the select list item",
+                      "examples": [
+                        "Stable"
+                      ],
+                      "type": "string"
+                    },
+                    "required": {
+                      "default": true,
+                      "description": "Whether the field is required for form submission",
+                      "type": "boolean"
+                    },
+                    "value": {
+                      "description": "The value to be stored as meta-data",
+                      "examples": [
+                        "stable"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "value"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "required": {
+                "default": true,
+                "description": "Whether the field is required for form submission",
+                "type": "boolean"
+              },
+              "select": {
+                "description": "The text input name",
+                "examples": [
+                  "Release Stream"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "options"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "groupStep": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_dependency_failure": {
+          "$ref": "#/definitions/allowDependencyFailure"
+        },
+        "depends_on": {
+          "$ref": "#/definitions/dependsOn"
+        },
+        "group": {
+          "description": "The name to give to this group of steps",
+          "examples": [
+            "Tests"
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "$ref": "#/definitions/groupStep/key"
+        },
+        "identifier": {
+          "$ref": "#/definitions/groupStep/key"
+        },
+        "if": {
+          "$ref": "#/definitions/if"
+        },
+        "key": {
+          "$ref": "#/definitions/key"
+        },
+        "label": {
+          "$ref": "#/definitions/groupStep/properties/group"
+        },
+        "name": {
+          "$ref": "#/definitions/groupStep/properties/label"
+        },
+        "notify": {
+          "$ref": "#/definitions/buildNotify"
+        },
+        "skip": {
+          "$ref": "#/definitions/skip"
+        },
+        "steps": {
+          "description": "A list of steps",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/stringBlockStep"
+              },
+              {
+                "$ref": "#/definitions/blockStep"
+              },
+              {
+                "$ref": "#/definitions/commandStep"
+              },
+              {
+                "$ref": "#/definitions/nestedCommandStep"
+              },
+              {
+                "$ref": "#/definitions/triggerStep"
+              },
+              {
+                "$ref": "#/definitions/nestedTriggerStep"
+              },
+              {
+                "$ref": "#/definitions/stringInputStep"
+              },
+              {
+                "$ref": "#/definitions/inputStep"
+              },
+              {
+                "$ref": "#/definitions/nestedInputStep"
+              },
+              {
+                "$ref": "#/definitions/waitStep"
+              },
+              {
+                "$ref": "#/definitions/nestedWaitStep"
+              },
+              {
+                "$ref": "#/definitions/stringWaitStep"
+              }
+            ]
+          },
+          "minSize": 1,
+          "type": "array"
+        },
+        "type": {
+          "enum": [
+            "group"
+          ],
+          "type": [
+            "string"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "if": {
+      "description": "A boolean expression that omits the step when false",
+      "examples": [
+        "build.message != 'skip me'",
+        "build.branch == 'master'"
+      ],
+      "type": "string"
+    },
+    "inputStep": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_dependency_failure": {
+          "$ref": "#/definitions/allowDependencyFailure"
+        },
+        "branches": {
+          "$ref": "#/definitions/branches"
+        },
+        "depends_on": {
+          "$ref": "#/definitions/dependsOn"
+        },
+        "fields": {
+          "$ref": "#/definitions/fields"
+        },
+        "id": {
+          "$ref": "#/definitions/inputStep/key"
+        },
+        "identifier": {
+          "$ref": "#/definitions/inputStep/key"
+        },
+        "if": {
+          "$ref": "#/definitions/if"
+        },
+        "input": {
+          "description": "The label of the input step",
+          "type": "string"
+        },
+        "key": {
+          "$ref": "#/definitions/key"
+        },
+        "label": {
+          "$ref": "#/definitions/label"
+        },
+        "name": {
+          "$ref": "#/definitions/label"
+        },
+        "prompt": {
+          "$ref": "#/definitions/prompt"
+        },
+        "type": {
+          "enum": [
+            "input"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "key": {
+      "description": "A unique identifier for a step, must not resemble a UUID",
+      "examples": [
+        "deploy-staging",
+        "test-integration"
+      ],
+      "type": "string"
+    },
+    "label": {
+      "description": "The label that will be displayed in the pipeline visualisation in Buildkite. Supports emoji.",
+      "examples": [
+        ":docker: Build"
+      ],
+      "type": "string"
+    },
+    "matrixElement": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "nestedBlockStep": {
+      "additionalProperties": false,
+      "properties": {
+        "block": {
+          "$ref": "#/definitions/blockStep"
+        }
+      },
+      "type": "object"
+    },
+    "nestedCommandStep": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "$ref": "#/definitions/commandStep"
+        },
+        "commands": {
+          "$ref": "#/definitions/commandStep"
+        },
+        "script": {
+          "$ref": "#/definitions/commandStep"
+        }
+      },
+      "type": "object"
+    },
+    "nestedInputStep": {
+      "additionalProperties": false,
+      "properties": {
+        "input": {
+          "$ref": "#/definitions/inputStep"
+        }
+      },
+      "type": "object"
+    },
+    "nestedTriggerStep": {
+      "additionalProperties": false,
+      "properties": {
+        "trigger": {
+          "$ref": "#/definitions/triggerStep"
+        }
+      },
+      "type": "object"
+    },
+    "nestedWaitStep": {
+      "additionalProperties": false,
+      "properties": {
+        "wait": {
+          "$ref": "#/definitions/waitStep",
+          "description": "Waits for previous steps to pass before continuing"
+        },
+        "waiter": {
+          "$ref": "#/definitions/waitStep"
+        }
+      },
+      "type": "object"
+    },
+    "prompt": {
+      "description": "The instructional message displayed in the dialog box when the unblock step is activated",
+      "examples": [
+        "Release to production?"
+      ],
+      "type": "string"
+    },
+    "skip": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Whether this step should be skipped. You can specify a reason for using a string.",
+      "examples": [
+        true,
+        false,
+        "My reason"
+      ]
+    },
+    "softFail": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "items": {
+            "anyOf": [
+              {
+                "properties": {
+                  "exit_status": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "*"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "description": "The exit status number that will cause this job to soft-fail"
+                  }
+                },
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      ],
+      "description": "The conditions for marking the step as a soft-fail."
+    },
+    "stringBlockStep": {
+      "description": "Pauses the execution of a build and waits on a user to unblock it",
+      "enum": [
+        "block"
+      ],
+      "type": "string"
+    },
+    "stringInputStep": {
+      "description": "Pauses the execution of a build and waits on a user to unblock it",
+      "enum": [
+        "input"
+      ],
+      "type": "string"
+    },
+    "stringWaitStep": {
+      "description": "Waits for previous steps to pass before continuing",
+      "enum": [
+        "wait",
+        "waiter"
+      ],
+      "type": "string"
+    },
+    "triggerStep": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_dependency_failure": {
+          "$ref": "#/definitions/allowDependencyFailure"
+        },
+        "async": {
+          "default": false,
+          "description": "Whether to continue the build without waiting for the triggered step to complete",
+          "type": "boolean"
+        },
+        "branches": {
+          "$ref": "#/definitions/branches"
+        },
+        "build": {
+          "additionalProperties": false,
+          "description": "Properties of the build that will be created when the step is triggered",
+          "properties": {
+            "branch": {
+              "default": "master",
+              "description": "The branch for the build",
+              "examples": [
+                "master",
+                "feature/xyz"
+              ],
+              "type": "string"
+            },
+            "commit": {
+              "default": "HEAD",
+              "description": "The commit hash for the build",
+              "examples": [
+                "HEAD",
+                "b5fb108"
+              ],
+              "type": "string"
+            },
+            "env": {
+              "$ref": "#/definitions/env"
+            },
+            "message": {
+              "default": "The label of the trigger step",
+              "description": "The message for the build (supports emoji)",
+              "examples": [
+                "Deployment 123 :rocket:"
+              ],
+              "type": "string"
+            },
+            "meta_data": {
+              "description": "Meta-data for the build",
+              "examples": [
+                {
+                  "server": "i-b244e37160c"
+                }
+              ],
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "depends_on": {
+          "$ref": "#/definitions/dependsOn"
+        },
+        "id": {
+          "$ref": "#/definitions/triggerStep/key"
+        },
+        "identifier": {
+          "$ref": "#/definitions/triggerStep/key"
+        },
+        "if": {
+          "$ref": "#/definitions/if"
+        },
+        "key": {
+          "$ref": "#/definitions/key"
+        },
+        "label": {
+          "$ref": "#/definitions/label"
+        },
+        "name": {
+          "$ref": "#/definitions/triggerStep/label"
+        },
+        "skip": {
+          "$ref": "#/definitions/skip"
+        },
+        "soft_fail": {
+          "$ref": "#/definitions/softFail"
+        },
+        "trigger": {
+          "description": "The slug of the pipeline to create a build",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "trigger"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "trigger"
+      ],
+      "type": "object"
+    },
+    "waitStep": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_dependency_failure": {
+          "$ref": "#/definitions/allowDependencyFailure"
+        },
+        "continue_on_failure": {
+          "description": "Continue to the next steps, even if the previous group of steps fail",
+          "type": "boolean"
+        },
+        "depends_on": {
+          "$ref": "#/definitions/dependsOn"
+        },
+        "id": {
+          "$ref": "#/definitions/waitStep/key"
+        },
+        "identifier": {
+          "$ref": "#/definitions/waitStep/key"
+        },
+        "if": {
+          "$ref": "#/definitions/if"
+        },
+        "key": {
+          "$ref": "#/definitions/key"
+        },
+        "type": {
+          "enum": [
+            "wait",
+            "waiter"
+          ],
+          "type": "string"
+        },
+        "wait": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                ""
+              ],
+              "type": "string"
+            }
+          ],
+          "description": "Waits for previous steps to pass before continuing"
+        },
+        "waiter": {
+          "$ref": "#/definitions/waitStep/wait"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "properties": {
+    "agents": {
+      "$ref": "#/definitions/agents"
+    },
+    "env": {
+      "$ref": "#/definitions/env"
+    },
+    "notify": {
+      "$ref": "#/definitions/buildNotify"
+    },
+    "steps": {
+      "description": "A list of steps",
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/blockStep"
+          },
+          {
+            "$ref": "#/definitions/nestedBlockStep"
+          },
+          {
+            "$ref": "#/definitions/stringBlockStep"
+          },
+          {
+            "$ref": "#/definitions/inputStep"
+          },
+          {
+            "$ref": "#/definitions/nestedInputStep"
+          },
+          {
+            "$ref": "#/definitions/stringInputStep"
+          },
+          {
+            "$ref": "#/definitions/commandStep"
+          },
+          {
+            "$ref": "#/definitions/nestedCommandStep"
+          },
+          {
+            "$ref": "#/definitions/waitStep"
+          },
+          {
+            "$ref": "#/definitions/nestedWaitStep"
+          },
+          {
+            "$ref": "#/definitions/stringWaitStep"
+          },
+          {
+            "$ref": "#/definitions/triggerStep"
+          },
+          {
+            "$ref": "#/definitions/nestedTriggerStep"
+          },
+          {
+            "$ref": "#/definitions/groupStep"
+          }
+        ]
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "steps"
+  ],
+  "type": "object"
+}
