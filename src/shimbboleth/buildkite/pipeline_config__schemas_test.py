@@ -1,12 +1,11 @@
 import json
-from copy import deepcopy
+import os
 import pydantic.json_schema
 import pydantic_core.core_schema
-from pydantic import BaseModel
 import pytest
 import httpx
 import yaml
-from typing import Any, cast
+from typing import Any
 
 from shimbboleth.buildkite.pipeline_config import (
     BuildkitePipeline,
@@ -14,7 +13,6 @@ from shimbboleth.buildkite.pipeline_config import (
 
 import jmespath
 
-from shimbboleth.buildkite.pipeline_config._block_step import BlockStep
 
 SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/e258f03c19692a05ea29bd21a5f9f3f751c8cd01/schema.json"
 VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/e258f03c19692a05ea29bd21a5f9f3f751c8cd01/test/valid-pipelines"
@@ -74,26 +72,23 @@ class BKCompatGenerateJsonSchema(pydantic.json_schema.GenerateJsonSchema):
     ) -> pydantic.json_schema.JsonSchemaValue:
         json_schema = super().model_schema(schema)
         json_schema.pop("title", None)
+        return json_schema
 
+    def model_fields_schema(self, schema):
+        json_schema = super().model_fields_schema(schema)
         # Mske the `validation_alias` aliases show up in the schema
-        for fieldname, fieldschema in schema["schema"].get("fields", {}).items():
+        for fieldname, fieldschema in schema.get("fields", {}).items():
             validation_alias = fieldschema.get("validation_alias", None)
             if validation_alias:
                 if isinstance(validation_alias, list):
+                    print(validation_alias)
                     for aliases in validation_alias:
                         for alias in aliases:
                             if alias == fieldname:
                                 continue
-                            mangled_ref = self.get_cache_defs_ref_schema(schema["ref"])[
-                                1
-                            ]["$ref"]
-                            # NB: This asumes the naming of the obj
-                            clsname = mangled_ref.rsplit(".", 1)[-1].split("-", 1)[0]
-                            # NB: Can't use $ref because that breaks things
                             json_schema["properties"][alias] = {
-                                "$ref$": f"#/definitions/{self.normalize_name(clsname)}/properties/{fieldname}"
+                                "$ref$": f"#/definitions/{self.normalize_name(schema.get('model_name', ''))}/properties/{fieldname}"
                             }
-
         return json_schema
 
     def generate(
@@ -241,6 +236,10 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     bk_defs["groupStep"]["properties"]["group"]["type"] = "string"
     bk_defs["dependsOn"]["anyOf"].pop(0)
 
+    # @TODO: https://github.com/buildkite/pipeline-schema/pull/101
+    bk_defs["waitStep"]["properties"]["label"] = {"$ref": "#/definitions/label"}
+    bk_defs["waitStep"]["properties"]["name"] = {"$ref": "#/definitions/label"}
+
     # Handle aliases
     bk_defs["blockStep"]["properties"]["block"] = {
         "$ref": "#/definitions/blockStep/properties/label"
@@ -253,6 +252,9 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     )
     bk_defs["commandStep"]["properties"]["name"]["$ref"] = (
         "#/definitions/commandStep/properties/label"  # @TODO
+    )
+    bk_defs["waitStep"]["properties"]["name"]["$ref"] = (
+        "#/definitions/waitStep/properties/label"  # @TODO
     )
     _handle_alias(bk_defs, "blockStep", "name", "label")
     _handle_alias(bk_defs, "inputStep", "name", "label")
@@ -339,7 +341,7 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     )["type"] = "string"
     # DONE!
 
-    if False:
+    if os.getenv("DUMP_SCHEMAS"):
         with open("bk_schema.json", "w") as f:
             json.dump(pinned_bk_schema, f, indent=2, sort_keys=True)
 
@@ -353,9 +355,9 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         theirs = jmespath.search(path, pinned_bk_schema)
         if ours is None or theirs is None:
             assert ours == theirs, f"At '{path=}'"
-        assert type(ours) == type(theirs), f"At '{path=}'"
+        assert type(ours) is type(theirs), f"At '{path=}'"
         if isinstance(ours, dict):
-            assert sorted(ours.keys()) == sorted(theirs.keys()), f"At '{path=}'"
+            assert set(ours.keys()) == set(theirs.keys()), f"At '{path=}'"
             pathqueue.extend(f'{path}."{key}"' for key in ours.keys())
         elif isinstance(ours, list):
             assert len(ours) == len(theirs), f"At '{path=}'"

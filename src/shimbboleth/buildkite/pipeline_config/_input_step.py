@@ -4,41 +4,28 @@ from typing_extensions import TypeAliasType
 from pydantic import BaseModel, Field
 from pydantic.aliases import AliasChoices
 
+from ._base import BKStepBase
 from ._types import (
-    AllowDependencyFailureT,
     BranchesT,
-    IfT,
-    DependsOnT,
-    IdentifierT,
-    KeyT,
     LabelT,
     PromptT,
 )
-from ._fields import TextInput, SelectInput, FieldsT
+from ._fields import FieldsT
 
 
-class InputStep(BaseModel, extra="forbid"):
+class InputStep(BKStepBase, extra="forbid"):
     """
     An input step is used to collect information from a user.
 
     https://buildkite.com/docs/pipelines/input-step
     """
 
-    allow_dependency_failure: AllowDependencyFailureT = False
     branches: BranchesT | None = None
-    depends_on: DependsOnT | None = None
     fields: FieldsT | None = None
-    if_condition: IfT | None = Field(default=None, alias="if")
-    key: KeyT | None = Field(
-        default=None, validation_alias=AliasChoices("key", "id", "identifier")
-    )
-    # @TODO: precedence is name > label > input
-    label: LabelT | None = Field(
-        default=None, validation_alias=AliasChoices("label", "name", "input")
-    )
     prompt: PromptT | None = None
     type: Literal["input"] | None = None
 
+# print(InputStep.__pydantic_core_schema__)
 
 class NestedInputStep(BaseModel, extra="forbid"):
     input: InputStep | None = None

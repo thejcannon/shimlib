@@ -1,7 +1,7 @@
 from typing_extensions import TypeAliasType
 from pydantic import Field, BaseModel, WithJsonSchema
 
-from typing import TypeAlias, Any, Annotated, Literal
+from typing import Any, Annotated, Literal
 
 AgentsListT = TypeAliasType(
     "AgentsListT",
@@ -128,23 +128,6 @@ UnblockFieldsT = TypeAliasType(
         list[UnblockFieldT],
         Field(
             description="A list of input fields required to be filled out before unblocking the step"
-        ),
-    ],
-)
-
-IdentifierT = TypeAliasType(
-    "IdentifierT",
-    Annotated[str, Field(description="A string identifier", examples=["an-id"])],
-)
-
-# @TODO: "not a UUID" validation
-KeyT = TypeAliasType(
-    "KeyT",
-    Annotated[
-        str,
-        Field(
-            description="A unique identifier for a step, must not resemble a UUID",
-            examples=["deploy-staging", "test-integration"],
         ),
     ],
 )

@@ -1,15 +1,11 @@
-from typing import Literal, Any
+from typing import Literal
 
 from pydantic import BaseModel, Field, AliasChoices
 
+from ._base import BKStepBase
 from ._types import (
-    AllowDependencyFailureT,
     BranchesT,
     EnvT,
-    IfT,
-    DependsOnT,
-    IdentifierT,
-    KeyT,
     LabelT,
     SkipT,
 )
@@ -42,7 +38,7 @@ class TriggeredBuild(BaseModel, extra="forbid"):
     )
 
 
-class TriggerStep(BaseModel, extra="forbid"):
+class TriggerStep(BKStepBase, extra="forbid"):
     """
     A trigger step creates a build on another pipeline.
 
@@ -51,7 +47,6 @@ class TriggerStep(BaseModel, extra="forbid"):
 
     trigger: str = Field(description="The slug of the pipeline to create a build")
 
-    allow_dependency_failure: AllowDependencyFailureT = False
     is_async: bool = Field(
         default=False,
         description="Whether to continue the build without waiting for the triggered step to complete",
@@ -59,14 +54,6 @@ class TriggerStep(BaseModel, extra="forbid"):
     )
     branches: BranchesT | None = None
     build: TriggeredBuild | None = None
-    depends_on: DependsOnT | None = None
-    if_condition: IfT | None = Field(default=None, alias="if")
-    key: KeyT | None = Field(
-        default=None, validation_alias=AliasChoices("key", "id", "identifier")
-    )
-    label: LabelT | None = Field(
-        default=None, validation_alias=AliasChoices("label", "name")
-    )
     skip: SkipT | None = None
     soft_fail: SoftFailT | None = None
     type: Literal["trigger"] | None = None

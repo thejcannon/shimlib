@@ -2,3 +2,4 @@
 /_version.py
 __pycache__
 /.DS_Store
+*_schema.json

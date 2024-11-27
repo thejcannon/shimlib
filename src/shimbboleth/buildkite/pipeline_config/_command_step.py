@@ -1,24 +1,24 @@
 from typing import Literal, Any, Annotated
 from typing_extensions import TypeAliasType
 
-from pydantic import BaseModel, Field, AliasChoices, WithJsonSchema
+from pydantic import (
+    BaseModel,
+    Field,
+    AliasChoices,
+)
 
+from ._base import BKStepBase
 from ._types import (
-    AllowDependencyFailureT,
     BranchesT,
     EnvT,
-    IfT,
-    DependsOnT,
     AgentsT,
-    IdentifierT,
-    KeyT,
     LabelT,
     SkipT,
     CacheT,
     CancelOnBuildFailingT,
     BoolLikeT,
 )
-from ._fields import SoftFailT, FieldsT
+from ._fields import SoftFailT
 from ._notify import CommandNotifyT
 
 
@@ -208,7 +208,7 @@ PluginMapT = Annotated[
 ]
 
 
-class CommandStep(BaseModel, extra="forbid"):
+class CommandStep(BKStepBase, extra="forbid"):
     """
     A command step runs one or more shell commands on one or more agents.
 
@@ -216,7 +216,6 @@ class CommandStep(BaseModel, extra="forbid"):
     """
 
     agents: AgentsT | None = None
-    allow_dependency_failure: AllowDependencyFailureT = False
     artifact_paths: str | list[str] | None = Field(
         default=None,
         description="The glob path/s of artifacts to upload once this step has finished running",
@@ -245,15 +244,7 @@ class CommandStep(BaseModel, extra="forbid"):
         description="Control command order, allowed values are 'ordered' (default) and 'eager'.  If you use this attribute, you must also define concurrency_group and concurrency.",
         examples=["ordered"],
     )
-    depends_on: DependsOnT | None = None
     env: EnvT | None = None
-    if_condition: IfT | None = Field(default=None, alias="if")
-    key: KeyT | None = Field(
-        default=None, validation_alias=AliasChoices("key", "id", "identifier")
-    )
-    label: LabelT | None = Field(
-        default=None, validation_alias=AliasChoices("label", "name")
-    )
     matrix: SingleDimensionalMatrix | MultiDimenisonalMatrix | None = None
     notify: CommandNotifyT | None = None
     parallelism: int | None = Field(
