@@ -69,12 +69,12 @@ BranchesT = TypeAliasType(
 )
 
 
-
 class CacheMap(BaseModel):
     paths: str | list[str]
 
     name: str | None = None
     size: Annotated[str, Field(pattern="^\\d+g$")] | None = None
+
 
 CacheT = TypeAliasType(
     "CacheT",

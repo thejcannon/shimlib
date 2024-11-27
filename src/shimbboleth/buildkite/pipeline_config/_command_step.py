@@ -111,7 +111,7 @@ SingleDimensionalMatrix = Annotated[
     list[MatrixElementT],
     Field(
         description="List of elements for simple single-dimension Build Matrix",
-        examples=[["linux", "freebsd"]]
+        examples=[["linux", "freebsd"]],
     ),
 ]
 
@@ -147,9 +147,9 @@ class MatrixAdjustment(BaseModel):
     soft_fail: SoftFailT | None = None
 
 
-
 class MultiDimenisonalMatrix(BaseModel):
     "Configuration for multi-dimension Build Matrix"
+
     # @TODO: add https://buildkite.com/docs/pipelines/command-step#matrix-attributes
 
     setup: (
@@ -167,7 +167,7 @@ class MultiDimenisonalMatrix(BaseModel):
                     Field(
                         description="Build Matrix dimension name",
                         pattern="^[a-zA-Z0-9_]+$",
-                    )
+                    ),
                 ],
                 Annotated[
                     list[MatrixElementT],

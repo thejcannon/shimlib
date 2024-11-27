@@ -16,8 +16,8 @@ import jmespath
 
 from shimbboleth.buildkite.pipeline_config._block_step import BlockStep
 
-SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/f17b0584f32fa922b5098e427f1ad3d60eb5a009/schema.json"
-VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/f17b0584f32fa922b5098e427f1ad3d60eb5a009/test/valid-pipelines"
+SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/e258f03c19692a05ea29bd21a5f9f3f751c8cd01/schema.json"
+VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/e258f03c19692a05ea29bd21a5f9f3f751c8cd01/test/valid-pipelines"
 
 VALID_PIPELINE_NAMES = (
     "block.yml",
@@ -141,8 +141,10 @@ class BKCompatGenerateJsonSchema(pydantic.json_schema.GenerateJsonSchema):
             ret["enum"] = [ret.pop("const")]
         return ret
 
-    def dict_schema(self, schema: pydantic_core.core_schema.DictSchema) -> pydantic.json_schema.JsonSchemaValue:
-        json_schema =  super().dict_schema(schema)
+    def dict_schema(
+        self, schema: pydantic_core.core_schema.DictSchema
+    ) -> pydantic.json_schema.JsonSchemaValue:
+        json_schema = super().dict_schema(schema)
         pattern_props: dict[str, dict] = json_schema.pop("patternProperties", None)
         if pattern_props:
             pattern, addt_props = pattern_props.popitem()
@@ -150,6 +152,7 @@ class BKCompatGenerateJsonSchema(pydantic.json_schema.GenerateJsonSchema):
             json_schema["propertyNames"]["pattern"] = pattern
 
         return json_schema
+
 
 @pytest.fixture
 def pinned_bk_schema(pytestconfig) -> dict[str, Any]:
@@ -219,32 +222,6 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     our_schema["definitions"]["textInput"].pop("description", None)
     our_schema["definitions"]["selectInput"].pop("description", None)
 
-    # https://github.com/buildkite/pipeline-schema/pull/90
-    triggerStepBuildProps = bk_defs["triggerStep"]["properties"]["build"]["properties"]
-    triggerStepBuildProps.pop("label")
-    triggerStepBuildProps.pop("name")
-    triggerStepBuildProps.pop("trigger")
-    triggerStepBuildProps.pop("type")
-
-    # https://github.com/buildkite/pipeline-schema/pull/91
-    stepsTypes = pinned_bk_schema["properties"]["steps"]["items"]["anyOf"]
-    stepsTypes.insert(10, stepsTypes.pop(8))
-    bk_defs["groupStep"]["properties"]["steps"]["items"]["anyOf"] = [
-        {"$ref": "#/definitions/blockStep"},
-        {"$ref": "#/definitions/nestedBlockStep"},
-        {"$ref": "#/definitions/stringBlockStep"},
-        {"$ref": "#/definitions/inputStep"},
-        {"$ref": "#/definitions/nestedInputStep"},
-        {"$ref": "#/definitions/stringInputStep"},
-        {"$ref": "#/definitions/commandStep"},
-        {"$ref": "#/definitions/nestedCommandStep"},
-        {"$ref": "#/definitions/waitStep"},
-        {"$ref": "#/definitions/nestedWaitStep"},
-        {"$ref": "#/definitions/stringWaitStep"},
-        {"$ref": "#/definitions/triggerStep"},
-        {"$ref": "#/definitions/nestedTriggerStep"},
-    ]
-
     # https://github.com/buildkite/pipeline-schema/pull/92
     bk_defs.pop("identifier")
     for defname in ALL_STEP_TYPES:
@@ -263,36 +240,6 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     }
     bk_defs["groupStep"]["properties"]["group"]["type"] = "string"
     bk_defs["dependsOn"]["anyOf"].pop(0)
-
-    # https://github.com/buildkite/pipeline-schema/pull/94
-    bk_defs["triggerStep"]["required"] = ["trigger"]
-
-    # https://github.com/buildkite/pipeline-schema/pull/95
-    bk_defs["softFail"]["anyOf"][1]["items"] = bk_defs["softFail"]["anyOf"][1][
-        "items"
-    ].pop("anyOf")[0]
-
-    # https://github.com/buildkite/pipeline-schema/pull/96
-    bk_defs["softFail"]["anyOf"][1]["items"]["properties"]["exit_status"]["anyOf"][1][
-        "type"
-    ] = "integer"
-    bk_defs["automaticRetry"]["properties"]["exit_status"]["anyOf"][1]["type"] = (
-        "integer"
-    )
-    bk_defs["automaticRetry"]["properties"]["exit_status"]["anyOf"][2]["items"][
-        "type"
-    ] = "integer"
-
-    # https://github.com/buildkite/pipeline-schema/pull/97
-    bk_defs["groupStep"]["properties"]["type"]["type"] = "string"
-
-    # https://github.com/buildkite/pipeline-schema/pull/98
-    bk_defs["groupStep"]["required"] = ["steps"]
-
-    # https://github.com/buildkite/pipeline-schema/pull/99
-    bk_defs["groupStep"]["properties"]["steps"]["minItems"] = bk_defs["groupStep"][
-        "properties"
-    ]["steps"].pop("minSize")
 
     # Handle aliases
     bk_defs["blockStep"]["properties"]["block"] = {
@@ -392,11 +339,12 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     )["type"] = "string"
     # DONE!
 
-    with open("bk_schema.json", "w") as f:
-        json.dump(pinned_bk_schema, f, indent=2, sort_keys=True)
+    if False:
+        with open("bk_schema.json", "w") as f:
+            json.dump(pinned_bk_schema, f, indent=2, sort_keys=True)
 
-    with open("our_schema.json", "w") as f:
-        json.dump(our_schema, f, indent=2, sort_keys=True)
+        with open("our_schema.json", "w") as f:
+            json.dump(our_schema, f, indent=2, sort_keys=True)
 
     pathqueue = [*set([*our_schema, *pinned_bk_schema])]
     while pathqueue:
@@ -415,8 +363,7 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         else:
             assert ours == theirs, f"At '{path=}'"
 
-    assert False
-    # assert our_schema == pinned_bk_schema
+    assert our_schema == pinned_bk_schema
 
 
 @pytest.fixture(params=VALID_PIPELINE_NAMES)
