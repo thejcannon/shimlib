@@ -1,5 +1,5 @@
 from typing_extensions import TypeAliasType
-from pydantic import Field
+from pydantic import Field, BaseModel, WithJsonSchema
 
 from typing import TypeAlias, Any, Annotated, Literal
 
@@ -16,7 +16,8 @@ AgentsListT = TypeAliasType(
 AgentsObjectT = TypeAliasType(
     "AgentsObjectT",
     Annotated[
-        dict[str, str],
+        # @TODO: Any?
+        dict[str, Any],
         Field(
             description="Query rules to target specific agents",
             examples=[{"queue": "deploy"}, {"ruby": "2*"}],
@@ -35,9 +36,16 @@ IfT = TypeAliasType(
         ),
     ],
 )
+# @TODO: RHS Any?
 EnvT = TypeAliasType(
     "EnvT",
-    Annotated[dict[str, Any], Field(description="Environment variables for this step")],
+    Annotated[
+        dict[str, Any],
+        Field(
+            description="Environment variables for this step",
+            examples=[{"NODE_ENV": "test"}],
+        ),
+    ],
 )
 AllowDependencyFailureT = TypeAliasType(
     "AllowDependencyFailureT",
@@ -60,17 +68,18 @@ BranchesT = TypeAliasType(
     ],
 )
 
-CachePathsT = TypeAliasType(
-    "CachePathsT", Annotated[str | list[str], Field(description="Cache paths")]
-)
-CacheSizeT = TypeAliasType(
-    "CacheSizeT",
-    Annotated[str, Field(description="Cache size in gigabytes", pattern="^\\d+g$")],
-)
+
+
+class CacheMap(BaseModel):
+    paths: str | list[str]
+
+    name: str | None = None
+    size: Annotated[str, Field(pattern="^\\d+g$")] | None = None
+
 CacheT = TypeAliasType(
     "CacheT",
     Annotated[
-        str | list[str] | dict[str, Any],
+        str | list[str] | CacheMap,
         Field(
             description="The paths for the caches to be used in the step",
             examples=[
@@ -86,14 +95,16 @@ CacheT = TypeAliasType(
     ],
 )
 
-DependsOnItemT = Annotated[
-    str | dict[str, Any], Field(description="Individual dependency item")
-]
+
+class DependsOnDependency(BaseModel, extra="forbid"):
+    allow_failure: bool | None = False
+    step: str | None = None
+
 
 DependsOnT = TypeAliasType(
     "DependsOnT",
     Annotated[
-        None | str | list[DependsOnItemT],
+        None | str | list[str | DependsOnDependency],
         Field(description="The step keys for a step to depend on"),
     ],
 )
@@ -176,14 +187,6 @@ SkipT = TypeAliasType(
     ],
 )
 
-SoftFailT = TypeAliasType(
-    "SoftFailT",
-    Annotated[
-        bool | list[dict[str, Any]],
-        Field(description="The conditions for marking the step as a soft-fail."),
-    ],
-)
-
 BlockStepT = TypeAliasType(
     "BlockStepT",
     Annotated[
@@ -222,3 +225,9 @@ WaitStepT = TypeAliasType(
         Field(description="Waits for previous steps to pass before continuing"),
     ],
 )
+
+# @TODO: Make sure this works, Python-side
+BoolLikeT = Annotated[
+    bool | Literal["true", "false"],
+    WithJsonSchema({"pattern": "^(true|false)$", "type": ["boolean", "string"]}),
+]

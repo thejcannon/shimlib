@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Annotated
 
 from pydantic import BaseModel, Field, AliasChoices
 
@@ -40,7 +40,7 @@ class GroupStep(BaseModel, extra="forbid"):
     )
     notify: BuildNotifyT | None = None
     skip: SkipT | None = None
-    steps: (
+    steps: Annotated[
         list[
             BlockStep
             | NestedBlockStep
@@ -56,6 +56,7 @@ class GroupStep(BaseModel, extra="forbid"):
             | TriggerStep
             | NestedTriggerStep
         ]
-        | None
-    ) = None
+        | None,
+        Field(description="A list of steps", min_length=1),
+    ]
     type: Literal["group"] | None = None

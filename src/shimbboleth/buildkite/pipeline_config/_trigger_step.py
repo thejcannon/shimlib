@@ -12,8 +12,8 @@ from ._types import (
     KeyT,
     LabelT,
     SkipT,
-    SoftFailT,
 )
+from ._fields import SoftFailT
 
 
 class TriggeredBuild(BaseModel, extra="forbid"):

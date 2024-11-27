@@ -1,3 +1,6 @@
+from typing import Literal, Annotated, Pattern
+from typing_extensions import TypeAliasType
+
 from pydantic import BaseModel, Field
 
 
@@ -26,9 +29,9 @@ class TextInput(BaseModel, extra="forbid"):
         description="The value that is pre-filled in the text field",
         examples=["Flying Dolphin"],
     )
-    format: str | None = Field(
+    format: Pattern | None = Field(
         default=None,
-        description="The format must be a regular expression implicitly anchored to the beginning and end of the input and is functionally equivalent to the HTML5 pattern attribute",
+        description="The format must be a regular expression implicitly anchored to the beginning and end of the input and is functionally equivalent to the HTML5 pattern attribute.",  # TODO: Only one with period?
         examples=["[0-9a-f]+"],
     )
     text: str | None = Field(
@@ -65,7 +68,7 @@ class SelectInput(BaseModel, extra="forbid"):
         pattern="^[a-zA-Z0-9-_]+$",
         examples=["release-stream"],
     )
-    options: list[SelectOption] = Field(description="The list of select options")
+    options: list[SelectOption]
 
     default: str | list[str] | None = Field(
         default=None,
@@ -86,3 +89,30 @@ class SelectInput(BaseModel, extra="forbid"):
     select: str | None = Field(
         default=None, description="The text input name", examples=["Release Stream"]
     )
+
+
+FieldsT = TypeAliasType(
+    "FieldsT",
+    Annotated[
+        list[TextInput | SelectInput],
+        Field(
+            description="A list of input fields required to be filled out before unblocking the step"
+        ),
+    ],
+)
+
+
+class SoftFailByStatus(BaseModel):
+    exit_status: Literal["*"] | int | None = Field(
+        default=None,
+        description="The exit status number that will cause this job to soft-fail",
+    )
+
+
+SoftFailT = TypeAliasType(
+    "SoftFailT",
+    Annotated[
+        bool | list[SoftFailByStatus],
+        Field(description="The conditions for marking the step as a soft-fail."),
+    ],
+)

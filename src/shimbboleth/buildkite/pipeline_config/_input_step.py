@@ -14,7 +14,7 @@ from ._types import (
     LabelT,
     PromptT,
 )
-from ._fields import TextInput, SelectInput
+from ._fields import TextInput, SelectInput, FieldsT
 
 
 class InputStep(BaseModel, extra="forbid"):
@@ -27,21 +27,21 @@ class InputStep(BaseModel, extra="forbid"):
     allow_dependency_failure: AllowDependencyFailureT = False
     branches: BranchesT | None = None
     depends_on: DependsOnT | None = None
-    fields: list[TextInput | SelectInput] | None = None
+    fields: FieldsT | None = None
     if_condition: IfT | None = Field(default=None, alias="if")
-    label: str | None = Field(default=None, description="The label of the input step")
     key: KeyT | None = Field(
         default=None, validation_alias=AliasChoices("key", "id", "identifier")
     )
+    # @TODO: precedence is name > label > input
     label: LabelT | None = Field(
-        default=None, validation_alias=AliasChoices("label", "name")
+        default=None, validation_alias=AliasChoices("label", "name", "input")
     )
     prompt: PromptT | None = None
     type: Literal["input"] | None = None
 
 
 class NestedInputStep(BaseModel, extra="forbid"):
-    block: InputStep | None = None
+    input: InputStep | None = None
 
 
 StringInputStep = TypeAliasType(

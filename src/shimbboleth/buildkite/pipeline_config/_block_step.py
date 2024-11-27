@@ -13,17 +13,7 @@ from ._types import (
     LabelT,
     PromptT,
 )
-from ._fields import TextInput, SelectInput
-
-FieldsT = TypeAliasType(
-    "FieldsT",
-    Annotated[
-        list[TextInput | SelectInput],
-        Field(
-            description="A list of input fields required to be filled out before unblocking the step"
-        ),
-    ],
-)
+from ._fields import TextInput, SelectInput, FieldsT
 
 
 class BlockStep(BaseModel, extra="forbid"):
@@ -34,7 +24,6 @@ class BlockStep(BaseModel, extra="forbid"):
     """
 
     allow_dependency_failure: AllowDependencyFailureT = False
-    block: str | None = Field(default=None, description="The label of the block step")
     blocked_state: Literal["passed", "failed", "running"] | None = Field(
         default=None,
         description="The state that the build is set to when the build is blocked by this block step",
@@ -46,8 +35,9 @@ class BlockStep(BaseModel, extra="forbid"):
     key: KeyT | None = Field(
         default=None, validation_alias=AliasChoices("key", "identifier", "id")
     )
+    # @TODO: precedence is name > label > block
     label: LabelT | None = Field(
-        default=None, validation_alias=AliasChoices("label", "name")
+        default=None, validation_alias=AliasChoices("label", "name", "block")
     )
     prompt: PromptT | None = None
     type: Literal["block"] | None = None

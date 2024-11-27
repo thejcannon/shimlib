@@ -1,7 +1,7 @@
 from typing import Literal, Any, Annotated
 from typing_extensions import TypeAliasType
 
-from pydantic import BaseModel, Field, AliasChoices
+from pydantic import BaseModel, Field, AliasChoices, WithJsonSchema
 
 from ._types import (
     AllowDependencyFailureT,
@@ -16,12 +16,14 @@ from ._types import (
     SkipT,
     CacheT,
     CancelOnBuildFailingT,
+    BoolLikeT,
 )
-from ._notify import BuildNotifyT
+from ._fields import SoftFailT, FieldsT
+from ._notify import CommandNotifyT
 
 
 # @TODO: Extra allow?
-class CommandStepSignature(BaseModel, extra="allow"):
+class CommandStepSignature(BaseModel):
     """
     The signature of the command step, generally injected by agents at pipeline upload
     """
@@ -43,11 +45,11 @@ class CommandStepSignature(BaseModel, extra="allow"):
 
 
 class ManualRetryConditions(BaseModel, extra="forbid"):
-    allowed: bool | Literal["true", "false"] = Field(
+    allowed: BoolLikeT = Field(
         default=True,
         description="Whether or not this job can be retried manually",
     )
-    permit_on_passed: bool | Literal["true", "false"] = Field(
+    permit_on_passed: BoolLikeT = Field(
         default=True,
         description="Whether or not this job can be retried after it has passed",
     )
@@ -91,63 +93,119 @@ class AutomaticRetry(BaseModel, extra="forbid"):
 
 
 # @TODO: Extra allow?
-class RetryConditions(BaseModel, extra="allow"):
+class RetryConditions(BaseModel):
     """The conditions for retrying this step."""
 
-    # @TODO "string true/false" use validators?
-    automatic: (
-        bool | Literal["true", "false"] | AutomaticRetry | list[AutomaticRetry] | None
-    ) = Field(
+    automatic: BoolLikeT | AutomaticRetry | list[AutomaticRetry] | None = Field(
+        # @TODO: Why does default have Nones here?
         default=[AutomaticRetry(exit_status="*", limit=2)],
         description="Whether to allow a job to retry automatically. If set to true, the retry conditions are set to the default value.",
     )
-    manual: bool | Literal["true", "false"] | AutomaticRetry | None = Field(
+    manual: BoolLikeT | ManualRetryConditions | None = Field(
         default=None, description="Whether to allow a job to be retried manually"
     )
 
 
 MatrixElementT = TypeAliasType("MatrixElementT", str | int | bool)
-MatrixElementsListT = Annotated[
+SingleDimensionalMatrix = Annotated[
     list[MatrixElementT],
     Field(
-        description="List of elements for single-dimension Build Matrix",
-        examples=[["linux", "freebsd"]],
-    ),
-]
-MatrixDimensionNameT = Annotated[
-    str, Field(pattern=r"^[a-zA-Z0-9_]+$", description="Build Matrix dimension name")
-]
-MatrixMapT = Annotated[
-    dict[MatrixDimensionNameT, MatrixElementsListT],
-    Field(
-        description="Mapping of Build Matrix dimension names to their lists of elements",
-        examples=[{"arch": ["arm64", "riscv"], "os": ["linux", "freebsd"]}],
+        description="List of elements for simple single-dimension Build Matrix",
+        examples=[["linux", "freebsd"]]
     ),
 ]
 
 
-class MatrixAdjustment(BaseModel, extra="allow"):
-    with_value: MatrixElementsListT | MatrixMapT = Field(
-        alias="with",
-        description="An adjustment to a Build Matrix",
-    )
+class MatrixAdjustment(BaseModel):
+    """An adjustment to a Build Matrix"""
+
+    with_value: (
+        Annotated[
+            list[MatrixElementT],
+            Field(
+                description="List of existing or new elements for single-dimension Build Matrix"
+            ),
+        ]
+        | Annotated[
+            dict[
+                Annotated[
+                    str,
+                    Field(
+                        description="Build Matrix dimension name",
+                    ),
+                ],
+                Annotated[str, Field(description="Build Matrix dimension element")],
+            ],
+            Field(
+                description="Specification of a new or existing Build Matrix combination",
+                examples=[{"arch": "arm64", "os": "linux"}],
+            ),
+        ]
+    ) = Field(alias="with")
 
     skip: SkipT | None = None
-    soft_fail: bool | None = None
+    soft_fail: SoftFailT | None = None
 
 
-class MultiDimenisonalMatrix(BaseModel, extra="allow"):
-    """
-    Configuration for multi-dimension Build Matrix
 
-    https://buildkite.com/docs/pipelines/command-step#matrix-attributes
-    """
+class MultiDimenisonalMatrix(BaseModel):
+    "Configuration for multi-dimension Build Matrix"
+    # @TODO: add https://buildkite.com/docs/pipelines/command-step#matrix-attributes
 
-    setup: MatrixElementsListT | MatrixMapT
+    setup: (
+        Annotated[
+            list[MatrixElementT],
+            Field(
+                description="List of elements for single-dimension Build Matrix",
+                examples=[["linux", "freebsd"]],
+            ),
+        ]
+        | Annotated[
+            dict[
+                Annotated[
+                    str,
+                    Field(
+                        description="Build Matrix dimension name",
+                        pattern="^[a-zA-Z0-9_]+$",
+                    )
+                ],
+                Annotated[
+                    list[MatrixElementT],
+                    Field(
+                        description="List of elements for this Build Matrix dimension"
+                    ),
+                ],
+            ],
+            Field(
+                description="Mapping of Build Matrix dimension names to their lists of elements",
+                examples=[{"arch": ["arm64", "riscv"], "os": ["linux", "freebsd"]}],
+            ),
+        ]
+    )
 
     adjustments: list[MatrixAdjustment] | None = Field(
         default=None, description="List of Build Matrix adjustments"
     )
+
+
+PluginArrayItem = Annotated[
+    dict[str, Any],
+    Field(
+        examples=[{"docker-compose#v1.0.0": {"run": "app"}}],
+        # @TODO: Validate this Python-side
+        json_schema_extra={"maxProperties": 1},
+    ),
+]
+PluginArrayT = Annotated[
+    list[str | PluginArrayItem], Field(description="Array of plugins for this step")
+]
+PluginMapT = Annotated[
+    dict[str, Any],
+    Field(
+        # @TODO: Deprecated (Python-side)
+        description="A map of plugins for this step. Deprecated: please use the array syntax."
+    ),
+]
 
 
 class CommandStep(BaseModel, extra="forbid"):
@@ -159,7 +217,7 @@ class CommandStep(BaseModel, extra="forbid"):
 
     agents: AgentsT | None = None
     allow_dependency_failure: AllowDependencyFailureT = False
-    artifacts_paths: str | list[str] | None = Field(
+    artifact_paths: str | list[str] | None = Field(
         default=None,
         description="The glob path/s of artifacts to upload once this step has finished running",
         examples=[["screenshots/*"], ["dist/myapp.zip", "dist/myapp.tgz"]],
@@ -196,16 +254,14 @@ class CommandStep(BaseModel, extra="forbid"):
     label: LabelT | None = Field(
         default=None, validation_alias=AliasChoices("label", "name")
     )
-    matrix: MatrixElementsListT | MultiDimenisonalMatrix | None = None
-    notify: BuildNotifyT | None = (
-        None  # @TODO: This doesnt use BuildNotify in the schema??
-    )
+    matrix: SingleDimensionalMatrix | MultiDimenisonalMatrix | None = None
+    notify: CommandNotifyT | None = None
     parallelism: int | None = Field(
         default=None,
         description="The number of parallel jobs that will be created based on this step",
         examples=[42],
     )
-    plugins: list[str | dict[str, Any]] | dict[str, Any] | None = None
+    plugins: PluginArrayT | PluginMapT | None = None
     priority: int | None = Field(
         default=None,
         description="Priority of the job, higher priorities are assigned to agents",
@@ -214,6 +270,7 @@ class CommandStep(BaseModel, extra="forbid"):
     retry: RetryConditions | None = None
     signature: CommandStepSignature | None = None
     skip: SkipT | None = None
+    soft_fail: SoftFailT | None = None
     timeout_in_minutes: int | None = Field(
         default=None,
         description="The number of minutes to time out a job",
@@ -226,5 +283,5 @@ class CommandStep(BaseModel, extra="forbid"):
 
 class NestedCommandStep(BaseModel, extra="forbid"):
     command: CommandStep | None = Field(
-        default=None, validation_alias=AliasChoices("command", "commands")
-    )  # @TODO: alias "script" as well
+        default=None, validation_alias=AliasChoices("command", "commands", "script")
+    )

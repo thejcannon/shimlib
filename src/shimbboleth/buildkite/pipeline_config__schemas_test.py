@@ -16,8 +16,8 @@ import jmespath
 
 from shimbboleth.buildkite.pipeline_config._block_step import BlockStep
 
-SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/5c58c564dd128e6144ae00c993d978b68ea247dc/schema.json"
-VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/5c58c564dd128e6144ae00c993d978b68ea247dc/test/valid-pipelines"
+SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/f17b0584f32fa922b5098e427f1ad3d60eb5a009/schema.json"
+VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/f17b0584f32fa922b5098e427f1ad3d60eb5a009/test/valid-pipelines"
 
 VALID_PIPELINE_NAMES = (
     "block.yml",
@@ -30,6 +30,15 @@ VALID_PIPELINE_NAMES = (
     "notify.yml",
     "trigger.yml",
     "wait.yml",
+)
+
+ALL_STEP_TYPES = (
+    "blockStep",
+    "commandStep",
+    "groupStep",
+    "inputStep",
+    "triggerStep",
+    "waitStep",
 )
 
 
@@ -71,9 +80,10 @@ class BKCompatGenerateJsonSchema(pydantic.json_schema.GenerateJsonSchema):
             validation_alias = fieldschema.get("validation_alias", None)
             if validation_alias:
                 if isinstance(validation_alias, list):
-                    for aliases in validation_alias[1:]:
+                    for aliases in validation_alias:
                         for alias in aliases:
-                            assert alias != fieldname
+                            if alias == fieldname:
+                                continue
                             mangled_ref = self.get_cache_defs_ref_schema(schema["ref"])[
                                 1
                             ]["$ref"]
@@ -81,7 +91,7 @@ class BKCompatGenerateJsonSchema(pydantic.json_schema.GenerateJsonSchema):
                             clsname = mangled_ref.rsplit(".", 1)[-1].split("-", 1)[0]
                             # NB: Can't use $ref because that breaks things
                             json_schema["properties"][alias] = {
-                                "$ref$": f"#/definitions/{self.normalize_name(clsname)}/{fieldname}"
+                                "$ref$": f"#/definitions/{self.normalize_name(clsname)}/properties/{fieldname}"
                             }
 
         return json_schema
@@ -121,6 +131,8 @@ class BKCompatGenerateJsonSchema(pydantic.json_schema.GenerateJsonSchema):
         ret = super().default_schema(schema)
         if ret["default"] is None:
             ret.pop("default")
+        if (ref := ret.get("$ref", None)) and "AllowDependencyFailure" in ref:
+            ret.pop("default")
         return ret
 
     def literal_schema(self, schema):
@@ -129,6 +141,15 @@ class BKCompatGenerateJsonSchema(pydantic.json_schema.GenerateJsonSchema):
             ret["enum"] = [ret.pop("const")]
         return ret
 
+    def dict_schema(self, schema: pydantic_core.core_schema.DictSchema) -> pydantic.json_schema.JsonSchemaValue:
+        json_schema =  super().dict_schema(schema)
+        pattern_props: dict[str, dict] = json_schema.pop("patternProperties", None)
+        if pattern_props:
+            pattern, addt_props = pattern_props.popitem()
+            json_schema["additionalProperties"] = addt_props
+            json_schema["propertyNames"]["pattern"] = pattern
+
+        return json_schema
 
 @pytest.fixture
 def pinned_bk_schema(pytestconfig) -> dict[str, Any]:
@@ -138,7 +159,8 @@ def pinned_bk_schema(pytestconfig) -> dict[str, Any]:
 
     response = httpx.get(SCHEMA_URL)
     response.raise_for_status()
-    schema = response.json()
+    schema_text = response.text.replace("’", "'")
+    schema = json.loads(schema_text)
     pytestconfig.cache.set(SCHEMA_URL, schema)
     return schema
 
@@ -167,18 +189,13 @@ def _handle_alias(bk_defs, defname, alias, alias_of):
         == bk_defs[defname]["properties"][alias_of]
     )
     bk_defs[defname]["properties"][alias] = {
-        "$ref": f"#/definitions/{defname}/{alias_of}"
+        "$ref": f"#/definitions/{defname}/properties/{alias_of}"
     }
 
 
-ALL_STEP_TYPES = (
-    "blockStep",
-    "commandStep",
-    "groupStep",
-    "inputStep",
-    "triggerStep",
-    "waitStep",
-)
+def _replace_oneOf(schema, path):
+    obj = jmespath.search(path, schema)
+    obj["anyOf"] = obj.pop("oneOf")
 
 
 def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
@@ -199,6 +216,8 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     # A few missing descriptions
     for defname in ALL_STEP_TYPES:
         our_schema["definitions"][defname].pop("description", None)
+    our_schema["definitions"]["textInput"].pop("description", None)
+    our_schema["definitions"]["selectInput"].pop("description", None)
 
     # https://github.com/buildkite/pipeline-schema/pull/90
     triggerStepBuildProps = bk_defs["triggerStep"]["properties"]["build"]["properties"]
@@ -210,16 +229,31 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     # https://github.com/buildkite/pipeline-schema/pull/91
     stepsTypes = pinned_bk_schema["properties"]["steps"]["items"]["anyOf"]
     stepsTypes.insert(10, stepsTypes.pop(8))
-    groupStepStepTypes = bk_defs["groupStep"]["properties"]["steps"]["items"]["anyOf"]
-    groupStepStepTypes.insert(11, groupStepStepTypes.pop(9))
+    bk_defs["groupStep"]["properties"]["steps"]["items"]["anyOf"] = [
+        {"$ref": "#/definitions/blockStep"},
+        {"$ref": "#/definitions/nestedBlockStep"},
+        {"$ref": "#/definitions/stringBlockStep"},
+        {"$ref": "#/definitions/inputStep"},
+        {"$ref": "#/definitions/nestedInputStep"},
+        {"$ref": "#/definitions/stringInputStep"},
+        {"$ref": "#/definitions/commandStep"},
+        {"$ref": "#/definitions/nestedCommandStep"},
+        {"$ref": "#/definitions/waitStep"},
+        {"$ref": "#/definitions/nestedWaitStep"},
+        {"$ref": "#/definitions/stringWaitStep"},
+        {"$ref": "#/definitions/triggerStep"},
+        {"$ref": "#/definitions/nestedTriggerStep"},
+    ]
 
     # https://github.com/buildkite/pipeline-schema/pull/92
     bk_defs.pop("identifier")
     for defname in ALL_STEP_TYPES:
         bk_defs[defname]["properties"]["identifier"] = {
-            "$ref": f"#/definitions/{defname}/key"
+            "$ref": f"#/definitions/{defname}/properties/key"
         }
-        bk_defs[defname]["properties"]["id"] = {"$ref": f"#/definitions/{defname}/key"}
+        bk_defs[defname]["properties"]["id"] = {
+            "$ref": f"#/definitions/{defname}/properties/key"
+        }
 
     # https://github.com/buildkite/pipeline-schema/issues/93
     wait_def = our_schema["definitions"]["waitStep"]["properties"].pop("wait")
@@ -227,29 +261,78 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         "description": wait_def.pop("description"),
         "anyOf": [{"type": "null"}, wait_def],
     }
+    bk_defs["groupStep"]["properties"]["group"]["type"] = "string"
+    bk_defs["dependsOn"]["anyOf"].pop(0)
 
     # https://github.com/buildkite/pipeline-schema/pull/94
     bk_defs["triggerStep"]["required"] = ["trigger"]
 
     # https://github.com/buildkite/pipeline-schema/pull/95
-    # @TODO
+    bk_defs["softFail"]["anyOf"][1]["items"] = bk_defs["softFail"]["anyOf"][1][
+        "items"
+    ].pop("anyOf")[0]
+
+    # https://github.com/buildkite/pipeline-schema/pull/96
+    bk_defs["softFail"]["anyOf"][1]["items"]["properties"]["exit_status"]["anyOf"][1][
+        "type"
+    ] = "integer"
+    bk_defs["automaticRetry"]["properties"]["exit_status"]["anyOf"][1]["type"] = (
+        "integer"
+    )
+    bk_defs["automaticRetry"]["properties"]["exit_status"]["anyOf"][2]["items"][
+        "type"
+    ] = "integer"
+
+    # https://github.com/buildkite/pipeline-schema/pull/97
+    bk_defs["groupStep"]["properties"]["type"]["type"] = "string"
+
+    # https://github.com/buildkite/pipeline-schema/pull/98
+    bk_defs["groupStep"]["required"] = ["steps"]
+
+    # https://github.com/buildkite/pipeline-schema/pull/99
+    bk_defs["groupStep"]["properties"]["steps"]["minItems"] = bk_defs["groupStep"][
+        "properties"
+    ]["steps"].pop("minSize")
 
     # Handle aliases
+    bk_defs["blockStep"]["properties"]["block"] = {
+        "$ref": "#/definitions/blockStep/properties/label"
+    }  # @TODO
+    bk_defs["inputStep"]["properties"]["input"] = {
+        "$ref": "#/definitions/inputStep/properties/label"
+    }  # @TODO
+    bk_defs["groupStep"]["properties"]["name"]["$ref"] = (
+        "#/definitions/groupStep/properties/group"  # @TODO
+    )
+    bk_defs["commandStep"]["properties"]["name"]["$ref"] = (
+        "#/definitions/commandStep/properties/label"  # @TODO
+    )
+    _handle_alias(bk_defs, "blockStep", "name", "label")
+    _handle_alias(bk_defs, "inputStep", "name", "label")
+    bk_defs["commandStep"]["properties"]["commands"].pop("description")  # @TODO
+    _handle_alias(bk_defs, "nestedCommandStep", "commands", "command")
+    _handle_alias(bk_defs, "nestedCommandStep", "script", "command")
     _handle_alias(bk_defs, "triggerStep", "name", "label")
-    assert "description" not in bk_defs["waitStep"]["properties"]["waiter"]
-    bk_defs["waitStep"]["properties"]["waiter"]["description"] = bk_defs["waitStep"][
-        "properties"
-    ]["wait"]["description"]
-    _handle_alias(bk_defs, "waitStep", "waiter", "wait")
+    for defname in ("waitStep", "nestedWaitStep"):
+        assert "description" not in bk_defs[defname]["properties"]["waiter"]
+        bk_defs[defname]["properties"]["waiter"]["description"] = bk_defs[defname][
+            "properties"
+        ]["wait"]["description"]
+        _handle_alias(bk_defs, defname, "waiter", "wait")
 
     # Some definitions are inlined
     _inline(
         our_schema,
+        "basecampCampfireNotify",
+        "cacheMap",
+        "commandNotify",
         "commandStepSignature",
+        "dependsOnDependency",
         "emailNotify",
         "gitHubCheckNotify",
         "gitHubCommitStatusNotify",
         "hasContext",
+        "manualRetryConditions",
         "matrixAdjustment",
         "multiDimenisonalMatrix",
         "pagerdutyNotify",
@@ -261,7 +344,53 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         "textInput",
         "triggeredBuild",
         "webhookNotify",
+        "softFailByStatus",
     )
+
+    # anyOf/oneOf (Should probably open an issue/PR)
+    _replace_oneOf(bk_defs, "matrixElement")
+    _replace_oneOf(bk_defs, "fields.items")
+    _replace_oneOf(bk_defs, "fields.items.anyOf[1].properties.default")
+    _replace_oneOf(bk_defs, "commandStep.properties.plugins.anyOf[0].items")
+    _replace_oneOf(bk_defs, "commandStep.properties.notify.items")
+    _replace_oneOf(
+        bk_defs, "commandStep.properties.notify.items.anyOf[2].properties.slack"
+    )
+    _replace_oneOf(bk_defs, "commandStep.properties.matrix")
+    _replace_oneOf(
+        bk_defs,
+        "commandStep.properties.matrix.anyOf[1].properties.adjustments.items.properties.with",
+    )
+    _replace_oneOf(bk_defs, "commandStep.properties.matrix.anyOf[1].properties.setup")
+    _replace_oneOf(bk_defs, "buildNotify.items")
+    _replace_oneOf(bk_defs, "buildNotify.items.anyOf[3].properties.slack")
+    _replace_oneOf(bk_defs, "agents")
+
+    # @TODO: Seems like a bug
+    jmespath.search(
+        "definitions.commandStep.properties.retry.properties.manual.anyOf[0]",
+        our_schema,
+    ).pop("default")
+    jmespath.search(
+        "definitions.commandStep.properties.retry.properties.automatic.anyOf[0]",
+        our_schema,
+    ).pop("default")
+    # @TOD: Annoying
+    auto_retry_default = jmespath.search(
+        "definitions.commandStep.properties.retry.properties.automatic.default[0]",
+        our_schema,
+    )
+    auto_retry_default.pop("signal")
+    auto_retry_default.pop("signal_reason")
+    jmespath.search(
+        "definitions.commandStep.properties.matrix.anyOf[1].properties.adjustments.items.properties.with.anyOf[1].propertyNames",
+        our_schema,
+    )["type"] = "string"
+    jmespath.search(
+        "definitions.commandStep.properties.matrix.anyOf[1].properties.setup.anyOf[1].propertyNames",
+        our_schema,
+    )["type"] = "string"
+    # DONE!
 
     with open("bk_schema.json", "w") as f:
         json.dump(pinned_bk_schema, f, indent=2, sort_keys=True)
