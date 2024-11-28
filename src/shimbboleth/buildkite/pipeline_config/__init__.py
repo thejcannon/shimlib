@@ -11,6 +11,15 @@ from ._command_step import CommandStep, NestedCommandStep
 from ._group_step import GroupStep
 from ._notify import BuildNotifyT
 
+ALL_STEP_TYPES = (
+    BlockStep,
+    InputStep,
+    CommandStep,
+    WaitStep,
+    TriggerStep,
+    GroupStep,
+)
+
 
 class BuildkitePipeline(BaseModel):
     steps: Annotated[

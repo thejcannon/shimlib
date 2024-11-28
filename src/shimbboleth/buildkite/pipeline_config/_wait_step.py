@@ -18,11 +18,13 @@ class WaitStep(BKStepBase, extra="forbid"):
         description="Continue to the next steps, even if the previous group of steps fail",
     )
     type: Literal["wait", "waiter"] | None = None
+    # @TODO: This should be part of `label`
     wait: Literal[""] | None = Field(
         default=None,
         description="Waits for previous steps to pass before continuing",
         validation_alias=AliasChoices("wait", "waiter"),
     )
+
 
 class NestedWaitStep(BaseModel, extra="forbid"):
     wait: WaitStep | None = Field(

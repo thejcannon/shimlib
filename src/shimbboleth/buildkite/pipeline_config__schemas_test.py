@@ -7,9 +7,7 @@ import httpx
 import yaml
 from typing import Any
 
-from shimbboleth.buildkite.pipeline_config import (
-    BuildkitePipeline,
-)
+from shimbboleth.buildkite.pipeline_config import BuildkitePipeline, ALL_STEP_TYPES
 
 import jmespath
 
@@ -28,15 +26,6 @@ VALID_PIPELINE_NAMES = (
     "notify.yml",
     "trigger.yml",
     "wait.yml",
-)
-
-ALL_STEP_TYPES = (
-    "blockStep",
-    "commandStep",
-    "groupStep",
-    "inputStep",
-    "triggerStep",
-    "waitStep",
 )
 
 
@@ -81,7 +70,6 @@ class BKCompatGenerateJsonSchema(pydantic.json_schema.GenerateJsonSchema):
             validation_alias = fieldschema.get("validation_alias", None)
             if validation_alias:
                 if isinstance(validation_alias, list):
-                    print(validation_alias)
                     for aliases in validation_alias:
                         for alias in aliases:
                             if alias == fieldname:
@@ -212,14 +200,16 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     bk_defs = pinned_bk_schema["definitions"]
 
     # A few missing descriptions
-    for defname in ALL_STEP_TYPES:
+    for step_type in ALL_STEP_TYPES:
+        defname = step_type.__name__[0].lower() + step_type.__name__[1:]
         our_schema["definitions"][defname].pop("description", None)
     our_schema["definitions"]["textInput"].pop("description", None)
     our_schema["definitions"]["selectInput"].pop("description", None)
 
     # https://github.com/buildkite/pipeline-schema/pull/92
     bk_defs.pop("identifier")
-    for defname in ALL_STEP_TYPES:
+    for step_type in ALL_STEP_TYPES:
+        defname = step_type.__name__[0].lower() + step_type.__name__[1:]
         bk_defs[defname]["properties"]["identifier"] = {
             "$ref": f"#/definitions/{defname}/properties/key"
         }

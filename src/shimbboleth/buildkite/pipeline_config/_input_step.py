@@ -25,7 +25,7 @@ class InputStep(BKStepBase, extra="forbid"):
     prompt: PromptT | None = None
     type: Literal["input"] | None = None
 
-# print(InputStep.__pydantic_core_schema__)
+
 
 class NestedInputStep(BaseModel, extra="forbid"):
     input: InputStep | None = None
