@@ -1,9 +1,12 @@
-from typing import Literal, Annotated
+from typing import ClassVar, Literal, Annotated
 from typing_extensions import TypeAliasType
 
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import BaseModel, Field
+
+from shimbboleth.buildkite.pipeline_config._types import LabelT
 
 from ._base import BKStepBase
+from ._alias import FieldAlias, FieldAliasSupport
 
 
 class WaitStep(BKStepBase, extra="forbid"):
@@ -17,20 +20,20 @@ class WaitStep(BKStepBase, extra="forbid"):
         default=None,
         description="Continue to the next steps, even if the previous group of steps fail",
     )
-    type: Literal["wait", "waiter"] | None = None
-    # @TODO: This should be part of `label`
-    wait: Literal[""] | None = Field(
-        default=None,
+    # (NB: These are somewhat meaningless, since they never appear in the UI)
+    name: ClassVar = FieldAlias("label")
+    label: LabelT | None = Field(default=None)
+    wait: ClassVar = FieldAlias(
+        "label",
         description="Waits for previous steps to pass before continuing",
-        validation_alias=AliasChoices("wait", "waiter"),
     )
+    type: Literal["wait", "waiter"] | None = None
 
 
-class NestedWaitStep(BaseModel, extra="forbid"):
+class NestedWaitStep(FieldAliasSupport, extra="forbid"):
     wait: WaitStep | None = Field(
         default=None,
         description="Waits for previous steps to pass before continuing",
-        validation_alias=AliasChoices("wait", "waiter"),
     )
 
 

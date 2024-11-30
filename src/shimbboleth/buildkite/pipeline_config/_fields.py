@@ -1,6 +1,7 @@
 from typing import Literal, Annotated, Pattern
 from typing_extensions import TypeAliasType
 
+
 from pydantic import BaseModel, Field
 
 

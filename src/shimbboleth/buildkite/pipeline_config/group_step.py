@@ -1,15 +1,16 @@
-from typing import Literal, Annotated
+from typing import Annotated, ClassVar
 
-from pydantic import Field, AliasChoices
+from pydantic import Field
 
 from ._types import (
     SkipT,
 )
-from ._block_step import BlockStep, NestedBlockStep, StringBlockStep
-from ._input_step import InputStep, NestedInputStep, StringInputStep
-from ._wait_step import WaitStep, NestedWaitStep, StringWaitStep
-from ._trigger_step import TriggerStep, NestedTriggerStep
-from ._command_step import CommandStep, NestedCommandStep
+from ._alias import FieldAlias
+from .block_step import BlockStep, NestedBlockStep, StringBlockStep
+from .input_step import InputStep, NestedInputStep, StringInputStep
+from .wait_step import WaitStep, NestedWaitStep, StringWaitStep
+from .trigger_step import TriggerStep, NestedTriggerStep
+from .command_step import CommandStep, NestedCommandStep
 from ._notify import BuildNotifyT
 from ._base import BKStepBase
 
@@ -22,11 +23,11 @@ class GroupStep(BKStepBase, extra="forbid"):
     """
 
     group: str | None = Field(
-        default=None,
         description="The name to give to this group of steps",
         examples=["Tests"],
-        validation_alias=AliasChoices("group", "label", "name"),
     )
+    name: ClassVar = FieldAlias("group")
+    label: ClassVar = FieldAlias("group")
 
     notify: BuildNotifyT | None = None
     skip: SkipT | None = None
@@ -49,4 +50,3 @@ class GroupStep(BKStepBase, extra="forbid"):
         | None,
         Field(description="A list of steps", min_length=1),
     ]
-    type: Literal["group"] | None = None

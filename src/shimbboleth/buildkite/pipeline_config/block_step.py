@@ -1,7 +1,9 @@
-from typing import Literal, Annotated
+from typing import Literal, Annotated, ClassVar
 from typing_extensions import TypeAliasType
 
-from pydantic import BaseModel, Field, AliasChoices, ConfigDict
+from pydantic import BaseModel, Field
+
+from shimbboleth.buildkite.pipeline_config._alias import FieldAlias
 
 from ._types import (
     AllowDependencyFailureT,
@@ -28,6 +30,9 @@ class BlockStep(BKStepBase, extra="forbid"):
     branches: BranchesT | None = None
     fields: FieldsT | None = None
     prompt: PromptT | None = None
+    name: ClassVar = FieldAlias("label")
+    label: LabelT | None = Field(default=None)
+    block: ClassVar = FieldAlias("label")
     type: Literal["block"] | None = None
 
 

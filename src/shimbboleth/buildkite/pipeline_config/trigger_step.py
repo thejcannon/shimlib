@@ -1,7 +1,8 @@
-from typing import Literal
+from typing import Literal, ClassVar
 
-from pydantic import BaseModel, Field, AliasChoices
+from pydantic import BaseModel, Field
 
+from ._alias import FieldAlias
 from ._base import BKStepBase
 from ._types import (
     BranchesT,
@@ -56,6 +57,8 @@ class TriggerStep(BKStepBase, extra="forbid"):
     build: TriggeredBuild | None = None
     skip: SkipT | None = None
     soft_fail: SoftFailT | None = None
+    name: ClassVar = FieldAlias("label")
+    label: LabelT | None = Field(default=None)
     type: Literal["trigger"] | None = None
 
 

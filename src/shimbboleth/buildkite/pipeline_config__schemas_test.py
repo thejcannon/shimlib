@@ -8,12 +8,13 @@ import yaml
 from typing import Any
 
 from shimbboleth.buildkite.pipeline_config import BuildkitePipeline, ALL_STEP_TYPES
+from shimbboleth.buildkite.pipeline_config._alias import GenerateJsonSchemaWithAliases
 
 import jmespath
 
 
-SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/e258f03c19692a05ea29bd21a5f9f3f751c8cd01/schema.json"
-VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/e258f03c19692a05ea29bd21a5f9f3f751c8cd01/test/valid-pipelines"
+SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/0a0c61c97fc842eeb8138b0b3589f9fb49cc31f2/schema.json"
+VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/0a0c61c97fc842eeb8138b0b3589f9fb49cc31f2/test/valid-pipelines"
 
 VALID_PIPELINE_NAMES = (
     "block.yml",
@@ -29,68 +30,30 @@ VALID_PIPELINE_NAMES = (
 )
 
 
-def _json_resurce(obj, func, *, _path=""):
+def _json_resurse(obj, func, *, _path=""):
     """
-    `func` should have match `(*, value, parent, index, path) -> bool | None`
+    `func` should have match `(*, value, parent, index, path)`
     """
 
     if isinstance(obj, dict):
         for k, v in obj.items():
             path = f"{_path}.{k}"
-            should_stop = func(value=v, parent=obj, index=k, path=path)
-            if should_stop:
-                return True
-            should_stop = _json_resurce(v, func, _path=path)
-            if should_stop:
-                return True
+            func(value=v, parent=obj, index=k, path=path)
+            _json_resurse(v, func, _path=path)
 
     elif isinstance(obj, list):
         for idx, v in enumerate(obj):
             path = f"{_path}[{idx}]"
-            should_stop = func(value=v, parent=obj, index=idx, path=path)
-            if should_stop:
-                return True
-            should_stop = _json_resurce(v, func, _path=path)
-            if should_stop:
-                return True
+            func(value=v, parent=obj, index=idx, path=path)
+            _json_resurse(v, func, _path=path)
 
 
-class BKCompatGenerateJsonSchema(pydantic.json_schema.GenerateJsonSchema):
+class BKCompatGenerateJsonSchema(GenerateJsonSchemaWithAliases):
     def model_schema(
         self, schema: pydantic_core.core_schema.ModelSchema
     ) -> pydantic.json_schema.JsonSchemaValue:
         json_schema = super().model_schema(schema)
         json_schema.pop("title", None)
-        return json_schema
-
-    def model_fields_schema(self, schema):
-        json_schema = super().model_fields_schema(schema)
-        # Mske the `validation_alias` aliases show up in the schema
-        for fieldname, fieldschema in schema.get("fields", {}).items():
-            validation_alias = fieldschema.get("validation_alias", None)
-            if validation_alias:
-                if isinstance(validation_alias, list):
-                    for aliases in validation_alias:
-                        for alias in aliases:
-                            if alias == fieldname:
-                                continue
-                            json_schema["properties"][alias] = {
-                                "$ref$": f"#/definitions/{self.normalize_name(schema.get('model_name', ''))}/properties/{fieldname}"
-                            }
-        return json_schema
-
-    def generate(
-        self,
-        schema: pydantic_core.core_schema.CoreSchema,
-        mode: pydantic.json_schema.JsonSchemaMode = "validation",
-    ) -> pydantic.json_schema.JsonSchemaValue:
-        json_schema = super().generate(schema, mode)
-
-        def replce_custom_ref(*, value, parent, index, path) -> bool | None:
-            if isinstance(value, dict) and "$ref$" in value:
-                value["$ref"] = value.pop("$ref$")
-
-        _json_resurce(json_schema, replce_custom_ref)
         return json_schema
 
     def field_title_should_be_set(self, schema) -> bool:
@@ -128,6 +91,7 @@ class BKCompatGenerateJsonSchema(pydantic.json_schema.GenerateJsonSchema):
         self, schema: pydantic_core.core_schema.DictSchema
     ) -> pydantic.json_schema.JsonSchemaValue:
         json_schema = super().dict_schema(schema)
+        # pydantic doesn't leverage `patternProperties`
         pattern_props: dict[str, dict] = json_schema.pop("patternProperties", None)
         if pattern_props:
             pattern, addt_props = pattern_props.popitem()
@@ -157,7 +121,7 @@ def _inline(schema, *defnames):
             if (defname := value.get("$ref", "").rsplit("/", 1)[-1]) in defnames:
                 parent[index] = schema["definitions"][defname]
 
-    _json_resurce(schema, inner)
+    _json_resurse(schema, inner)
 
     for defname in defnames:
         schema["definitions"].pop(defname)
@@ -206,29 +170,20 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     our_schema["definitions"]["textInput"].pop("description", None)
     our_schema["definitions"]["selectInput"].pop("description", None)
 
-    # https://github.com/buildkite/pipeline-schema/pull/92
-    bk_defs.pop("identifier")
-    for step_type in ALL_STEP_TYPES:
-        defname = step_type.__name__[0].lower() + step_type.__name__[1:]
-        bk_defs[defname]["properties"]["identifier"] = {
-            "$ref": f"#/definitions/{defname}/properties/key"
-        }
-        bk_defs[defname]["properties"]["id"] = {
-            "$ref": f"#/definitions/{defname}/properties/key"
-        }
-
     # https://github.com/buildkite/pipeline-schema/issues/93
-    wait_def = our_schema["definitions"]["waitStep"]["properties"].pop("wait")
-    our_schema["definitions"]["waitStep"]["properties"]["wait"] = {
-        "description": wait_def.pop("description"),
-        "anyOf": [{"type": "null"}, wait_def],
-    }
     bk_defs["groupStep"]["properties"]["group"]["type"] = "string"
     bk_defs["dependsOn"]["anyOf"].pop(0)
 
-    # @TODO: https://github.com/buildkite/pipeline-schema/pull/101
-    bk_defs["waitStep"]["properties"]["label"] = {"$ref": "#/definitions/label"}
-    bk_defs["waitStep"]["properties"]["name"] = {"$ref": "#/definitions/label"}
+    # https://github.com/buildkite/pipeline-schema/pull/103
+    bk_defs["groupStep"]["properties"].pop("type")
+
+    # https://github.com/buildkite/pipeline-schema/pull/104
+    bk_defs["groupStep"]["required"].insert(0, "group")
+
+    # https://github.com/buildkite/pipeline-schema/pull/105
+    bk_defs["waitStep"]["properties"].pop("waiter")
+    bk_defs["waitStep"]["properties"]["wait"]["anyOf"][1].pop("enum")
+    bk_defs["nestedWaitStep"]["properties"].pop("waiter")
 
     # Handle aliases
     bk_defs["blockStep"]["properties"]["block"] = {
@@ -243,21 +198,17 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     bk_defs["commandStep"]["properties"]["name"]["$ref"] = (
         "#/definitions/commandStep/properties/label"  # @TODO
     )
-    bk_defs["waitStep"]["properties"]["name"]["$ref"] = (
+    bk_defs["waitStep"]["properties"]["wait"].pop("anyOf") # @TODO
+    bk_defs["waitStep"]["properties"]["wait"]["$ref"] = (
         "#/definitions/waitStep/properties/label"  # @TODO
     )
     _handle_alias(bk_defs, "blockStep", "name", "label")
     _handle_alias(bk_defs, "inputStep", "name", "label")
+    _handle_alias(bk_defs, "waitStep", "name", "label")
     bk_defs["commandStep"]["properties"]["commands"].pop("description")  # @TODO
     _handle_alias(bk_defs, "nestedCommandStep", "commands", "command")
     _handle_alias(bk_defs, "nestedCommandStep", "script", "command")
     _handle_alias(bk_defs, "triggerStep", "name", "label")
-    for defname in ("waitStep", "nestedWaitStep"):
-        assert "description" not in bk_defs[defname]["properties"]["waiter"]
-        bk_defs[defname]["properties"]["waiter"]["description"] = bk_defs[defname][
-            "properties"
-        ]["wait"]["description"]
-        _handle_alias(bk_defs, defname, "waiter", "wait")
 
     # Some definitions are inlined
     _inline(

@@ -1,9 +1,9 @@
 from typing import Literal, Annotated
-from typing_extensions import TypeAliasType
+from typing_extensions import ClassVar, TypeAliasType
 
 from pydantic import BaseModel, Field
-from pydantic.aliases import AliasChoices
 
+from ._alias import FieldAlias
 from ._base import BKStepBase
 from ._types import (
     BranchesT,
@@ -23,8 +23,10 @@ class InputStep(BKStepBase, extra="forbid"):
     branches: BranchesT | None = None
     fields: FieldsT | None = None
     prompt: PromptT | None = None
+    name: ClassVar = FieldAlias("label")
+    label: LabelT | None = Field(default=None)
+    input: ClassVar = FieldAlias("label")
     type: Literal["input"] | None = None
-
 
 
 class NestedInputStep(BaseModel, extra="forbid"):

@@ -1,4 +1,4 @@
-from typing import Literal, Any, Annotated
+from typing import Literal, Any, Annotated, ClassVar
 from typing_extensions import TypeAliasType
 
 from pydantic import (
@@ -6,6 +6,8 @@ from pydantic import (
     Field,
     AliasChoices,
 )
+
+from shimbboleth.buildkite.pipeline_config._alias import FieldAlias
 
 from ._base import BKStepBase
 from ._types import (
@@ -229,6 +231,7 @@ class CommandStep(BKStepBase, extra="forbid"):
         validation_alias=AliasChoices("command", "commands"),
         description="The commands to run on the agent",
     )
+    commands: ClassVar = FieldAlias("command")
     concurrency: int | None = Field(
         default=None,
         description="The maximum number of jobs created from this step that are allowed to run at the same time. If you use this attribute, you must also define concurrency_group.",
@@ -269,6 +272,8 @@ class CommandStep(BKStepBase, extra="forbid"):
         ge=1,
     )
 
+    name: ClassVar = FieldAlias("label")
+    label: LabelT | None = Field(default=None)
     type: Literal["script", "command", "commands"] | None = None
 
 
@@ -276,3 +281,5 @@ class NestedCommandStep(BaseModel, extra="forbid"):
     command: CommandStep | None = Field(
         default=None, validation_alias=AliasChoices("command", "commands", "script")
     )
+    commands: ClassVar = FieldAlias("command")
+    script: ClassVar = FieldAlias("command")
