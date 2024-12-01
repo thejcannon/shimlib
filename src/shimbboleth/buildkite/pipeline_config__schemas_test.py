@@ -56,6 +56,15 @@ class BKCompatGenerateJsonSchema(GenerateJsonSchemaWithAliases):
         json_schema.pop("title", None)
         return json_schema
 
+    def generate(
+        self,
+        schema: pydantic_core.core_schema.CoreSchema,
+        mode: pydantic.json_schema.JsonSchemaMode = "validation",
+    ) -> pydantic.json_schema.JsonSchemaValue:
+        json_schema = super().generate(schema, mode)
+        json_schema["definitions"] = json_schema.pop("$defs")
+        return json_schema
+
     def field_title_should_be_set(self, schema) -> bool:
         return False
 
@@ -159,8 +168,6 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     pinned_bk_schema.pop("fileMatch")
     pinned_bk_schema.pop("title")
 
-    our_schema["definitions"] = our_schema.pop("$defs")
-
     bk_defs = pinned_bk_schema["definitions"]
 
     # A few missing descriptions
@@ -198,14 +205,13 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     bk_defs["commandStep"]["properties"]["name"]["$ref"] = (
         "#/definitions/commandStep/properties/label"  # @TODO
     )
-    bk_defs["waitStep"]["properties"]["wait"].pop("anyOf") # @TODO
+    bk_defs["waitStep"]["properties"]["wait"].pop("anyOf")  # @TODO
     bk_defs["waitStep"]["properties"]["wait"]["$ref"] = (
         "#/definitions/waitStep/properties/label"  # @TODO
     )
     _handle_alias(bk_defs, "blockStep", "name", "label")
     _handle_alias(bk_defs, "inputStep", "name", "label")
     _handle_alias(bk_defs, "waitStep", "name", "label")
-    bk_defs["commandStep"]["properties"]["commands"].pop("description")  # @TODO
     _handle_alias(bk_defs, "nestedCommandStep", "commands", "command")
     _handle_alias(bk_defs, "nestedCommandStep", "script", "command")
     _handle_alias(bk_defs, "triggerStep", "name", "label")

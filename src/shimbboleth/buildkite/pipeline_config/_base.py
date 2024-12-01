@@ -14,6 +14,7 @@ KeyT = TypeAliasType(
         Field(
             description="A unique identifier for a step, must not resemble a UUID",
             examples=["deploy-staging", "test-integration"],
+            # @TODO: https://github.com/buildkite/pipeline-schema/pull/102
             pattern=re.compile(
                 r"^(?!^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$).*$"
             ),

@@ -231,7 +231,9 @@ class CommandStep(BKStepBase, extra="forbid"):
         validation_alias=AliasChoices("command", "commands"),
         description="The commands to run on the agent",
     )
-    commands: ClassVar = FieldAlias("command")
+    commands: ClassVar = FieldAlias(
+        "command", description="The commands to run on the agent"
+    )
     concurrency: int | None = Field(
         default=None,
         description="The maximum number of jobs created from this step that are allowed to run at the same time. If you use this attribute, you must also define concurrency_group.",
