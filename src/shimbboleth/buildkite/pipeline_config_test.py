@@ -48,7 +48,8 @@ def kaboom(*aliases):
 @pytest.mark.parametrize("step_cls", ALL_STEP_TYPES)
 @pytest.mark.parametrize("payload", kaboom("key", "id", "identifier"))
 def test_key_aliasing(step_cls, payload):
-    assert step_cls.model_validate({**payload, **STEP_EXTRA_DATA[step_cls]}).key == (
+    step = step_cls.model_validate({**payload, **STEP_EXTRA_DATA[step_cls]})
+    assert step.key == (
         "key"
         if payload.get("key", None) is not None
         else "id"
@@ -57,7 +58,12 @@ def test_key_aliasing(step_cls, payload):
         if payload.get("identifier", None) is not None
         else None
     )
+    assert step.id == step.key
+    assert step.identifier == step.key
 
+@pytest.mark.parametrize("step_cls", ALL_STEP_TYPES)
+def test_key_aliasing__wrong_type(step_cls):
+    step = step_cls.model_validate({"key": "key", "id": {}, "identifier": {}, **STEP_EXTRA_DATA[step_cls]})
 
 @pytest.mark.parametrize("step_cls", [CommandStep, TriggerStep])
 @pytest.mark.parametrize("payload", kaboom("name", "label"))

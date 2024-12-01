@@ -152,8 +152,6 @@ class MatrixAdjustment(BaseModel):
 class MultiDimenisonalMatrix(BaseModel):
     "Configuration for multi-dimension Build Matrix"
 
-    # @TODO: add https://buildkite.com/docs/pipelines/command-step#matrix-attributes
-
     setup: (
         Annotated[
             list[MatrixElementT],
