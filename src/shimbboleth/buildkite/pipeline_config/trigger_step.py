@@ -57,9 +57,10 @@ class TriggerStep(BKStepBase, extra="forbid"):
     build: TriggeredBuild | None = None
     skip: SkipT | None = None
     soft_fail: SoftFailT | None = None
-    name: ClassVar = FieldAlias("label")
     label: LabelT | None = Field(default=None)
     type: Literal["trigger"] | None = None
+
+    name: ClassVar = FieldAlias("label", mode="prepend")
 
 
 class NestedTriggerStep(BaseModel, extra="forbid"):

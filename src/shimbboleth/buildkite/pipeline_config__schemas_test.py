@@ -177,10 +177,6 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     our_schema["definitions"]["textInput"].pop("description", None)
     our_schema["definitions"]["selectInput"].pop("description", None)
 
-    # https://github.com/buildkite/pipeline-schema/issues/93
-    bk_defs["groupStep"]["properties"]["group"]["type"] = "string"
-    bk_defs["dependsOn"]["anyOf"].pop(0)
-
     # https://github.com/buildkite/pipeline-schema/pull/103
     bk_defs["groupStep"]["properties"].pop("type")
 
@@ -192,29 +188,64 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     bk_defs["waitStep"]["properties"]["wait"]["anyOf"][1].pop("enum")
     bk_defs["nestedWaitStep"]["properties"].pop("waiter")
 
-    # Handle aliases
-    bk_defs["blockStep"]["properties"]["block"] = {
-        "$ref": "#/definitions/blockStep/properties/label"
-    }  # @TODO
-    bk_defs["inputStep"]["properties"]["input"] = {
-        "$ref": "#/definitions/inputStep/properties/label"
-    }  # @TODO
-    bk_defs["groupStep"]["properties"]["name"]["$ref"] = (
-        "#/definitions/groupStep/properties/group"  # @TODO
+    # https://github.com/buildkite/pipeline-schema/pull/106
+    def simplify_boollike(path):
+        obj = jmespath.search(path, bk_defs)
+        obj.pop("type")
+        obj.pop("pattern")
+        obj["enum"] = [True, False, "true", "false"]
+
+    simplify_boollike("commandStep.properties.retry.properties.manual.anyOf[0]")
+    simplify_boollike("commandStep.properties.retry.properties.automatic.anyOf[0]")
+    simplify_boollike(
+        "commandStep.properties.retry.properties.manual.anyOf[1].properties.allowed"
     )
-    bk_defs["commandStep"]["properties"]["name"]["$ref"] = (
-        "#/definitions/commandStep/properties/label"  # @TODO
+    simplify_boollike(
+        "commandStep.properties.retry.properties.manual.anyOf[1].properties.permit_on_passed"
     )
-    bk_defs["waitStep"]["properties"]["wait"].pop("anyOf")  # @TODO
-    bk_defs["waitStep"]["properties"]["wait"]["$ref"] = (
-        "#/definitions/waitStep/properties/label"  # @TODO
-    )
-    _handle_alias(bk_defs, "blockStep", "name", "label")
-    _handle_alias(bk_defs, "inputStep", "name", "label")
-    _handle_alias(bk_defs, "waitStep", "name", "label")
+
+    # https://github.com/buildkite/pipeline-schema/pull/107
+    bk_defs["blockStep"]["properties"]["label"] = {
+        "$ref": "#/definitions/blockStep/properties/block"
+    }
+    bk_defs["blockStep"]["properties"]["name"] = {
+        "$ref": "#/definitions/blockStep/properties/block"
+    }
+    bk_defs["inputStep"]["properties"]["label"] = {
+        "$ref": "#/definitions/inputStep/properties/input"
+    }
+    bk_defs["inputStep"]["properties"]["name"] = {
+        "$ref": "#/definitions/inputStep/properties/input"
+    }
+    bk_defs["commandStep"]["properties"]["name"] = {
+        "$ref": "#/definitions/commandStep/properties/label"
+    }
+    bk_defs["waitStep"]["properties"]["label"] = {
+        "$ref": "#/definitions/waitStep/properties/wait"
+    }
+    bk_defs["waitStep"]["properties"]["name"] = {
+        "$ref": "#/definitions/waitStep/properties/wait"
+    }
+    bk_defs["triggerStep"]["properties"]["name"] = {
+        "$ref": "#/definitions/triggerStep/properties/label"
+    }
+    bk_defs["groupStep"]["properties"]["name"] = {
+        "$ref": "#/definitions/groupStep/properties/group"
+    }
+
+    # https://github.com/buildkite/pipeline-schema/pull/108
+    bk_defs["waitStep"]["properties"]["wait"].pop("anyOf")
+    bk_defs["waitStep"]["properties"]["wait"]["type"] = ["string", "null"]
+
+    # https://github.com/buildkite/pipeline-schema/issues/93
+    bk_defs["groupStep"]["properties"]["group"]["type"] = "string"
+    bk_defs["dependsOn"]["anyOf"].pop(0)
+    assert bk_defs["waitStep"]["properties"]["wait"]["type"] == ["string", "null"]
+    bk_defs["waitStep"]["properties"]["wait"]["type"] = "string"
+
+    # Handle (other) aliases
     _handle_alias(bk_defs, "nestedCommandStep", "commands", "command")
     _handle_alias(bk_defs, "nestedCommandStep", "script", "command")
-    _handle_alias(bk_defs, "triggerStep", "name", "label")
 
     # Some definitions are inlined
     _inline(
@@ -262,16 +293,7 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     _replace_oneOf(bk_defs, "buildNotify.items.anyOf[3].properties.slack")
     _replace_oneOf(bk_defs, "agents")
 
-    # @TODO: Seems like a bug
-    jmespath.search(
-        "definitions.commandStep.properties.retry.properties.manual.anyOf[0]",
-        our_schema,
-    ).pop("default")
-    jmespath.search(
-        "definitions.commandStep.properties.retry.properties.automatic.anyOf[0]",
-        our_schema,
-    ).pop("default")
-    # @TOD: Annoying
+    # @TOD: Annoying, the non-required fields have `None` in the example object
     auto_retry_default = jmespath.search(
         "definitions.commandStep.properties.retry.properties.automatic.default[0]",
         our_schema,
@@ -329,5 +351,6 @@ def upstream_valid_schema(request: pytest.FixtureRequest, pytestconfig: pytest.C
     return schema
 
 
+@pytest.mark.skip(reason="PR #103 and #105 must be merged first")
 def test_upstream_valid_pipelines(upstream_valid_schema):
     BuildkitePipeline(**upstream_valid_schema)

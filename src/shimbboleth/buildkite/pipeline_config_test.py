@@ -1,5 +1,4 @@
 from collections import defaultdict
-from collections.abc import Container
 import itertools
 
 from shimbboleth.buildkite.pipeline_config.command_step import CommandStep
@@ -20,13 +19,6 @@ STEP_EXTRA_DATA = defaultdict(
         GroupStep: {"group": None, "steps": [{"command": "hi"}]},
     },
 )
-
-# @TODO: test "is wrong type"
-
-
-def kkdict(*keys: str, **kwargs: str | None) -> dict[str, str | None]:
-    kwargs.update((key, key) for key in keys)
-    return kwargs
 
 
 def all_combos(possibilities: list | tuple):
@@ -61,10 +53,17 @@ def test_key_aliasing(step_cls, payload):
     assert step.id == step.key
     assert step.identifier == step.key
 
+
 @pytest.mark.parametrize("step_cls", ALL_STEP_TYPES)
 def test_key_aliasing__wrong_type(step_cls):
-    step = step_cls.model_validate({"key": "key", "id": {}, "identifier": {}, **STEP_EXTRA_DATA[step_cls]})
+    step_cls.model_validate(
+        {"key": "key", "id": {}, "identifier": {}, **STEP_EXTRA_DATA[step_cls]}
+    )
+    step_cls.model_validate({"id": "", "identifier": {}, **STEP_EXTRA_DATA[step_cls]})
+    # TODO: test with wrong type raises error
 
+
+# @TODO: test "is wrong type" for label
 @pytest.mark.parametrize("step_cls", [CommandStep, TriggerStep])
 @pytest.mark.parametrize("payload", kaboom("name", "label"))
 def test_label_aliasing__just_name_label(step_cls, payload):
@@ -77,6 +76,7 @@ def test_label_aliasing__just_name_label(step_cls, payload):
         else None
     )
     assert step.label == step.name
+
 
 @pytest.mark.parametrize("step_cls", [BlockStep, InputStep, WaitStep])
 @pytest.mark.parametrize("payload", kaboom("name", "label", "stepname"))
@@ -97,6 +97,7 @@ def test_label_aliasing__with_stepname(step_cls, payload):
     )
     assert step.label == step.name
     assert getattr(step, stepname) == step.name
+
 
 @pytest.mark.parametrize(
     "payload",
@@ -120,27 +121,19 @@ def test_label_aliasing__stepname__groupstep(payload):
     assert group_step.name == group_step.group
 
 
+def test_command_step_command_alias():
+    # TODO: Can't use `command' and `commands`!
+    # step = CommandStep.model_validate({"command": "command", "commands": "commands"})
+    step = CommandStep.model_validate({"commands": "commands"})
+    assert step.command == "commands"
+    assert step.commands == "commands"
+    step = CommandStep.model_validate({"command": None, "commands": "commands"})
+    assert step.command == "commands"
+    assert step.commands == "commands"
+    # @TODO: This should error!
+    step = CommandStep.model_validate({})
+    # @TODO: This too!
+    step = CommandStep.model_validate({"command": None})
 
-
-# @pytest.mark.integration
-def test_bk_aliasing():
-    # group
-    config = [
-        {
-            "name": "name",
-            "label": "label",
-            "group": "group",
-            "steps": [{"command": "hi"}],
-        }
-    ]  # -> group
-    config = [
-        {"name": "name", "label": "label", "group": None, "steps": [{"command": "hi"}]}
-    ]  # -> name
-    # block (and input)
-    config = [{"block": "block", "name": "name", "label": "label"}]  # -> name
-    config = [{"block": "block", "label": "label"}]  # -> label
-    config = [{"block": "block"}]  # -> block
-    # (wait step has no label so meh...)
-    # command
-    config = [{"command": "command", "name": "name", "label": "label"}]  # -> name
-    config = [{"command": "command"}]  # -> None (empty string)
+# @TODO: "key not like UUID test"
+# @TODO: NestedCommandStep aliases

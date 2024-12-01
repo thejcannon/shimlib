@@ -8,7 +8,6 @@ from shimbboleth.buildkite.pipeline_config._alias import FieldAlias
 from ._types import (
     AllowDependencyFailureT,
     BranchesT,
-    LabelT,
     PromptT,
 )
 from ._fields import FieldsT
@@ -30,10 +29,11 @@ class BlockStep(BKStepBase, extra="forbid"):
     branches: BranchesT | None = None
     fields: FieldsT | None = None
     prompt: PromptT | None = None
-    name: ClassVar = FieldAlias("label")
-    label: LabelT | None = Field(default=None)
-    block: ClassVar = FieldAlias("label")
+    block: str | None = Field(default=None, description="The label of the block step")
     type: Literal["block"] | None = None
+
+    label: ClassVar = FieldAlias("block", mode="prepend")
+    name: ClassVar = FieldAlias("block", mode="prepend")
 
 
 class NestedBlockStep(BaseModel, extra="forbid"):

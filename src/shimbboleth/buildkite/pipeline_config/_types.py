@@ -1,7 +1,7 @@
 from typing_extensions import TypeAliasType
-from pydantic import Field, BaseModel, WithJsonSchema
+from pydantic import Field, BaseModel
 
-from typing import Any, Annotated, Literal
+from typing import Any, Annotated
 
 AgentsListT = TypeAliasType(
     "AgentsListT",
@@ -170,16 +170,6 @@ SkipT = TypeAliasType(
     ],
 )
 
-BlockStepT = TypeAliasType(
-    "BlockStepT",
-    Annotated[
-        Literal["block"],
-        Field(
-            description="Pauses the execution of a build and waits on a user to unblock it"
-        ),
-    ],
-)
-
 CancelOnBuildFailingT = TypeAliasType(
     "CancelOnBuildFailingT",
     Annotated[
@@ -190,27 +180,3 @@ CancelOnBuildFailingT = TypeAliasType(
         ),
     ],
 )
-
-InputStepT = TypeAliasType(
-    "InputStepT",
-    Annotated[
-        Literal["input"],
-        Field(
-            description="Pauses the execution of a build and waits on a user to unblock it"
-        ),
-    ],
-)
-
-WaitStepT = TypeAliasType(
-    "WaitStepT",
-    Annotated[
-        Literal["wait", "waiter"],
-        Field(description="Waits for previous steps to pass before continuing"),
-    ],
-)
-
-# @TODO: Make sure this works, Python-side
-BoolLikeT = Annotated[
-    bool | Literal["true", "false"],
-    WithJsonSchema({"pattern": "^(true|false)$", "type": ["boolean", "string"]}),
-]

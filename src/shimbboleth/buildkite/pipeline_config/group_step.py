@@ -26,8 +26,6 @@ class GroupStep(BKStepBase, extra="forbid"):
         description="The name to give to this group of steps",
         examples=["Tests"],
     )
-    name: ClassVar = FieldAlias("group")
-    label: ClassVar = FieldAlias("group")
 
     notify: BuildNotifyT | None = None
     skip: SkipT | None = None
@@ -50,3 +48,6 @@ class GroupStep(BKStepBase, extra="forbid"):
         | None,
         Field(description="A list of steps", min_length=1),
     ]
+
+    name: ClassVar = FieldAlias("group")
+    label: ClassVar = FieldAlias("group")

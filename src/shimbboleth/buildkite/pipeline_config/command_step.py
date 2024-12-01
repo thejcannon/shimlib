@@ -4,10 +4,9 @@ from typing_extensions import TypeAliasType
 from pydantic import (
     BaseModel,
     Field,
-    AliasChoices,
 )
 
-from shimbboleth.buildkite.pipeline_config._alias import FieldAlias
+from shimbboleth.buildkite.pipeline_config._alias import FieldAlias, FieldAliasSupport
 
 from ._base import BKStepBase
 from ._types import (
@@ -18,7 +17,6 @@ from ._types import (
     SkipT,
     CacheT,
     CancelOnBuildFailingT,
-    BoolLikeT,
 )
 from ._fields import SoftFailT
 from ._notify import CommandNotifyT
@@ -47,11 +45,11 @@ class CommandStepSignature(BaseModel):
 
 
 class ManualRetryConditions(BaseModel, extra="forbid"):
-    allowed: BoolLikeT = Field(
+    allowed: Literal[True, False, "true", "false"] = Field(
         default=True,
         description="Whether or not this job can be retried manually",
     )
-    permit_on_passed: BoolLikeT = Field(
+    permit_on_passed: Literal[True, False, "true", "false"] = Field(
         default=True,
         description="Whether or not this job can be retried after it has passed",
     )
@@ -98,13 +96,18 @@ class AutomaticRetry(BaseModel, extra="forbid"):
 class RetryConditions(BaseModel):
     """The conditions for retrying this step."""
 
-    automatic: BoolLikeT | AutomaticRetry | list[AutomaticRetry] | None = Field(
+    automatic: (
+        Literal[True, False, "true", "false"]
+        | AutomaticRetry
+        | list[AutomaticRetry]
+        | None
+    ) = Field(
         # @TODO: Why does default have Nones here?
         default=[AutomaticRetry(exit_status="*", limit=2)],
         description="Whether to allow a job to retry automatically. If set to true, the retry conditions are set to the default value.",
     )
-    manual: BoolLikeT | ManualRetryConditions | None = Field(
-        default=None, description="Whether to allow a job to be retried manually"
+    manual: Literal[True, False, "true", "false"] | ManualRetryConditions | None = (
+        Field(default=None, description="Whether to allow a job to be retried manually")
     )
 
 
@@ -226,11 +229,7 @@ class CommandStep(BKStepBase, extra="forbid"):
     cancel_on_build_failing: CancelOnBuildFailingT | None = None
     command: list[str] | str | None = Field(
         default=None,
-        validation_alias=AliasChoices("command", "commands"),
         description="The commands to run on the agent",
-    )
-    commands: ClassVar = FieldAlias(
-        "command", description="The commands to run on the agent"
     )
     concurrency: int | None = Field(
         default=None,
@@ -272,14 +271,17 @@ class CommandStep(BKStepBase, extra="forbid"):
         ge=1,
     )
 
-    name: ClassVar = FieldAlias("label")
     label: LabelT | None = Field(default=None)
     type: Literal["script", "command", "commands"] | None = None
 
-
-class NestedCommandStep(BaseModel, extra="forbid"):
-    command: CommandStep | None = Field(
-        default=None, validation_alias=AliasChoices("command", "commands", "script")
+    name: ClassVar = FieldAlias("label", mode="prepend")
+    commands: ClassVar = FieldAlias(
+        "command", description="The commands to run on the agent"
     )
+
+
+class NestedCommandStep(FieldAliasSupport, extra="forbid"):
+    command: CommandStep | None = Field(default=None)
+
     commands: ClassVar = FieldAlias("command")
     script: ClassVar = FieldAlias("command")

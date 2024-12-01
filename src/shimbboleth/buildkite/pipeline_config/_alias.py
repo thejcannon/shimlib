@@ -1,6 +1,6 @@
 # @TODO: Add docstrings!
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 from pydantic import BaseModel, AliasChoices, model_validator
 from pydantic.fields import FieldInfo
 import pydantic_core.core_schema
@@ -10,6 +10,7 @@ import pydantic.json_schema
 @dataclass
 class FieldAlias:
     alias_of: str
+    mode: Literal["prepend", "append"] = "append"
     description: str | None = None
     deprecated: bool = False
 
@@ -73,16 +74,25 @@ class FieldAliasSupport(BaseModel):
         for name, obj in cls.__dict__.items():
             if isinstance(obj, FieldAlias):
                 field_name = obj.alias_of
-                obj = cls.__dict__[obj.alias_of]
+                field_info = cls.__dict__[obj.alias_of]
+                mode = obj.mode
             elif isinstance(obj, FieldInfo) and name in aliased_fieldnames:
                 field_name = name
+                field_info = obj
+                mode = "append"
             else:
                 continue
-            validation_alias = obj.validation_alias
+            print(name, obj)
+            validation_alias = field_info.validation_alias
             if validation_alias is None:
-                obj.validation_alias = OrderedAliasChoices(name, fieldname=field_name)
+                field_info.validation_alias = OrderedAliasChoices(
+                    name, fieldname=field_name
+                )
             elif isinstance(validation_alias, OrderedAliasChoices):
-                validation_alias.choices.append(name)
+                if mode == "prepend":
+                    validation_alias.choices.insert(0, name)
+                else:
+                    validation_alias.choices.append(name)
 
         super().__init_subclass__()
 
