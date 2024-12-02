@@ -1,3 +1,5 @@
+# @TODO: Inline some annotations
+
 from typing import Literal, Any, Annotated, ClassVar
 from typing_extensions import TypeAliasType
 
@@ -109,7 +111,6 @@ class RetryConditions(BaseModel):
     manual: Literal[True, False, "true", "false"] | ManualRetryConditions | None = (
         Field(default=None, description="Whether to allow a job to be retried manually")
     )
-
 
 MatrixElementT = TypeAliasType("MatrixElementT", str | int | bool)
 SingleDimensionalMatrix = Annotated[

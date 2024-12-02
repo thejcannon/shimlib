@@ -19,13 +19,13 @@ class WaitStep(BKStepBase, extra="forbid"):
         default=None,
         description="Continue to the next steps, even if the previous group of steps fail",
     )
-    # (NB: These are somewhat meaningless, since they never appear in the UI)
     wait: str | None = Field(
         default=None,
         description="Waits for previous steps to pass before continuing",
     )
     type: Literal["wait", "waiter"] | None = None
 
+    # (NB: These are somewhat meaningless, since they never appear in the UI)
     label: ClassVar = FieldAlias("wait", mode="prepend")
     name: ClassVar = FieldAlias("wait", mode="prepend")
 
