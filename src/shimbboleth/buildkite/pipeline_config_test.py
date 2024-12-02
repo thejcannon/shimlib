@@ -1,6 +1,8 @@
 from collections import defaultdict
 import itertools
 
+from pydantic import ValidationError
+
 from shimbboleth.buildkite.pipeline_config.command_step import CommandStep
 from shimbboleth.buildkite.pipeline_config.group_step import GroupStep
 from shimbboleth.buildkite.pipeline_config.input_step import InputStep
@@ -62,6 +64,12 @@ def test_key_aliasing__wrong_type(step_cls):
     step_cls.model_validate({"id": "", "identifier": {}, **STEP_EXTRA_DATA[step_cls]})
     # TODO: test with wrong type raises error
 
+@pytest.mark.parametrize("step_cls", ALL_STEP_TYPES)
+def test_key_not_uuid(step_cls):
+    with pytest.raises(ValidationError, match=r"must not be a valid UUID"):
+        step_cls.model_validate(
+            {"key": "e03c95ff-7a98-4a32-8a0c-fd37f36a06f7",  **STEP_EXTRA_DATA[step_cls]}
+        )
 
 # @TODO: test "is wrong type" for label
 @pytest.mark.parametrize("step_cls", [CommandStep, TriggerStep])

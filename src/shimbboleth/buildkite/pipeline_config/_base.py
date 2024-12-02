@@ -1,11 +1,23 @@
+from pydantic.functional_validators import AfterValidator
 from ._types import AllowDependencyFailureT, DependsOnT, IfT
 from ._alias import FieldAlias, FieldAliasSupport
 from typing_extensions import TypeAliasType
+from uuid import UUID
 import re
-from pydantic import BaseModel, Field, WrapValidator, ValidationError
-
+from pydantic import BaseModel, Field, AfterValidator, ValidationError
+from pydantic_core import PydanticCustomError
 from typing import Annotated, ClassVar, Any
 
+def not_(value: str):
+    try:
+        UUID(value)
+    except ValueError:
+        return value
+    else:
+        raise PydanticCustomError(
+            "not_uuid_error",
+            'Value must not be a valid UUID'
+        )
 
 
 KeyT = TypeAliasType(
@@ -15,11 +27,11 @@ KeyT = TypeAliasType(
         Field(
             description="A unique identifier for a step, must not resemble a UUID",
             examples=["deploy-staging", "test-integration"],
-            # @TODO: Actually do the validation...
             json_schema_extra={
                 "not": {"format": "uuid"}
             }
-        )
+        ),
+        AfterValidator(not_),
     ],
 )
 
