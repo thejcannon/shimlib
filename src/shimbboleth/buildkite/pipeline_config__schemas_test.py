@@ -13,8 +13,8 @@ from shimbboleth.buildkite.pipeline_config._alias import GenerateJsonSchemaWithA
 import jmespath
 
 
-SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/0a0c61c97fc842eeb8138b0b3589f9fb49cc31f2/schema.json"
-VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/0a0c61c97fc842eeb8138b0b3589f9fb49cc31f2/test/valid-pipelines"
+SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/354f67f64f37456641cc39670c122d0b8e27e4e5/schema.json"
+VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/354f67f64f37456641cc39670c122d0b8e27e4e5/test/valid-pipelines"
 
 VALID_PIPELINE_NAMES = (
     "block.yml",
@@ -185,57 +185,7 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
 
     # https://github.com/buildkite/pipeline-schema/pull/105
     bk_defs["waitStep"]["properties"].pop("waiter")
-    bk_defs["waitStep"]["properties"]["wait"]["anyOf"][1].pop("enum")
     bk_defs["nestedWaitStep"]["properties"].pop("waiter")
-
-    # https://github.com/buildkite/pipeline-schema/pull/106
-    def simplify_boollike(path):
-        obj = jmespath.search(path, bk_defs)
-        obj.pop("type")
-        obj.pop("pattern")
-        obj["enum"] = [True, False, "true", "false"]
-
-    simplify_boollike("commandStep.properties.retry.properties.manual.anyOf[0]")
-    simplify_boollike("commandStep.properties.retry.properties.automatic.anyOf[0]")
-    simplify_boollike(
-        "commandStep.properties.retry.properties.manual.anyOf[1].properties.allowed"
-    )
-    simplify_boollike(
-        "commandStep.properties.retry.properties.manual.anyOf[1].properties.permit_on_passed"
-    )
-
-    # https://github.com/buildkite/pipeline-schema/pull/107
-    bk_defs["blockStep"]["properties"]["label"] = {
-        "$ref": "#/definitions/blockStep/properties/block"
-    }
-    bk_defs["blockStep"]["properties"]["name"] = {
-        "$ref": "#/definitions/blockStep/properties/block"
-    }
-    bk_defs["inputStep"]["properties"]["label"] = {
-        "$ref": "#/definitions/inputStep/properties/input"
-    }
-    bk_defs["inputStep"]["properties"]["name"] = {
-        "$ref": "#/definitions/inputStep/properties/input"
-    }
-    bk_defs["commandStep"]["properties"]["name"] = {
-        "$ref": "#/definitions/commandStep/properties/label"
-    }
-    bk_defs["waitStep"]["properties"]["label"] = {
-        "$ref": "#/definitions/waitStep/properties/wait"
-    }
-    bk_defs["waitStep"]["properties"]["name"] = {
-        "$ref": "#/definitions/waitStep/properties/wait"
-    }
-    bk_defs["triggerStep"]["properties"]["name"] = {
-        "$ref": "#/definitions/triggerStep/properties/label"
-    }
-    bk_defs["groupStep"]["properties"]["name"] = {
-        "$ref": "#/definitions/groupStep/properties/group"
-    }
-
-    # https://github.com/buildkite/pipeline-schema/pull/108
-    bk_defs["waitStep"]["properties"]["wait"].pop("anyOf")
-    bk_defs["waitStep"]["properties"]["wait"]["type"] = ["string", "null"]
 
     # https://github.com/buildkite/pipeline-schema/issues/93
     bk_defs["groupStep"]["properties"]["group"]["type"] = "string"

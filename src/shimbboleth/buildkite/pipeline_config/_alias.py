@@ -82,7 +82,6 @@ class FieldAliasSupport(BaseModel):
                 mode = "append"
             else:
                 continue
-            print(name, obj)
             validation_alias = field_info.validation_alias
             if validation_alias is None:
                 field_info.validation_alias = OrderedAliasChoices(

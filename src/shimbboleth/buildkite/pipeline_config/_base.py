@@ -2,9 +2,10 @@ from ._types import AllowDependencyFailureT, DependsOnT, IfT
 from ._alias import FieldAlias, FieldAliasSupport
 from typing_extensions import TypeAliasType
 import re
-from pydantic import Field
+from pydantic import BaseModel, Field, WrapValidator, ValidationError
 
-from typing import Annotated, ClassVar
+from typing import Annotated, ClassVar, Any
+
 
 
 KeyT = TypeAliasType(
@@ -14,11 +15,11 @@ KeyT = TypeAliasType(
         Field(
             description="A unique identifier for a step, must not resemble a UUID",
             examples=["deploy-staging", "test-integration"],
-            # @TODO: https://github.com/buildkite/pipeline-schema/pull/102
-            pattern=re.compile(
-                r"^(?!^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$).*$"
-            ),
-        ),
+            # @TODO: Actually do the validation...
+            json_schema_extra={
+                "not": {"format": "uuid"}
+            }
+        )
     ],
 )
 
