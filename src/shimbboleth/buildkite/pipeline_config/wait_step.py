@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from shimbboleth.buildkite.pipeline_config._types import LooseBoolT
 
-
+from ._types import BranchesT
 from ._base import BKStepBase
 from ._alias import FieldAlias
 
@@ -17,6 +17,7 @@ class WaitStep(BKStepBase, extra="forbid"):
     https://buildkite.com/docs/pipelines/wait-step
     """
 
+    branches: BranchesT | None = None
     continue_on_failure: LooseBoolT | None = Field(
         default=False,
         description="Continue to the next steps, even if the previous group of steps fail",
@@ -30,8 +31,6 @@ class WaitStep(BKStepBase, extra="forbid"):
     # (NB: These are somewhat meaningless, since they never appear in the UI)
     label: ClassVar = FieldAlias("wait", mode="prepend")
     name: ClassVar = FieldAlias("wait", mode="prepend")
-
-    # @TODO: branches is valid here
 
 
 class NestedWaitStep(BaseModel, extra="forbid"):
