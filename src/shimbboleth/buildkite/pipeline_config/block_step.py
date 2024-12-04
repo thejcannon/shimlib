@@ -20,6 +20,7 @@ class BlockStep(BKStepBase, extra="forbid"):
     https://buildkite.com/docs/pipelines/block-step
     """
 
+    # @TODO: I think this actually has default == passed
     blocked_state: Literal["passed", "failed", "running"] | None = Field(
         default=None,
         description="The state that the build is set to when the build is blocked by this block step",

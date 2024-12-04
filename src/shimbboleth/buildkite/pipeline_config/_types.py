@@ -16,6 +16,7 @@ IfT = TypeAliasType(
         ),
     ],
 )
+
 # @TODO: RHS Any?
 EnvT = TypeAliasType(
     "EnvT",
@@ -28,6 +29,7 @@ EnvT = TypeAliasType(
     ],
 )
 
+# @TODO: Canonicalize to list[str]
 BranchesT = TypeAliasType(
     "BranchesT",
     Annotated[
@@ -61,6 +63,7 @@ PromptT = TypeAliasType(
     ],
 )
 
+# @TODO: Canonicalize? (note "false" is a reason, not a boolean)
 SkipT = TypeAliasType(
     "SkipT",
     Annotated[

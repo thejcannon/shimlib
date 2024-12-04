@@ -190,6 +190,9 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     # https://github.com/buildkite/pipeline-schema/pull/112
     bk_defs["waitStep"]["properties"]["continue_on_failure"]["default"] = False
 
+    # https://github.com/buildkite/pipeline-schema/pull/113
+    bk_defs["waitStep"]["properties"]["branches"] = {"$ref": "#/definitions/branches"}
+
     # https://github.com/buildkite/pipeline-schema/issues/93
     bk_defs["groupStep"]["properties"]["group"]["type"] = "string"
     bk_defs["dependsOn"]["anyOf"].pop(0)
@@ -219,7 +222,7 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         "retryConditions",
         "selectInput",
         "selectOption",
-        "slackChannelsNotify",
+        "slackChannels",
         "slackNotify",
         "textInput",
         "triggeredBuild",

@@ -10,44 +10,41 @@ class HasContext(BaseModel):
     context: str | None = Field(default=None, description="GitHub commit status name")
 
 
-class GitHubCommitStatusNotify(BaseModel, extra="forbid"):
+class _NotifyBase(BaseModel, extra="forbid"):
+    if_condition: IfT | None = Field(default=None, alias="if")
+
+
+class GitHubCommitStatusNotify(_NotifyBase):
     github_commit_status: HasContext | None = None
-    if_condition: IfT | None = Field(default=None, alias="if")
 
 
-class GitHubCheckNotify(BaseModel, extra="forbid"):
+class GitHubCheckNotify(_NotifyBase):
     github_check: HasContext | None = None
-    if_condition: IfT | None = Field(default=None, alias="if")
 
 
-class EmailNotify(BaseModel, extra="forbid"):
+class EmailNotify(_NotifyBase):
     email: str | None = None
-    if_condition: IfT | None = Field(default=None, alias="if")
 
 
-class BasecampCampfireNotify(BaseModel, extra="forbid"):
+class BasecampCampfireNotify(_NotifyBase):
     basecamp_campfire: str | None = None
-    if_condition: IfT | None = Field(default=None, alias="if")
 
 
-class SlackChannelsNotify(BaseModel):
+class SlackChannels(BaseModel):
     channels: list[str] | None = None
     message: str | None = None
 
 
-class SlackNotify(BaseModel, extra="forbid"):
-    slack: str | SlackChannelsNotify | None = None
-    if_condition: IfT | None = Field(default=None, alias="if")
+class SlackNotify(_NotifyBase):
+    slack: str | SlackChannels | None = None
 
 
-class WebhookNotify(BaseModel, extra="forbid"):
+class WebhookNotify(_NotifyBase):
     webhook: str | None = None
-    if_condition: IfT | None = Field(default=None, alias="if")
 
 
-class PagerdutyNotify(BaseModel, extra="forbid"):
+class PagerdutyNotify(_NotifyBase):
     pagerduty_change_event: str | None = None
-    if_condition: IfT | None = Field(default=None, alias="if")
 
 
 GitHubNotify = (

@@ -62,6 +62,7 @@ class ManualRetryConditions(BaseModel, extra="forbid"):
 
 
 class AutomaticRetry(BaseModel, extra="forbid"):
+    # @TODO: Canonicalize?
     exit_status: Literal["*"] | int | list[int] | None = Field(
         default=None,
         description="The exit status number that will cause this job to retry",
@@ -97,16 +98,19 @@ class AutomaticRetry(BaseModel, extra="forbid"):
 class RetryConditions(BaseModel):
     """The conditions for retrying this step."""
 
+    # @TODO: Canonicalize?
     automatic: LooseBoolT | AutomaticRetry | list[AutomaticRetry] | None = Field(
         # @TODO: Why does default have Nones here?
         default=[AutomaticRetry(exit_status="*", limit=2)],
         description="Whether to allow a job to retry automatically. If set to true, the retry conditions are set to the default value.",
     )
+    # @TODO: Canonicalize?
     manual: LooseBoolT | ManualRetryConditions | None = Field(
         default=None, description="Whether to allow a job to be retried manually"
     )
 
 
+# @TODO: Canonicalize?
 MatrixElementT = TypeAliasType("MatrixElementT", str | int | bool)
 SingleDimensionalMatrix = Annotated[
     list[MatrixElementT],
@@ -121,6 +125,7 @@ class MatrixAdjustment(BaseModel):
     """An adjustment to a Build Matrix"""
 
     with_value: (
+        # @TODO: Canonicalize?
         Annotated[
             list[MatrixElementT],
             Field(
@@ -152,6 +157,7 @@ class MultiDimenisonalMatrix(BaseModel):
     "Configuration for multi-dimension Build Matrix"
 
     setup: (
+        # @TODO: Canonicalize?
         Annotated[
             list[MatrixElementT],
             Field(
@@ -188,6 +194,7 @@ class MultiDimenisonalMatrix(BaseModel):
 
 
 PluginArrayItem = Annotated[
+    # @TODO: Any?
     dict[str, Any],
     Field(
         examples=[{"docker-compose#v1.0.0": {"run": "app"}}],
@@ -196,6 +203,7 @@ PluginArrayItem = Annotated[
     ),
 ]
 PluginArrayT = Annotated[
+    # @TODO: Canonicalize?
     list[str | PluginArrayItem], Field(description="Array of plugins for this step")
 ]
 PluginMapT = Annotated[
@@ -208,15 +216,17 @@ PluginMapT = Annotated[
 
 
 class CacheMap(BaseModel):
+    # @TODO: Canonicalize?
     paths: str | list[str]
 
     name: str | None = None
-    size: Annotated[str, Field(pattern="^\\d+g$")] | None = None
+    size: str | None = Field(default=None, pattern="^\\d+g$")
 
 
 CacheT = TypeAliasType(
     "CacheT",
     Annotated[
+        # @TODO: Canonicalize?
         str | list[str] | CacheMap,
         Field(
             description="The paths for the caches to be used in the step",
@@ -253,6 +263,7 @@ class CommandStep(BKStepBase, extra="forbid"):
     """
 
     agents: AgentsT | None = None
+    # @TODO: Canonicalize?
     artifact_paths: str | list[str] | None = Field(
         default=None,
         description="The glob path/s of artifacts to upload once this step has finished running",
@@ -261,6 +272,7 @@ class CommandStep(BKStepBase, extra="forbid"):
     branches: BranchesT | None = None
     cache: CacheT | None = None
     cancel_on_build_failing: CancelOnBuildFailingT | None = None
+    # @TODO: Canonicalize?
     command: list[str] | str | None = Field(
         default=None,
         description="The commands to run on the agent",
@@ -313,7 +325,7 @@ class CommandStep(BKStepBase, extra="forbid"):
         "command", description="The commands to run on the agent"
     )
 
-    # @TODO: Reject command and commands
+    # @TODO: Reject command and commands both being provided
 
 
 class NestedCommandStep(FieldAliasSupport, extra="forbid"):

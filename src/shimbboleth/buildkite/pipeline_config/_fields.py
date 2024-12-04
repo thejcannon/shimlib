@@ -60,6 +60,7 @@ class SelectOption(BaseModel, extra="forbid"):
     )
 
 
+# @TODO: If `multiple` is falsey, then `default` cant be a list of strings
 class SelectInput(BaseModel, extra="forbid"):
     """
     For Input Step: https://buildkite.com/docs/pipelines/input-step#select-input-attributes
@@ -71,6 +72,7 @@ class SelectInput(BaseModel, extra="forbid"):
         pattern="^[a-zA-Z0-9-_]+$",
         examples=["release-stream"],
     )
+    # @TODO: Allowed to be empty?
     options: list[SelectOption]
 
     default: str | list[str] | None = Field(

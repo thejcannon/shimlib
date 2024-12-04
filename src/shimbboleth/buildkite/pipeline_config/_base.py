@@ -7,7 +7,7 @@ from pydantic_core import PydanticCustomError
 from typing import Annotated, ClassVar
 
 
-def not_a_uuid(value: str) -> str:
+def _not_a_uuid(value: str) -> str:
     try:
         UUID(value)
     except ValueError:
@@ -29,7 +29,7 @@ KeyT = TypeAliasType(
                 }
             },
         ),
-        AfterValidator(not_a_uuid),
+        AfterValidator(_not_a_uuid),
     ],
 )
 
