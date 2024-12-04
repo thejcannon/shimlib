@@ -13,8 +13,8 @@ from shimbboleth.buildkite.pipeline_config._alias import GenerateJsonSchemaWithA
 import jmespath
 
 
-SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/a6f530c79ebe5232fd0782444fc6e0872fc98f43/schema.json"
-VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/a6f530c79ebe5232fd0782444fc6e0872fc98f43/test/valid-pipelines"
+SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/91cb62e507b74585765513cf95df268dff2f8d79/schema.json"
+VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/91cb62e507b74585765513cf95df268dff2f8d79/test/valid-pipelines"
 
 VALID_PIPELINE_NAMES = (
     "block.yml",
@@ -186,6 +186,9 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     # https://github.com/buildkite/pipeline-schema/pull/105
     bk_defs["waitStep"]["properties"].pop("waiter")
     bk_defs["nestedWaitStep"]["properties"].pop("waiter")
+
+    # https://github.com/buildkite/pipeline-schema/pull/112
+    bk_defs["waitStep"]["properties"]["continue_on_failure"]["default"] = False
 
     # https://github.com/buildkite/pipeline-schema/issues/93
     bk_defs["groupStep"]["properties"]["group"]["type"] = "string"

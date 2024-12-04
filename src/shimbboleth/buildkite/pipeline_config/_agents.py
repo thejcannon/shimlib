@@ -3,7 +3,7 @@ from pydantic import (
     Field,
 )
 import pydantic_core
-from ._validators import FlattenUnionValidator
+from ._validators import Canonicalizer
 
 from typing import Any, Annotated
 
@@ -30,9 +30,9 @@ AgentsObjectT = TypeAliasType(
 )
 
 
-class AgentsValidator(FlattenUnionValidator):
+class AgentsValidator(Canonicalizer[AgentsObjectT | AgentsListT, dict[str, str]]):
     @classmethod
-    def flatten(
+    def canonicalize(
         cls,
         value: AgentsObjectT | AgentsListT,
         handler: pydantic_core.core_schema.ValidatorFunctionWrapHandler,

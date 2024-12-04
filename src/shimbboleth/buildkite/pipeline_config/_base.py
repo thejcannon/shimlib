@@ -1,4 +1,4 @@
-from ._types import IfT
+from ._types import IfT, LooseBoolT
 from ._alias import FieldAlias, FieldAliasSupport
 from typing_extensions import TypeAliasType
 from uuid import UUID
@@ -36,7 +36,7 @@ KeyT = TypeAliasType(
 AllowDependencyFailureT = TypeAliasType(
     "AllowDependencyFailureT",
     Annotated[
-        bool,
+        LooseBoolT,
         Field(
             default=False,
             description="Whether to proceed with this step and further steps if a step named in the depends_on attribute fails",
@@ -46,7 +46,7 @@ AllowDependencyFailureT = TypeAliasType(
 
 
 class DependsOnDependency(BaseModel, extra="forbid"):
-    allow_failure: bool | None = False
+    allow_failure: LooseBoolT | None = False
     step: str | None = None
 
 

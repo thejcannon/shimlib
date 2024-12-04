@@ -8,6 +8,7 @@ from ._types import (
     BranchesT,
     EnvT,
     LabelT,
+    LooseBoolT,
     SkipT,
 )
 from ._fields import SoftFailT
@@ -48,7 +49,7 @@ class TriggerStep(BKStepBase, extra="forbid"):
 
     trigger: str = Field(description="The slug of the pipeline to create a build")
 
-    is_async: bool = Field(
+    is_async: LooseBoolT = Field(
         default=False,
         description="Whether to continue the build without waiting for the triggered step to complete",
         alias="async",

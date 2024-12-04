@@ -46,11 +46,11 @@ class CommandStepSignature(BaseModel):
 
 
 class ManualRetryConditions(BaseModel, extra="forbid"):
-    allowed: Literal[True, False, "true", "false"] = Field(
+    allowed: LooseBoolT = Field(
         default=True,
         description="Whether or not this job can be retried manually",
     )
-    permit_on_passed: Literal[True, False, "true", "false"] = Field(
+    permit_on_passed: LooseBoolT = Field(
         default=True,
         description="Whether or not this job can be retried after it has passed",
     )
@@ -97,12 +97,7 @@ class AutomaticRetry(BaseModel, extra="forbid"):
 class RetryConditions(BaseModel):
     """The conditions for retrying this step."""
 
-    automatic: (
-        Literal[True, False, "true", "false"]
-        | AutomaticRetry
-        | list[AutomaticRetry]
-        | None
-    ) = Field(
+    automatic: LooseBoolT | AutomaticRetry | list[AutomaticRetry] | None = Field(
         # @TODO: Why does default have Nones here?
         default=[AutomaticRetry(exit_status="*", limit=2)],
         description="Whether to allow a job to retry automatically. If set to true, the retry conditions are set to the default value.",
@@ -241,7 +236,7 @@ CacheT = TypeAliasType(
 CancelOnBuildFailingT = TypeAliasType(
     "CancelOnBuildFailingT",
     Annotated[
-        bool,
+        LooseBoolT,
         Field(
             default=False,
             description="Whether to cancel the job as soon as the build is marked as failing",

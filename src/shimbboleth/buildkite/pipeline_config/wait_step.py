@@ -3,6 +3,8 @@ from typing_extensions import TypeAliasType
 
 from pydantic import BaseModel, Field
 
+from shimbboleth.buildkite.pipeline_config._types import LooseBoolT
+
 
 from ._base import BKStepBase
 from ._alias import FieldAlias
@@ -15,9 +17,8 @@ class WaitStep(BKStepBase, extra="forbid"):
     https://buildkite.com/docs/pipelines/wait-step
     """
 
-    continue_on_failure: bool | None = Field(
-        # @TODO: Shouldnt this default to `False` to be consistent?
-        default=None,
+    continue_on_failure: LooseBoolT | None = Field(
+        default=False,
         description="Continue to the next steps, even if the previous group of steps fail",
     )
     wait: str | None = Field(

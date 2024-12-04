@@ -4,6 +4,8 @@ from typing_extensions import TypeAliasType
 
 from pydantic import BaseModel, Field
 
+from shimbboleth.buildkite.pipeline_config._types import LooseBoolT
+
 
 class TextInput(BaseModel, extra="forbid"):
     """
@@ -22,7 +24,7 @@ class TextInput(BaseModel, extra="forbid"):
         description="The explanatory text that is shown after the label",
         examples=["What's the code name for this release? :name_badge:"],
     )
-    required: bool = Field(
+    required: LooseBoolT = Field(
         default=True, description="Whether the field is required for form submission"
     )
     default: str | None = Field(
@@ -53,7 +55,7 @@ class SelectOption(BaseModel, extra="forbid"):
         description="The text displayed directly under the select field's label",
         examples=["Which release stream does this belong in? :fork:"],
     )
-    required: bool = Field(
+    required: LooseBoolT = Field(
         default=True, description="Whether the field is required for form submission"
     )
 
@@ -81,10 +83,10 @@ class SelectInput(BaseModel, extra="forbid"):
         description="The explanatory text that is shown after the label",
         examples=["What's the code name for this release? :name_badge:"],
     )
-    multiple: bool = Field(
+    multiple: LooseBoolT = Field(
         default=False, description="Whether more than one option may be selected"
     )
-    required: bool = Field(
+    required: LooseBoolT = Field(
         default=True, description="Whether the field is required for form submission"
     )
     select: str | None = Field(
@@ -113,7 +115,7 @@ class SoftFailByStatus(BaseModel):
 SoftFailT = TypeAliasType(
     "SoftFailT",
     Annotated[
-        bool | list[SoftFailByStatus],
+        LooseBoolT | list[SoftFailByStatus],
         Field(description="The conditions for marking the step as a soft-fail."),
     ],
 )

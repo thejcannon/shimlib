@@ -1,10 +1,10 @@
 from typing_extensions import TypeAliasType
-from pydantic import BeforeValidator, Field, WithJsonSchema
+from pydantic import Field
 
-from typing import Any, Annotated
+from typing import Any, Annotated, Literal
+import pydantic_core
+from ._validators import Canonicalizer
 
-
-# @TODO: A lot of these are only used in one place
 
 IfT = TypeAliasType(
     "IfT",
@@ -66,15 +66,23 @@ SkipT = TypeAliasType(
     Annotated[
         bool | str,
         Field(
+            # TODO: grammar?
             description="Whether this step should be skipped. You can specify a reason for using a string.",
             examples=[True, False, "My reason"],
         ),
     ],
 )
 
+
+class LooseBoolValidator(Canonicalizer[Literal[True, False, "true", "false"], bool]):
+    @classmethod
+    def canonicalize(
+        cls,
+        value: Literal[True, False, "true", "false"],
+        handler: pydantic_core.core_schema.ValidatorFunctionWrapHandler,
+    ) -> bool:
+        return True if value == "true" else False if value == "false" else value
+
+
 # NB: Most Buildkite booleans also support the strings "true" and "false"
-LooseBoolT = Annotated[
-    bool,
-    BeforeValidator(lambda v: True if v == "true" else False if v == "false" else v),
-    WithJsonSchema({"enum": [True, False, "true", "false"]}),
-]
+LooseBoolT = Annotated[bool, LooseBoolValidator()]
