@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field
 from shimbboleth.buildkite.pipeline_config._alias import FieldAlias
 
 from ._types import (
-    AllowDependencyFailureT,
     BranchesT,
     PromptT,
 )
@@ -21,7 +20,6 @@ class BlockStep(BKStepBase, extra="forbid"):
     https://buildkite.com/docs/pipelines/block-step
     """
 
-    allow_dependency_failure: AllowDependencyFailureT = False
     blocked_state: Literal["passed", "failed", "running"] | None = Field(
         default=None,
         description="The state that the build is set to when the build is blocked by this block step",

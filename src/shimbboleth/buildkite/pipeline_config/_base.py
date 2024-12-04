@@ -1,23 +1,19 @@
-from pydantic.functional_validators import AfterValidator
-from ._types import AllowDependencyFailureT, DependsOnT, IfT
+from ._types import IfT
 from ._alias import FieldAlias, FieldAliasSupport
 from typing_extensions import TypeAliasType
 from uuid import UUID
-import re
-from pydantic import BaseModel, Field, AfterValidator, ValidationError
+from pydantic import Field, AfterValidator, BaseModel
 from pydantic_core import PydanticCustomError
-from typing import Annotated, ClassVar, Any
+from typing import Annotated, ClassVar
 
-def not_(value: str):
+
+def not_a_uuid(value: str) -> str:
     try:
         UUID(value)
     except ValueError:
         return value
     else:
-        raise PydanticCustomError(
-            "not_uuid_error",
-            'Value must not be a valid UUID'
-        )
+        raise PydanticCustomError("not_uuid_error", "Value must not be a valid UUID")
 
 
 KeyT = TypeAliasType(
@@ -28,10 +24,37 @@ KeyT = TypeAliasType(
             description="A unique identifier for a step, must not resemble a UUID",
             examples=["deploy-staging", "test-integration"],
             json_schema_extra={
-                "not": {"format": "uuid"}
-            }
+                "not": {
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                }
+            },
         ),
-        AfterValidator(not_),
+        AfterValidator(not_a_uuid),
+    ],
+)
+
+AllowDependencyFailureT = TypeAliasType(
+    "AllowDependencyFailureT",
+    Annotated[
+        bool,
+        Field(
+            default=False,
+            description="Whether to proceed with this step and further steps if a step named in the depends_on attribute fails",
+        ),
+    ],
+)
+
+
+class DependsOnDependency(BaseModel, extra="forbid"):
+    allow_failure: bool | None = False
+    step: str | None = None
+
+
+DependsOnT = TypeAliasType(
+    "DependsOnT",
+    Annotated[
+        None | str | list[str | DependsOnDependency],
+        Field(description="The step keys for a step to depend on"),
     ],
 )
 
@@ -44,5 +67,3 @@ class BKStepBase(FieldAliasSupport):
 
     id: ClassVar[FieldAlias] = FieldAlias("key", deprecated=True)
     identifier: ClassVar[FieldAlias] = FieldAlias("key")
-
-    # `branches` is not valid on `group` (but IS on wait, just missing from schema)

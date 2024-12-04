@@ -1,31 +1,11 @@
 from typing_extensions import TypeAliasType
-from pydantic import Field, BaseModel
+from pydantic import BeforeValidator, Field, WithJsonSchema
 
 from typing import Any, Annotated
 
-AgentsListT = TypeAliasType(
-    "AgentsListT",
-    Annotated[
-        list[str],
-        Field(
-            description="Query rules to target specific agents in k=v format",
-            examples=["queue=default", "xcode=true"],
-        ),
-    ],
-)
-AgentsObjectT = TypeAliasType(
-    "AgentsObjectT",
-    Annotated[
-        # @TODO: Any?
-        dict[str, Any],
-        Field(
-            description="Query rules to target specific agents",
-            examples=[{"queue": "deploy"}, {"ruby": "2*"}],
-        ),
-    ],
-)
 
-AgentsT = TypeAliasType("AgentsT", AgentsObjectT | AgentsListT)
+# @TODO: A lot of these are only used in one place
+
 IfT = TypeAliasType(
     "IfT",
     Annotated[
@@ -47,16 +27,7 @@ EnvT = TypeAliasType(
         ),
     ],
 )
-AllowDependencyFailureT = TypeAliasType(
-    "AllowDependencyFailureT",
-    Annotated[
-        bool,
-        Field(
-            default=False,
-            description="Whether to proceed with this step and further steps if a step named in the depends_on attribute fails",
-        ),
-    ],
-)
+
 BranchesT = TypeAliasType(
     "BranchesT",
     Annotated[
@@ -64,70 +35,6 @@ BranchesT = TypeAliasType(
         Field(
             description="Which branches will include this step in their builds",
             examples=["master", ["feature/*", "chore/*"]],
-        ),
-    ],
-)
-
-
-class CacheMap(BaseModel):
-    paths: str | list[str]
-
-    name: str | None = None
-    size: Annotated[str, Field(pattern="^\\d+g$")] | None = None
-
-
-CacheT = TypeAliasType(
-    "CacheT",
-    Annotated[
-        str | list[str] | CacheMap,
-        Field(
-            description="The paths for the caches to be used in the step",
-            examples=[
-                "dist/",
-                [".build/*", "assets/*"],
-                {
-                    "name": "cool-cache",
-                    "paths": ["/path/one", "/path/two"],
-                    "size": "20g",
-                },
-            ],
-        ),
-    ],
-)
-
-
-class DependsOnDependency(BaseModel, extra="forbid"):
-    allow_failure: bool | None = False
-    step: str | None = None
-
-
-DependsOnT = TypeAliasType(
-    "DependsOnT",
-    Annotated[
-        None | str | list[str | DependsOnDependency],
-        Field(description="The step keys for a step to depend on"),
-    ],
-)
-
-UnblockFieldOptionT = TypeAliasType(
-    "UnblockFieldOptionT",
-    Annotated[dict[str, Any], Field(description="Option for an unblock field")],
-)
-
-UnblockFieldT = TypeAliasType(
-    "UnblockFieldT",
-    Annotated[
-        dict[str, Any] | dict[str, Any],
-        Field(description="A field in an unblock step"),
-    ],
-)
-
-UnblockFieldsT = TypeAliasType(
-    "UnblockFieldsT",
-    Annotated[
-        list[UnblockFieldT],
-        Field(
-            description="A list of input fields required to be filled out before unblocking the step"
         ),
     ],
 )
@@ -141,11 +48,6 @@ LabelT = TypeAliasType(
             examples=[":docker: Build"],
         ),
     ],
-)
-
-MatrixElementT = TypeAliasType(
-    "MatrixElementT",
-    Annotated[str | int | bool, Field(description="Matrix element value")],
 )
 
 PromptT = TypeAliasType(
@@ -170,13 +72,9 @@ SkipT = TypeAliasType(
     ],
 )
 
-CancelOnBuildFailingT = TypeAliasType(
-    "CancelOnBuildFailingT",
-    Annotated[
-        bool,
-        Field(
-            default=False,
-            description="Whether to cancel the job as soon as the build is marked as failing",
-        ),
-    ],
-)
+# NB: Most Buildkite booleans also support the strings "true" and "false"
+LooseBoolT = Annotated[
+    bool,
+    BeforeValidator(lambda v: True if v == "true" else False if v == "false" else v),
+    WithJsonSchema({"enum": [True, False, "true", "false"]}),
+]

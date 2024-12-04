@@ -2,7 +2,8 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from ._types import AgentsT, EnvT
+from ._types import EnvT
+from ._agents import AgentsT
 from .block_step import BlockStep, NestedBlockStep, StringBlockStep
 from .input_step import InputStep, NestedInputStep, StringInputStep
 from .wait_step import WaitStep, NestedWaitStep, StringWaitStep

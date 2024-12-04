@@ -1,3 +1,7 @@
+"""
+These tests test the Python-side of the pipeline config classes.
+"""
+
 from collections import defaultdict
 import itertools
 
@@ -9,7 +13,8 @@ from shimbboleth.buildkite.pipeline_config.input_step import InputStep
 from shimbboleth.buildkite.pipeline_config.wait_step import WaitStep
 from shimbboleth.buildkite.pipeline_config.trigger_step import TriggerStep
 from shimbboleth.buildkite.pipeline_config.block_step import BlockStep
-from shimbboleth.buildkite.pipeline_config import ALL_STEP_TYPES
+from shimbboleth.buildkite.pipeline_config import ALL_STEP_TYPES, BuildkitePipeline
+from shimbboleth.buildkite.pipeline_config._types import LooseBoolT
 
 import pytest
 
@@ -57,21 +62,37 @@ def test_key_aliasing(step_cls, payload):
 
 
 @pytest.mark.parametrize("step_cls", ALL_STEP_TYPES)
-def test_key_aliasing__wrong_type(step_cls):
+def test_key_aliasing__wrong_type_on_ignored_field(step_cls):
     step_cls.model_validate(
         {"key": "key", "id": {}, "identifier": {}, **STEP_EXTRA_DATA[step_cls]}
     )
     step_cls.model_validate({"id": "", "identifier": {}, **STEP_EXTRA_DATA[step_cls]})
-    # TODO: test with wrong type raises error
+
+
+@pytest.mark.parametrize("step_cls", ALL_STEP_TYPES)
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"key": {}},
+        {"id": {}},
+        {"identifier": {}},
+        {"key": None, "id": {}},
+        {"key": None, "id": None, "identifier": {}},
+    ],
+)
+def test_key_aliasing__wrong_type_on_field(step_cls, payload):
+    with pytest.raises(ValidationError):
+        step_cls.model_validate({**payload, **STEP_EXTRA_DATA[step_cls]})
+
 
 @pytest.mark.parametrize("step_cls", ALL_STEP_TYPES)
 def test_key_not_uuid(step_cls):
     with pytest.raises(ValidationError, match=r"must not be a valid UUID"):
         step_cls.model_validate(
-            {"key": "e03c95ff-7a98-4a32-8a0c-fd37f36a06f7",  **STEP_EXTRA_DATA[step_cls]}
+            {"key": "e03c95ff-7a98-4a32-8a0c-fd37f36a06f7", **STEP_EXTRA_DATA[step_cls]}
         )
 
-# @TODO: test "is wrong type" for label
+
 @pytest.mark.parametrize("step_cls", [CommandStep, TriggerStep])
 @pytest.mark.parametrize("payload", kaboom("name", "label"))
 def test_label_aliasing__just_name_label(step_cls, payload):
@@ -84,6 +105,25 @@ def test_label_aliasing__just_name_label(step_cls, payload):
         else None
     )
     assert step.label == step.name
+
+
+@pytest.mark.parametrize("step_cls", ALL_STEP_TYPES)
+def test_label_aliasing__wrong_type_on_ignored_field(step_cls):
+    step_cls.model_validate({"name": "", "label": {}, **STEP_EXTRA_DATA[step_cls]})
+
+
+@pytest.mark.parametrize("step_cls", ALL_STEP_TYPES)
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"name": {}},
+        {"label": {}},
+        {"name": None, "label": {}},
+    ],
+)
+def test_label_aliasing__wrong_type_on_field(step_cls, payload):
+    with pytest.raises(ValidationError):
+        step_cls.model_validate({**payload, **STEP_EXTRA_DATA[step_cls]})
 
 
 @pytest.mark.parametrize("step_cls", [BlockStep, InputStep, WaitStep])
@@ -105,6 +145,19 @@ def test_label_aliasing__with_stepname(step_cls, payload):
     )
     assert step.label == step.name
     assert getattr(step, stepname) == step.name
+
+
+@pytest.mark.parametrize("step_cls", [BlockStep, InputStep, WaitStep])
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"stepname": {}},
+        {"name": None, "label": None, "stepname": {}},
+    ],
+)
+def test_label_aliasing__wrong_type_with_stepname(step_cls, payload):
+    with pytest.raises(ValidationError):
+        step_cls.model_validate({**payload, **STEP_EXTRA_DATA[step_cls]})
 
 
 @pytest.mark.parametrize(
@@ -130,18 +183,48 @@ def test_label_aliasing__stepname__groupstep(payload):
 
 
 def test_command_step_command_alias():
-    # TODO: Can't use `command' and `commands`!
-    # step = CommandStep.model_validate({"command": "command", "commands": "commands"})
     step = CommandStep.model_validate({"commands": "commands"})
     assert step.command == "commands"
     assert step.commands == "commands"
     step = CommandStep.model_validate({"command": None, "commands": "commands"})
     assert step.command == "commands"
     assert step.commands == "commands"
+
+    # @TODO: Should raise "Step type is ambiguous, use only one of command or commands"
+    step = CommandStep.model_validate({"command": "command", "commands": "commands"})
+    assert step.command == "command"
+    assert step.commands == "command"
     # @TODO: This should error!
     step = CommandStep.model_validate({})
     # @TODO: This too!
     step = CommandStep.model_validate({"command": None})
 
-# @TODO: "key not like UUID test"
+
 # @TODO: NestedCommandStep aliases
+
+
+def test_agents_parsing():
+    assert (
+        BuildkitePipeline.model_validate({"agents": {}, "steps": ["wait"]}).agents == {}
+    )
+    assert (
+        BuildkitePipeline.model_validate({"agents": [], "steps": ["wait"]}).agents == {}
+    )
+    assert BuildkitePipeline.model_validate(
+        {"agents": {"a": "b"}, "steps": ["wait"]}
+    ).agents == {"a": "b"}
+    assert BuildkitePipeline.model_validate(
+        {"agents": ["a=b"], "steps": ["wait"]}
+    ).agents == {"a": "b"}
+
+
+def test_loose_bool():
+    from pydantic import BaseModel
+
+    class Model(BaseModel, strict=True):
+        field: LooseBoolT
+
+    assert Model.model_validate({"field": True}).field is True
+    assert Model.model_validate({"field": "true"}).field is True
+    assert Model.model_validate({"field": "false"}).field is False
+    assert Model.model_validate({"field": False}).field is False

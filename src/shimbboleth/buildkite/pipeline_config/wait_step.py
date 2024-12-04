@@ -16,6 +16,7 @@ class WaitStep(BKStepBase, extra="forbid"):
     """
 
     continue_on_failure: bool | None = Field(
+        # @TODO: Shouldnt this default to `False` to be consistent?
         default=None,
         description="Continue to the next steps, even if the previous group of steps fail",
     )
@@ -28,6 +29,8 @@ class WaitStep(BKStepBase, extra="forbid"):
     # (NB: These are somewhat meaningless, since they never appear in the UI)
     label: ClassVar = FieldAlias("wait", mode="prepend")
     name: ClassVar = FieldAlias("wait", mode="prepend")
+
+    # @TODO: branches is valid here
 
 
 class NestedWaitStep(BaseModel, extra="forbid"):

@@ -11,14 +11,13 @@ from pydantic import (
 from shimbboleth.buildkite.pipeline_config._alias import FieldAlias, FieldAliasSupport
 
 from ._base import BKStepBase
+from ._agents import AgentsT
 from ._types import (
     BranchesT,
     EnvT,
-    AgentsT,
     LabelT,
     SkipT,
-    CacheT,
-    CancelOnBuildFailingT,
+    LooseBoolT,
 )
 from ._fields import SoftFailT
 from ._notify import CommandNotifyT
@@ -108,9 +107,10 @@ class RetryConditions(BaseModel):
         default=[AutomaticRetry(exit_status="*", limit=2)],
         description="Whether to allow a job to retry automatically. If set to true, the retry conditions are set to the default value.",
     )
-    manual: Literal[True, False, "true", "false"] | ManualRetryConditions | None = (
-        Field(default=None, description="Whether to allow a job to be retried manually")
+    manual: LooseBoolT | ManualRetryConditions | None = Field(
+        default=None, description="Whether to allow a job to be retried manually"
     )
+
 
 MatrixElementT = TypeAliasType("MatrixElementT", str | int | bool)
 SingleDimensionalMatrix = Annotated[
@@ -212,6 +212,44 @@ PluginMapT = Annotated[
 ]
 
 
+class CacheMap(BaseModel):
+    paths: str | list[str]
+
+    name: str | None = None
+    size: Annotated[str, Field(pattern="^\\d+g$")] | None = None
+
+
+CacheT = TypeAliasType(
+    "CacheT",
+    Annotated[
+        str | list[str] | CacheMap,
+        Field(
+            description="The paths for the caches to be used in the step",
+            examples=[
+                "dist/",
+                [".build/*", "assets/*"],
+                {
+                    "name": "cool-cache",
+                    "paths": ["/path/one", "/path/two"],
+                    "size": "20g",
+                },
+            ],
+        ),
+    ],
+)
+
+CancelOnBuildFailingT = TypeAliasType(
+    "CancelOnBuildFailingT",
+    Annotated[
+        bool,
+        Field(
+            default=False,
+            description="Whether to cancel the job as soon as the build is marked as failing",
+        ),
+    ],
+)
+
+
 class CommandStep(BKStepBase, extra="forbid"):
     """
     A command step runs one or more shell commands on one or more agents.
@@ -279,6 +317,8 @@ class CommandStep(BKStepBase, extra="forbid"):
     commands: ClassVar = FieldAlias(
         "command", description="The commands to run on the agent"
     )
+
+    # @TODO: Reject command and commands
 
 
 class NestedCommandStep(FieldAliasSupport, extra="forbid"):

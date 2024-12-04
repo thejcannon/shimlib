@@ -13,8 +13,8 @@ from shimbboleth.buildkite.pipeline_config._alias import GenerateJsonSchemaWithA
 import jmespath
 
 
-SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/354f67f64f37456641cc39670c122d0b8e27e4e5/schema.json"
-VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/354f67f64f37456641cc39670c122d0b8e27e4e5/test/valid-pipelines"
+SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/a6f530c79ebe5232fd0782444fc6e0872fc98f43/schema.json"
+VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/a6f530c79ebe5232fd0782444fc6e0872fc98f43/test/valid-pipelines"
 
 VALID_PIPELINE_NAMES = (
     "block.yml",
