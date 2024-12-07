@@ -209,17 +209,35 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
 
     # https://github.com/buildkite/pipeline-schema/pull/117
     bk_defs["buildNotify"]["items"]["oneOf"][7]["properties"].pop("if")
-    bk_defs["buildNotify"]["items"]["oneOf"][7]["properties"]["github_check"]["properties"] = {}
-    bk_defs["buildNotify"]["items"]["oneOf"][7]["properties"]["github_check"]["additionalProperties"] = False
-    bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][4]["properties"].pop("if")
-    bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][4]["properties"]["github_check"]["properties"] = {}
-    bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][4]["properties"]["github_check"]["additionalProperties"] = False
+    bk_defs["buildNotify"]["items"]["oneOf"][7]["properties"]["github_check"][
+        "properties"
+    ] = {}
+    bk_defs["buildNotify"]["items"]["oneOf"][7]["properties"]["github_check"][
+        "additionalProperties"
+    ] = False
+    bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][4][
+        "properties"
+    ].pop("if")
+    bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][4]["properties"][
+        "github_check"
+    ]["properties"] = {}
+    bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][4]["properties"][
+        "github_check"
+    ]["additionalProperties"] = False
+
+    # https://github.com/buildkite/pipeline-schema/pull/118
+    bk_defs["buildNotify"]["items"]["oneOf"][6]["properties"]["github_commit_status"][
+        "additionalProperties"
+    ] = False
+    bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][3]["properties"][
+        "github_commit_status"
+    ]["additionalProperties"] = False
 
     # Handle (other) aliases
     _handle_alias(bk_defs, "nestedCommandStep", "commands", "command")
     _handle_alias(bk_defs, "nestedCommandStep", "script", "command")
     bk_defs["nestedWaitStep"]["properties"]["waiter"] = {
-        "$ref": f"#/definitions/nestedWaitStep/properties/wait"
+        "$ref": "#/definitions/nestedWaitStep/properties/wait"
     }
 
     # Some definitions are inlined
@@ -233,8 +251,8 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         "emailNotify",
         "_EmptyModel",
         "gitHubCheckNotify",
+        "gitHubCommitStatusInfo",
         "gitHubCommitStatusNotify",
-        "hasContext",
         "manualRetryConditions",
         "matrixAdjustment",
         "multiDimenisonalMatrix",

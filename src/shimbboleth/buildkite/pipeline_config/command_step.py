@@ -1,6 +1,6 @@
 # @TODO: Inline some annotations?
 
-from typing import Literal, Any, Annotated, ClassVar, Self
+from typing import Literal, Any, Annotated, ClassVar
 from typing_extensions import TypeAliasType
 
 from pydantic import (

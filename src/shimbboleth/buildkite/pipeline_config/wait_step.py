@@ -1,7 +1,7 @@
 from typing import ClassVar, Literal, Annotated
 from typing_extensions import TypeAliasType
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from shimbboleth.buildkite.pipeline_config._types import LooseBoolT
 

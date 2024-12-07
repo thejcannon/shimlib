@@ -1,9 +1,8 @@
 from typing_extensions import TypeAliasType
 from pydantic import Field
 
-from typing import Any, Annotated, Literal
-import pydantic_core
-from ._canonicalize import Canonicalizer, ListofStringCanonicalizer, LooseBoolValidator
+from typing import Any, Annotated
+from ._canonicalize import ListofStringCanonicalizer, LooseBoolValidator
 
 
 IfT = TypeAliasType(

@@ -9,15 +9,17 @@ from ._types import IfT
 class _EmptyModel(BaseModel, extra="forbid"):
     pass
 
-class HasContext(BaseModel):
+
+class GitHubCommitStatusInfo(BaseModel, extra="forbid"):
     context: str | None = Field(default=None, description="GitHub commit status name")
 
 
 class _NotifyBase(BaseModel, extra="forbid"):
     if_condition: IfT | None = Field(default=None, alias="if")
 
+
 class GitHubCommitStatusNotify(_NotifyBase):
-    github_commit_status: HasContext | None = None
+    github_commit_status: GitHubCommitStatusInfo | None = None
 
 
 class GitHubCheckNotify(BaseModel, extra="forbid"):

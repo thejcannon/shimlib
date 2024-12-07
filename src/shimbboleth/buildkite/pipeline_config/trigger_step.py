@@ -11,7 +11,6 @@ from ._types import (
     LooseBoolT,
     SkipT,
 )
-from ._fields import SoftFailT
 
 
 class TriggeredBuild(BaseModel, extra="forbid"):
