@@ -24,8 +24,7 @@ from ._fields import SoftFailT
 from ._notify import CommandNotifyT
 
 
-# @TODO: Extra allow?
-class CommandStepSignature(BaseModel):
+class CommandStepSignature(BaseModel, extra="allow"):
     """
     The signature of the command step, generally injected by agents at pipeline upload
     """
@@ -95,8 +94,7 @@ class AutomaticRetry(BaseModel, extra="forbid"):
     )
 
 
-# @TODO: Extra allow?
-class RetryConditions(BaseModel):
+class RetryRuleset(BaseModel, extra="forbid"):
     """The conditions for retrying this step."""
 
     # @TODO: Canonicalize?
@@ -122,7 +120,7 @@ SingleDimensionalMatrix = Annotated[
 ]
 
 
-class MatrixAdjustment(BaseModel):
+class MatrixAdjustment(BaseModel, extra="forbid"):
     """An adjustment to a Build Matrix"""
 
     with_value: (
@@ -154,7 +152,7 @@ class MatrixAdjustment(BaseModel):
     soft_fail: SoftFailT | None = None
 
 
-class MultiDimenisonalMatrix(BaseModel):
+class MultiDimenisonalMatrix(BaseModel, extra="forbid"):
     "Configuration for multi-dimension Build Matrix"
 
     setup: (
@@ -216,7 +214,7 @@ PluginMapT = Annotated[
 ]
 
 
-class CacheMap(BaseModel):
+class CacheMap(BaseModel, extra="allow"):
     # @TODO: Canonicalize?
     paths: str | list[str]
 
@@ -307,7 +305,7 @@ class CommandStep(BKStepBase, extra="forbid"):
         description="Priority of the job, higher priorities are assigned to agents",
         examples=[-1, 1],
     )
-    retry: RetryConditions | None = None
+    retry: RetryRuleset | None = None
     signature: CommandStepSignature | None = None
     skip: SkipT | None = None
     soft_fail: SoftFailT | None = None

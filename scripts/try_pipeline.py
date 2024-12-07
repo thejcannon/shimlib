@@ -24,7 +24,7 @@ def update_pipeline(pipeline_file: str):
             pipeline_config = file.read()
 
         url = f"{base_url}/organizations/thejcannon/pipelines/test"
-        response = httpx.patch(
+        httpx.patch(
             url, headers=headers, json={"configuration": pipeline_config}
         ).raise_for_status()
         typer.echo("Pipeline 'test' updated successfully.")

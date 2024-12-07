@@ -34,13 +34,13 @@ class BasecampCampfireNotify(_NotifyBase):
     basecamp_campfire: str | None = None
 
 
-class SlackChannels(BaseModel):
+class SlackNotifyInfo(BaseModel, extra="forbid"):
     channels: list[str] | None = None
     message: str | None = None
 
 
 class SlackNotify(_NotifyBase):
-    slack: str | SlackChannels | None = None
+    slack: str | SlackNotifyInfo | None = None
 
 
 class WebhookNotify(_NotifyBase):

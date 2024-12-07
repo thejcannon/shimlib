@@ -54,7 +54,11 @@ class BKCompatGenerateJsonSchema(GenerateJsonSchemaWithAliases):
     ) -> pydantic.json_schema.JsonSchemaValue:
         json_schema = super().model_schema(schema)
         json_schema.pop("title", None)
-        if json_schema.get("additionalProperties"):
+        # @TODO: assert the key in the schema
+        assert (
+            "additionalProperties" in json_schema
+        ), "Every model should specify `extra`"
+        if json_schema["additionalProperties"]:
             json_schema.pop("additionalProperties")
         return json_schema
 
@@ -233,6 +237,27 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         "github_commit_status"
     ]["additionalProperties"] = False
 
+    # https://github.com/buildkite/pipeline-schema/pull/119
+    bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][2]["properties"][
+        "slack"
+    ]["oneOf"][1]["additionalProperties"] = False
+    bk_defs["buildNotify"]["items"]["oneOf"][3]["properties"]["slack"]["oneOf"][1][
+        "additionalProperties"
+    ] = False
+
+    # https://github.com/buildkite/pipeline-schema/pull/120
+    bk_defs["commandStep"]["properties"]["retry"]["additionalProperties"] = False
+
+    # https://github.com/buildkite/pipeline-schema/pull/121
+    bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][1]["properties"][
+        "adjustments"
+    ]["items"]["additionalProperties"] = False
+
+    # https://github.com/buildkite/pipeline-schema/pull/122
+    bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][1][
+        "additionalProperties"
+    ] = False
+
     # Handle (other) aliases
     _handle_alias(bk_defs, "nestedCommandStep", "commands", "command")
     _handle_alias(bk_defs, "nestedCommandStep", "script", "command")
@@ -257,11 +282,11 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         "matrixAdjustment",
         "multiDimenisonalMatrix",
         "pagerdutyNotify",
-        "retryConditions",
+        "retryRuleset",
         "selectInput",
         "selectOption",
-        "slackChannels",
         "slackNotify",
+        "slackNotifyInfo",
         "textInput",
         "triggeredBuild",
         "webhookNotify",
