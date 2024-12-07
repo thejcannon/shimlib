@@ -3,7 +3,7 @@ from pydantic import Field
 
 from typing import Any, Annotated, Literal
 import pydantic_core
-from ._validators import Canonicalizer
+from ._canonicalize import Canonicalizer, ListofStringCanonicalizer, LooseBoolValidator
 
 
 IfT = TypeAliasType(
@@ -29,11 +29,11 @@ EnvT = TypeAliasType(
     ],
 )
 
-# @TODO: Canonicalize to list[str]
 BranchesT = TypeAliasType(
     "BranchesT",
     Annotated[
         str | list[str],
+        ListofStringCanonicalizer(),
         Field(
             description="Which branches will include this step in their builds",
             examples=["master", ["feature/*", "chore/*"]],
@@ -75,17 +75,6 @@ SkipT = TypeAliasType(
         ),
     ],
 )
-
-
-class LooseBoolValidator(Canonicalizer[Literal[True, False, "true", "false"], bool]):
-    @classmethod
-    def canonicalize(
-        cls,
-        value: Literal[True, False, "true", "false"],
-        handler: pydantic_core.core_schema.ValidatorFunctionWrapHandler,
-    ) -> bool:
-        return True if value == "true" else False if value == "false" else value
-
 
 # NB: Most Buildkite booleans also support the strings "true" and "false"
 LooseBoolT = Annotated[bool, LooseBoolValidator()]

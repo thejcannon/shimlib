@@ -1,4 +1,3 @@
-# @TODO: Add docstrings!
 from dataclasses import dataclass
 from typing import Any, Literal
 from pydantic import BaseModel, AliasChoices, model_validator
@@ -36,7 +35,7 @@ class OrderedAliasChoices(AliasChoices):
             [alias] for alias in self.choices if alias != self.fieldname
         ]
 
-
+# @TODO: Make this a mixin
 class FieldAliasSupport(BaseModel):
     @model_validator(mode="before")
     @classmethod

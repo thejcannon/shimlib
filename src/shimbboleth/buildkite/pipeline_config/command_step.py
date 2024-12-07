@@ -1,11 +1,12 @@
-# @TODO: Inline some annotations
+# @TODO: Inline some annotations?
 
-from typing import Literal, Any, Annotated, ClassVar
+from typing import Literal, Any, Annotated, ClassVar, Self
 from typing_extensions import TypeAliasType
 
 from pydantic import (
     BaseModel,
     Field,
+    model_validator,
 )
 
 from shimbboleth.buildkite.pipeline_config._alias import FieldAlias, FieldAliasSupport
@@ -325,7 +326,15 @@ class CommandStep(BKStepBase, extra="forbid"):
         "command", description="The commands to run on the agent"
     )
 
-    # @TODO: Reject command and commands both being provided
+    @model_validator(mode="before")
+    @classmethod
+    def _check_command_commands(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "command" in data and "commands" in data:
+                raise ValueError(
+                    "Step type is ambiguous: use only one of `command` or `commands`"
+                )
+        return data
 
 
 class NestedCommandStep(FieldAliasSupport, extra="forbid"):

@@ -3,7 +3,7 @@ from pydantic import (
     Field,
 )
 import pydantic_core
-from ._validators import Canonicalizer
+from ._canonicalize import Canonicalizer
 
 from typing import Any, Annotated
 
@@ -30,7 +30,7 @@ AgentsObjectT = TypeAliasType(
 )
 
 
-class AgentsValidator(Canonicalizer[AgentsObjectT | AgentsListT, dict[str, str]]):
+class AgentsCanonicalizer(Canonicalizer[AgentsObjectT | AgentsListT, dict[str, str]]):
     @classmethod
     def canonicalize(
         cls,
@@ -38,9 +38,9 @@ class AgentsValidator(Canonicalizer[AgentsObjectT | AgentsListT, dict[str, str]]
         handler: pydantic_core.core_schema.ValidatorFunctionWrapHandler,
     ) -> dict[str, str]:
         if isinstance(value, list):
-            # @TODO: probably more validation
+            # @TODO: probably more validation (e.g. malformed strings)
             value = dict(elem.split("=") for elem in value)
         return handler(value)
 
 
-AgentsT = TypeAliasType("AgentsT", Annotated[dict[str, Any], AgentsValidator()])
+AgentsT = TypeAliasType("AgentsT", Annotated[dict[str, Any], AgentsCanonicalizer()])

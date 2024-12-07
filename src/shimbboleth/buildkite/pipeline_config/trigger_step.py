@@ -57,7 +57,10 @@ class TriggerStep(BKStepBase, extra="forbid"):
     branches: BranchesT | None = None
     build: TriggeredBuild | None = None
     skip: SkipT | None = None
-    soft_fail: SoftFailT | None = None
+    soft_fail: LooseBoolT | None = Field(
+        default=False,
+        description="The conditions for marking the step as a soft-fail.",
+    )
     label: LabelT | None = Field(default=None)
     type: Literal["trigger"] | None = None
 

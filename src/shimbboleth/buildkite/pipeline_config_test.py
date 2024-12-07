@@ -7,13 +7,16 @@ import itertools
 
 from pydantic import ValidationError
 
-from shimbboleth.buildkite.pipeline_config.command_step import CommandStep
-from shimbboleth.buildkite.pipeline_config.group_step import GroupStep
-from shimbboleth.buildkite.pipeline_config.input_step import InputStep
-from shimbboleth.buildkite.pipeline_config.wait_step import WaitStep
-from shimbboleth.buildkite.pipeline_config.trigger_step import TriggerStep
-from shimbboleth.buildkite.pipeline_config.block_step import BlockStep
-from shimbboleth.buildkite.pipeline_config import ALL_STEP_TYPES, BuildkitePipeline
+from shimbboleth.buildkite.pipeline_config import (
+    ALL_STEP_TYPES,
+    BuildkitePipeline,
+    CommandStep,
+    GroupStep,
+    InputStep,
+    WaitStep,
+    TriggerStep,
+    BlockStep,
+)
 from shimbboleth.buildkite.pipeline_config._types import LooseBoolT
 
 import pytest
@@ -186,21 +189,12 @@ def test_command_step_command_alias():
     step = CommandStep.model_validate({"commands": "commands"})
     assert step.command == "commands"
     assert step.commands == "commands"
-    step = CommandStep.model_validate({"command": None, "commands": "commands"})
-    assert step.command == "commands"
-    assert step.commands == "commands"
-
-    # @TODO: Should raise "Step type is ambiguous, use only one of command or commands"
-    step = CommandStep.model_validate({"command": "command", "commands": "commands"})
-    assert step.command == "command"
-    assert step.commands == "command"
-    # @TODO: This should error!
-    step = CommandStep.model_validate({})
-    # @TODO: This too!
-    step = CommandStep.model_validate({"command": None})
+    assert CommandStep.model_validate({"command": None}).command is None
+    assert CommandStep.model_validate({"command": None}).commands is None
 
 
 # @TODO: NestedCommandStep aliases
+# @TODO: NestedWaitStep aliases
 
 
 def test_agents_parsing():
@@ -228,3 +222,61 @@ def test_loose_bool():
     assert Model.model_validate({"field": "true"}).field is True
     assert Model.model_validate({"field": "false"}).field is False
     assert Model.model_validate({"field": False}).field is False
+
+
+@pytest.mark.parametrize(
+    "step_cls", [BlockStep, CommandStep, InputStep, TriggerStep, WaitStep]
+)
+def test_branches_canonicalization(step_cls):
+    assert step_cls.model_validate(
+        {"branches": "main", **STEP_EXTRA_DATA[step_cls]}
+    ).branches == ["main"]
+    assert step_cls.model_validate(
+        {"branches": ["main"], **STEP_EXTRA_DATA[step_cls]}
+    ).branches == ["main"]
+    assert (
+        step_cls.model_validate(
+            {"branches": None, **STEP_EXTRA_DATA[step_cls]}
+        ).branches
+        is None
+    )
+
+
+# @TODO: Each of these can be run against upstream BK API
+@pytest.mark.parametrize(
+    "config, error",
+    [
+        pytest.param(
+            {
+                "steps": [
+                    {
+                        "input": "input",
+                        "fields": [{"select": "select", "key": "key", "options": []}],
+                    }
+                ]
+            },
+            "`options` can't be empty",
+            marks=pytest.mark.xfail,  # Wrong error mesage
+        ),
+        (
+            {"steps": [{"command": "command", "commands": "commands"}]},
+            "Step type is ambiguous: use only one of `command` or `commands`",
+        ),
+        (
+            {"steps": [{"command": None, "commands": "commands"}]},
+            "Step type is ambiguous: use only one of `command` or `commands`",
+        ),
+        (
+            {"steps": [{"command": "command", "commands": None}]},
+            "Step type is ambiguous: use only one of `command` or `commands`",
+        ),
+        (
+            {"steps": [{"command": None, "commands": None}]},
+            "Step type is ambiguous: use only one of `command` or `commands`",
+        ),
+    ],
+)
+def test_from_yaml(config, error):
+    with pytest.raises(ValidationError) as e:
+        BuildkitePipeline.model_validate(config)
+    assert e.value.errors()[0]["ctx"]["error"].args[0] == error

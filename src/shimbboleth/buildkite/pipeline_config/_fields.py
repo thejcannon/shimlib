@@ -34,7 +34,7 @@ class TextInput(BaseModel, extra="forbid"):
     )
     format: Pattern | None = Field(
         default=None,
-        description="The format must be a regular expression implicitly anchored to the beginning and end of the input and is functionally equivalent to the HTML5 pattern attribute.",  # TODO: Only one with period?
+        description="The format must be a regular expression implicitly anchored to the beginning and end of the input and is functionally equivalent to the HTML5 pattern attribute.",
         examples=["[0-9a-f]+"],
     )
     text: str | None = Field(
@@ -72,8 +72,8 @@ class SelectInput(BaseModel, extra="forbid"):
         pattern="^[a-zA-Z0-9-_]+$",
         examples=["release-stream"],
     )
-    # @TODO: Allowed to be empty?
-    options: list[SelectOption]
+    # @TODO: Change validation error to: "`options` can't be empty"
+    options: list[SelectOption] = Field(min_length=1)
 
     default: str | list[str] | None = Field(
         default=None,
@@ -99,6 +99,7 @@ class SelectInput(BaseModel, extra="forbid"):
 FieldsT = TypeAliasType(
     "FieldsT",
     Annotated[
+        # @TODO: Use discriminator
         list[TextInput | SelectInput],
         Field(
             description="A list of input fields required to be filled out before unblocking the step"
@@ -107,7 +108,7 @@ FieldsT = TypeAliasType(
 )
 
 
-class SoftFailByStatus(BaseModel):
+class SoftFailByStatus(BaseModel, extra="allow"):
     exit_status: Literal["*"] | int | None = Field(
         default=None,
         description="The exit status number that will cause this job to soft-fail",

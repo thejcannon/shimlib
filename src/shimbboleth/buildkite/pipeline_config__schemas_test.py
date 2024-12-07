@@ -13,8 +13,8 @@ from shimbboleth.buildkite.pipeline_config._alias import GenerateJsonSchemaWithA
 import jmespath
 
 
-SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/91cb62e507b74585765513cf95df268dff2f8d79/schema.json"
-VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/91cb62e507b74585765513cf95df268dff2f8d79/test/valid-pipelines"
+SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/6032143864b3244bbd8f71496f05b9fcba1014c9/schema.json"
+VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/6032143864b3244bbd8f71496f05b9fcba1014c9/test/valid-pipelines"
 
 VALID_PIPELINE_NAMES = (
     "block.yml",
@@ -54,6 +54,8 @@ class BKCompatGenerateJsonSchema(GenerateJsonSchemaWithAliases):
     ) -> pydantic.json_schema.JsonSchemaValue:
         json_schema = super().model_schema(schema)
         json_schema.pop("title", None)
+        if json_schema.get("additionalProperties"):
+            json_schema.pop("additionalProperties")
         return json_schema
 
     def generate(
@@ -185,13 +187,6 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
 
     # https://github.com/buildkite/pipeline-schema/pull/105
     bk_defs["waitStep"]["properties"].pop("waiter")
-    bk_defs["nestedWaitStep"]["properties"].pop("waiter")
-
-    # https://github.com/buildkite/pipeline-schema/pull/112
-    bk_defs["waitStep"]["properties"]["continue_on_failure"]["default"] = False
-
-    # https://github.com/buildkite/pipeline-schema/pull/113
-    bk_defs["waitStep"]["properties"]["branches"] = {"$ref": "#/definitions/branches"}
 
     # https://github.com/buildkite/pipeline-schema/issues/93
     bk_defs["groupStep"]["properties"]["group"]["type"] = "string"
@@ -199,9 +194,33 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     assert bk_defs["waitStep"]["properties"]["wait"]["type"] == ["string", "null"]
     bk_defs["waitStep"]["properties"]["wait"]["type"] = "string"
 
+    # https://github.com/buildkite/pipeline-schema/pull/114
+    bk_defs["fields"]["items"]["oneOf"][1]["properties"]["options"]["minItems"] = 1
+
+    # https://github.com/buildkite/pipeline-schema/pull/115
+    bk_defs["blockStep"]["properties"]["blocked_state"]["default"] = "passed"
+
+    # https://github.com/buildkite/pipeline-schema/pull/116
+    bk_defs["triggerStep"]["properties"]["soft_fail"] = {
+        "enum": [True, False, "true", "false"],
+        "description": "The conditions for marking the step as a soft-fail.",
+        "default": False,
+    }
+
+    # https://github.com/buildkite/pipeline-schema/pull/117
+    bk_defs["buildNotify"]["items"]["oneOf"][7]["properties"].pop("if")
+    bk_defs["buildNotify"]["items"]["oneOf"][7]["properties"]["github_check"]["properties"] = {}
+    bk_defs["buildNotify"]["items"]["oneOf"][7]["properties"]["github_check"]["additionalProperties"] = False
+    bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][4]["properties"].pop("if")
+    bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][4]["properties"]["github_check"]["properties"] = {}
+    bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][4]["properties"]["github_check"]["additionalProperties"] = False
+
     # Handle (other) aliases
     _handle_alias(bk_defs, "nestedCommandStep", "commands", "command")
     _handle_alias(bk_defs, "nestedCommandStep", "script", "command")
+    bk_defs["nestedWaitStep"]["properties"]["waiter"] = {
+        "$ref": f"#/definitions/nestedWaitStep/properties/wait"
+    }
 
     # Some definitions are inlined
     _inline(
@@ -212,6 +231,7 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         "commandStepSignature",
         "dependsOnDependency",
         "emailNotify",
+        "_EmptyModel",
         "gitHubCheckNotify",
         "gitHubCommitStatusNotify",
         "hasContext",
@@ -230,6 +250,7 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         "softFailByStatus",
     )
 
+    _replace_oneOf(our_schema, "properties.steps.items")
     # anyOf/oneOf (Should probably open an issue/PR)
     _replace_oneOf(bk_defs, "matrixElement")
     _replace_oneOf(bk_defs, "fields.items")

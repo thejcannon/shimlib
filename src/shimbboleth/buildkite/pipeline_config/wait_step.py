@@ -7,7 +7,7 @@ from shimbboleth.buildkite.pipeline_config._types import LooseBoolT
 
 from ._types import BranchesT
 from ._base import BKStepBase
-from ._alias import FieldAlias
+from ._alias import FieldAlias, FieldAliasSupport
 
 
 class WaitStep(BKStepBase, extra="forbid"):
@@ -33,11 +33,13 @@ class WaitStep(BKStepBase, extra="forbid"):
     name: ClassVar = FieldAlias("wait", mode="prepend")
 
 
-class NestedWaitStep(BaseModel, extra="forbid"):
+class NestedWaitStep(FieldAliasSupport, extra="forbid"):
     wait: WaitStep | None = Field(
         default=None,
         description="Waits for previous steps to pass before continuing",
     )
+
+    waiter: ClassVar = FieldAlias("wait")
 
 
 StringWaitStep = TypeAliasType(
