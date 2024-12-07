@@ -106,19 +106,3 @@ FieldsT = TypeAliasType(
         ),
     ],
 )
-
-
-class SoftFailByStatus(BaseModel, extra="allow"):
-    exit_status: Literal["*"] | int | None = Field(
-        default=None,
-        description="The exit status number that will cause this job to soft-fail",
-    )
-
-
-SoftFailT = TypeAliasType(
-    "SoftFailT",
-    Annotated[
-        LooseBoolT | list[SoftFailByStatus],
-        Field(description="The conditions for marking the step as a soft-fail."),
-    ],
-)

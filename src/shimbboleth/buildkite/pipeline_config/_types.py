@@ -2,7 +2,7 @@ from typing_extensions import TypeAliasType
 from pydantic import Field
 
 from typing import Any, Annotated
-from ._canonicalize import ListofStringCanonicalizer, LooseBoolValidator
+from ._canonicalize import Canonicalizer, ListofStringCanonicalizer, LooseBoolValidator
 
 
 IfT = TypeAliasType(
@@ -16,7 +16,8 @@ IfT = TypeAliasType(
     ],
 )
 
-# @TODO: RHS Any?
+# @TODO: RHS Should be "any JSON type": https://docs.pydantic.dev/latest/api/types/#pydantic.types.Json maybe?
+# @TODO: Find out what happens to `true`/`false`/`null`/`dict`/`list` BK-side (likely to be stringified)
 EnvT = TypeAliasType(
     "EnvT",
     Annotated[
@@ -31,7 +32,7 @@ EnvT = TypeAliasType(
 BranchesT = TypeAliasType(
     "BranchesT",
     Annotated[
-        str | list[str],
+        list[str],
         ListofStringCanonicalizer(),
         Field(
             description="Which branches will include this step in their builds",
@@ -62,14 +63,14 @@ PromptT = TypeAliasType(
     ],
 )
 
-# @TODO: Canonicalize? (note "false" is a reason, not a boolean)
+
 SkipT = TypeAliasType(
     "SkipT",
     Annotated[
+        # NB: Passing an empty string is equivalent to false.
         bool | str,
         Field(
-            # TODO: grammar?
-            description="Whether this step should be skipped. You can specify a reason for using a string.",
+            description="Whether this step should be skipped. Passing a string provides a reason for skipping this command",
             examples=[True, False, "My reason"],
         ),
     ],

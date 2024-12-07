@@ -10,18 +10,38 @@ from pydantic import (
 )
 
 from shimbboleth.buildkite.pipeline_config._alias import FieldAlias, FieldAliasSupport
-
-from ._base import BKStepBase
-from ._agents import AgentsT
-from ._types import (
+from shimbboleth.buildkite.pipeline_config._canonicalize import (
+    Canonicalizer,
+    ListofStringCanonicalizer,
+)
+from shimbboleth.buildkite.pipeline_config._base import BKStepBase
+from shimbboleth.buildkite.pipeline_config._agents import AgentsT
+from shimbboleth.buildkite.pipeline_config._types import (
     BranchesT,
     EnvT,
     LabelT,
     SkipT,
     LooseBoolT,
 )
-from ._fields import SoftFailT
-from ._notify import CommandNotifyT
+from shimbboleth.buildkite.pipeline_config._notify import CommandNotifyT
+
+
+class SoftFailByStatus(BaseModel, extra="allow"):
+    exit_status: Literal["*"] | int | None = Field(
+        default=None,
+        description="The exit status number that will cause this job to soft-fail",
+    )
+
+
+# @TODO: Canonicalize
+#   (IDK if we should flatten '*' exit statuses or convert 'true' to '*')
+SoftFailT = TypeAliasType(
+    "SoftFailT",
+    Annotated[
+        LooseBoolT | list[SoftFailByStatus],
+        Field(description="The conditions for marking the step as a soft-fail."),
+    ],
+)
 
 
 class CommandStepSignature(BaseModel, extra="allow"):
@@ -94,22 +114,67 @@ class AutomaticRetry(BaseModel, extra="forbid"):
     )
 
 
+_AUTOMATIC_RETRY_DEFAULT = [AutomaticRetry(exit_status="*", limit=2)]
+
+
+class _AutomaticRetryCanonicalizer(
+    Canonicalizer[
+        LooseBoolT | AutomaticRetry | list[AutomaticRetry] | None, list[AutomaticRetry]
+    ]
+):
+    # @TODO: We could inject the default here
+
+    @classmethod
+    def canonicalize(
+        cls, value: LooseBoolT | AutomaticRetry | list[AutomaticRetry] | None
+    ) -> list[AutomaticRetry]:
+        if value is None or value == "false" or value is False:
+            return []
+        if value == "true" or value is True:
+            return _AUTOMATIC_RETRY_DEFAULT
+        if not isinstance(value, list):
+            return [value]
+        return value
+
+
+class _ManualRetryCanonicalizer(
+    Canonicalizer[
+        LooseBoolT | ManualRetryConditions | None,
+        ManualRetryConditions,
+    ]
+):
+    @classmethod
+    def canonicalize(
+        cls, value: LooseBoolT | ManualRetryConditions | None
+    ) -> ManualRetryConditions:
+        if value is None or value == "true" or value is True:
+            return ManualRetryConditions(allowed=True)
+        if value == "false" or value is False:
+            return ManualRetryConditions(allowed=False)
+        return value
+
+
 class RetryRuleset(BaseModel, extra="forbid"):
     """The conditions for retrying this step."""
 
-    # @TODO: Canonicalize?
-    automatic: LooseBoolT | AutomaticRetry | list[AutomaticRetry] | None = Field(
-        # @TODO: Why does default have Nones here?
-        default=[AutomaticRetry(exit_status="*", limit=2)],
+    automatic: Annotated[list[AutomaticRetry], _AutomaticRetryCanonicalizer()] = Field(
+        # @TODO: Why does default have Nones here in the schema?
+        default=_AUTOMATIC_RETRY_DEFAULT,
         description="Whether to allow a job to retry automatically. If set to true, the retry conditions are set to the default value.",
     )
-    # @TODO: Canonicalize?
-    manual: LooseBoolT | ManualRetryConditions | None = Field(
-        default=None, description="Whether to allow a job to be retried manually"
+    # NB: This canonicalizes truthy values into `ManualRetryConditions(allowed=True)`
+    manual: Annotated[ManualRetryConditions, _ManualRetryCanonicalizer()] = Field(
+        default=ManualRetryConditions(allowed=True),
+        description="Whether to allow a job to be retried manually",
+        json_schema_extra={"default": True},
     )
 
 
-# @TODO: Canonicalize?
+# @TODO: Make better types for the `matrix` stuff. E.g. single dimensional vs multi dimensional has different
+#   `with` values. See https://buildkite.com/docs/pipelines/configure/workflows/build-matrix#matrix-limits
+
+
+# @TODO: Validation: "Each item within a `matrix` must be either a string, boolean or integer"
 MatrixElementT = TypeAliasType("MatrixElementT", str | int | bool)
 SingleDimensionalMatrix = Annotated[
     list[MatrixElementT],
@@ -124,9 +189,8 @@ class MatrixAdjustment(BaseModel, extra="forbid"):
     """An adjustment to a Build Matrix"""
 
     with_value: (
-        # @TODO: Canonicalize?
         Annotated[
-            list[MatrixElementT],
+            str,
             Field(
                 description="List of existing or new elements for single-dimension Build Matrix"
             ),
@@ -156,7 +220,6 @@ class MultiDimenisonalMatrix(BaseModel, extra="forbid"):
     "Configuration for multi-dimension Build Matrix"
 
     setup: (
-        # @TODO: Canonicalize?
         Annotated[
             list[MatrixElementT],
             Field(
@@ -206,27 +269,37 @@ PluginArrayT = Annotated[
     list[str | PluginArrayItem], Field(description="Array of plugins for this step")
 ]
 PluginMapT = Annotated[
+    # @TODO: Any?
     dict[str, Any],
     Field(
-        # @TODO: Deprecated (Python-side)
-        description="A map of plugins for this step. Deprecated: please use the array syntax."
+        description="A map of plugins for this step. Deprecated: please use the array syntax.",
+        deprecated=True,
     ),
 ]
 
 
 class CacheMap(BaseModel, extra="allow"):
-    # @TODO: Canonicalize?
-    paths: str | list[str]
+    paths: list[str]
 
     name: str | None = None
     size: str | None = Field(default=None, pattern="^\\d+g$")
 
 
+class _CacheCanonicalizer(Canonicalizer[str | list[str] | CacheMap, CacheMap]):
+    @classmethod
+    def canonicalize(cls, value: str | list[str] | CacheMap) -> CacheMap:
+        if isinstance(value, str):
+            return CacheMap(paths=[value])
+        if isinstance(value, list):
+            return CacheMap(paths=value)
+        return value
+
+
 CacheT = TypeAliasType(
     "CacheT",
     Annotated[
-        # @TODO: Canonicalize?
-        str | list[str] | CacheMap,
+        CacheMap,
+        _CacheCanonicalizer(),
         Field(
             description="The paths for the caches to be used in the step",
             examples=[
@@ -271,11 +344,11 @@ class CommandStep(BKStepBase, extra="forbid"):
     branches: BranchesT | None = None
     cache: CacheT | None = None
     cancel_on_build_failing: CancelOnBuildFailingT | None = None
-    # @TODO: Canonicalize?
-    command: list[str] | str | None = Field(
-        default=None,
+    command: Annotated[list[str], ListofStringCanonicalizer()] = Field(
+        default=[],
         description="The commands to run on the agent",
     )
+    # @TODO: Validate these together
     concurrency: int | None = Field(
         default=None,
         description="The maximum number of jobs created from this step that are allowed to run at the same time. If you use this attribute, you must also define concurrency_group.",

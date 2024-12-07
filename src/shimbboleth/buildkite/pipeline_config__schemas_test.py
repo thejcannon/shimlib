@@ -183,6 +183,9 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     our_schema["definitions"]["textInput"].pop("description", None)
     our_schema["definitions"]["selectInput"].pop("description", None)
 
+    # Misc defaults
+    our_schema["definitions"]["commandStep"]["properties"]["command"].pop("default")
+
     # https://github.com/buildkite/pipeline-schema/pull/103
     bk_defs["groupStep"]["properties"].pop("type")
 
@@ -257,6 +260,37 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][1][
         "additionalProperties"
     ] = False
+
+    # https://github.com/buildkite/pipeline-schema/pull/123
+    bk_defs["commandStep"]["properties"]["retry"]["properties"]["manual"]["default"] = (
+        True
+    )
+
+    # https://github.com/buildkite/pipeline-schema/pull/124
+    bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][1]["properties"][
+        "adjustments"
+    ]["items"]["properties"]["with"]["oneOf"][0]["type"] = "string"
+    bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][1]["properties"][
+        "adjustments"
+    ]["items"]["properties"]["with"]["oneOf"][0].pop("items")
+
+    # https://github.com/buildkite/pipeline-schema/pull/125
+    bk_defs["commandStep"]["properties"]["plugins"]["anyOf"][1]["deprecated"] = True
+
+    # https://github.com/buildkite/pipeline-schema/pull/126
+    bk_defs["cache"]["anyOf"][2]["properties"]["paths"] = bk_defs["cache"]["anyOf"][2][
+        "properties"
+    ]["paths"].pop("anyOf")[1]
+
+    # https://github.com/buildkite/pipeline-schema/pull/127
+    bk_defs["skip"]["description"] = (
+        "Whether this step should be skipped. Passing a string provides a reason for skipping this command"
+    )
+
+    # Misc
+    bk_defs["commandStep"]["properties"]["command"]["anyOf"] = list(
+        reversed(bk_defs["commandStep"]["properties"]["command"]["anyOf"])
+    )
 
     # Handle (other) aliases
     _handle_alias(bk_defs, "nestedCommandStep", "commands", "command")

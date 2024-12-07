@@ -185,12 +185,18 @@ def test_label_aliasing__stepname__groupstep(payload):
     assert group_step.name == group_step.group
 
 
-def test_command_step_command_alias():
-    step = CommandStep.model_validate({"commands": "commands"})
-    assert step.command == "commands"
-    assert step.commands == "commands"
-    assert CommandStep.model_validate({"command": None}).command is None
-    assert CommandStep.model_validate({"command": None}).commands is None
+@pytest.mark.parametrize(
+    "data, expected",
+    [
+        ({"commands": "commands"}, ["commands"]),
+        ({"commands": ["commands"]}, ["commands"]),
+        ({"command": None}, []),
+    ],
+)
+def test_command_step_command_alias(data, expected):
+    step = CommandStep.model_validate(data)
+    assert step.command == expected
+    assert step.commands == expected
 
 
 # @TODO: NestedCommandStep aliases

@@ -35,12 +35,11 @@ class AgentsCanonicalizer(Canonicalizer[AgentsObjectT | AgentsListT, dict[str, s
     def canonicalize(
         cls,
         value: AgentsObjectT | AgentsListT,
-        handler: pydantic_core.core_schema.ValidatorFunctionWrapHandler,
     ) -> dict[str, str]:
         if isinstance(value, list):
             # @TODO: probably more validation (e.g. malformed strings)
             value = dict(elem.split("=") for elem in value)
-        return handler(value)
+        return value
 
 
 AgentsT = TypeAliasType("AgentsT", Annotated[dict[str, Any], AgentsCanonicalizer()])

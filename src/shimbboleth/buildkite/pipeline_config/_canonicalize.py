@@ -12,9 +12,16 @@ class Canonicalizer(Generic[JsonValueT, PythonValueT]):
     def canonicalize(
         cls,
         value: JsonValueT,
-        handler: pydantic_core.core_schema.ValidatorFunctionWrapHandler,
     ) -> PythonValueT:
         raise NotImplementedError
+
+    @classmethod
+    def _canonicalize__with_handler(
+        cls,
+        value: JsonValueT,
+        handler: pydantic_core.core_schema.ValidatorFunctionWrapHandler,
+    ) -> PythonValueT:
+        return cls.canonicalize(value)
 
     @classmethod
     def __get_pydantic_core_schema__(
@@ -35,7 +42,7 @@ class Canonicalizer(Generic[JsonValueT, PythonValueT]):
 
         metadata = {"pydantic_js_input_core_schema": input_schema}
         return pydantic_core.core_schema.no_info_wrap_validator_function(
-            cls.canonicalize, schema=schema, metadata=metadata
+            cls._canonicalize__with_handler, schema=schema, metadata=metadata
         )
 
 
@@ -44,18 +51,18 @@ class LooseBoolValidator(Canonicalizer[Literal[True, False, "true", "false"], bo
     def canonicalize(
         cls,
         value: Literal[True, False, "true", "false"],
-        handler: pydantic_core.core_schema.ValidatorFunctionWrapHandler,
     ) -> bool:
         return True if value == "true" else False if value == "false" else value
 
 
-class ListofStringCanonicalizer(Canonicalizer[str | list[str], list[str]]):
+class ListofStringCanonicalizer(Canonicalizer[str | list[str] | None, list[str]]):
     @classmethod
     def canonicalize(
         cls,
-        value: str | list[str],
-        handler: pydantic_core.core_schema.ValidatorFunctionWrapHandler,
+        value: str | list[str] | None,
     ) -> list[str]:
+        if value is None:
+            return []
         if isinstance(value, list):
             return value
         return [value]
