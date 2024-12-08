@@ -7,6 +7,9 @@ PythonValueT = TypeVar("PythonValueT")
 T = TypeVar("T")
 
 
+# @TODO: Should we keep `None` alone? Only reason why would be to
+#   imply that a field wasn't given. But that doesn't work for the fields
+#   which already have non-None defaults (bools).
 class Canonicalizer(Generic[JsonValueT, PythonValueT]):
     @classmethod
     def canonicalize(
@@ -44,15 +47,6 @@ class Canonicalizer(Generic[JsonValueT, PythonValueT]):
         return pydantic_core.core_schema.no_info_wrap_validator_function(
             cls._canonicalize__with_handler, schema=schema, metadata=metadata
         )
-
-
-class LooseBoolValidator(Canonicalizer[Literal[True, False, "true", "false"], bool]):
-    @classmethod
-    def canonicalize(
-        cls,
-        value: Literal[True, False, "true", "false"],
-    ) -> bool:
-        return True if value == "true" else False if value == "false" else value
 
 
 class ListofStringCanonicalizer(Canonicalizer[str | list[str] | None, list[str]]):

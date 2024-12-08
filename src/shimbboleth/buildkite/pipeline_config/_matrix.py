@@ -12,7 +12,6 @@ from pydantic import (
 from shimbboleth.buildkite.pipeline_config._types import SoftFailT, SkipT
 
 
-# @TODO: Validation: "Each item within a `matrix` must be either a string, boolean or integer"
 MatrixElementT = TypeAliasType("MatrixElementT", str | int | bool)
 SimpleMatrixT = Annotated[
     list[MatrixElementT],
@@ -34,7 +33,7 @@ class SingleDimensionMatrixAdjustment(BaseModel, extra="forbid"):
     ] = Field(alias="with")
 
     skip: SkipT | None = None
-    soft_fail: SoftFailT | None = None
+    soft_fail: SoftFailT = Field(default=[])
 
 
 class SingleDimensionMatrix(BaseModel, extra="forbid"):
@@ -62,7 +61,7 @@ class MultiDimensionMatrixAdjustment(BaseModel, extra="forbid"):
                 str,
                 Field(
                     description="Build Matrix dimension name",
-                    # pattern="^[a-zA-Z0-9_]+$",
+                    pattern="^[a-zA-Z0-9_]+$",
                 ),
             ],
             Annotated[
@@ -77,7 +76,7 @@ class MultiDimensionMatrixAdjustment(BaseModel, extra="forbid"):
     ] = Field(alias="with")
 
     skip: SkipT | None = None
-    soft_fail: SoftFailT | None = None
+    soft_fail: SoftFailT = Field(default=[])
 
 
 class MultiDimensionMatrix(BaseModel, extra="forbid"):

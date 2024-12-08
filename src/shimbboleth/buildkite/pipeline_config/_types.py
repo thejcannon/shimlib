@@ -3,7 +3,7 @@ from typing import Literal
 from pydantic import Field, BaseModel
 
 from typing import Any, Annotated
-from ._canonicalize import ListofStringCanonicalizer, LooseBoolValidator
+from ._canonicalize import Canonicalizer, ListofStringCanonicalizer
 
 
 IfT = TypeAliasType(
@@ -77,23 +77,52 @@ SkipT = TypeAliasType(
     ],
 )
 
+
+class _LooseBoolCanonicalizer(
+    Canonicalizer[Literal[True, False, "true", "false"], bool]
+):
+    @classmethod
+    def canonicalize(
+        cls,
+        value: Literal[True, False, "true", "false"],
+    ) -> bool:
+        return True if value == "true" else False if value == "false" else value
+
+
 # NB: Most Buildkite booleans also support the strings "true" and "false"
-LooseBoolT = Annotated[bool, LooseBoolValidator()]
+LooseBoolT = Annotated[bool, _LooseBoolCanonicalizer()]
 
 
-class SoftFailConditions(BaseModel, extra="allow"):
+class ExitStatus(BaseModel, extra="allow"):
     exit_status: Literal["*"] | int | None = Field(
         default=None,
         description="The exit status number that will cause this job to soft-fail",
     )
 
 
-# @TODO: Canonicalize
-#   (IDK if we should flatten '*' exit statuses or convert 'true' to '*')
+# NB: This may seem annoying (having to do `any(status == '*' for soft_fail in model.soft_fail)`)
+#   however consider if we allowed `bool`. `if model.soft_fail` would be ambiguous (because a non-empty list is truthy)
+# @TODO: Propvide helper method for this
+class _SoftFailCanonicalizer(
+    Canonicalizer[LooseBoolT | list[ExitStatus] | None, list[ExitStatus]]
+):
+    @classmethod
+    def canonicalize(
+        cls, value: LooseBoolT | list[ExitStatus] | None
+    ) -> list[ExitStatus]:
+        # @TODO: Does `_LooseBoolCanonicalizer` already fire?
+        if value == "true" or value is True:
+            return [ExitStatus(exit_status="*")]
+        if value is None or value == "false" or value is False:
+            return []
+        return value
+
+
 SoftFailT = TypeAliasType(
     "SoftFailT",
     Annotated[
-        LooseBoolT | list[SoftFailConditions],
+        list[ExitStatus] | None,
+        _SoftFailCanonicalizer(),
         Field(description="The conditions for marking the step as a soft-fail."),
     ],
 )

@@ -185,7 +185,9 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
 
     # Misc defaults
     our_schema["definitions"]["commandStep"]["properties"]["command"].pop("default")
-    our_schema["definitions"]["commandStep"]["properties"]["artifact_paths"].pop("default")
+    our_schema["definitions"]["commandStep"]["properties"]["artifact_paths"].pop(
+        "default"
+    )
 
     # https://github.com/buildkite/pipeline-schema/pull/103
     bk_defs["groupStep"]["properties"].pop("type")
@@ -386,6 +388,11 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         "Whether this step should be skipped. Passing a string provides a reason for skipping this command"
     )
 
+    # @TODO: File issue
+    bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][2]["properties"][
+        "adjustments"
+    ]["items"]["properties"]["with"]["propertyNames"]["pattern"] = "^[a-zA-Z0-9_]+$"
+
     # Misc
     bk_defs["commandStep"]["properties"]["command"]["anyOf"] = list(
         reversed(bk_defs["commandStep"]["properties"]["command"]["anyOf"])
@@ -425,7 +432,7 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         "textInput",
         "triggeredBuild",
         "webhookNotify",
-        "softFailConditions",
+        "exitStatus",
     )
 
     _replace_oneOf(our_schema, "properties.steps.items")

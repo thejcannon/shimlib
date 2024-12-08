@@ -238,7 +238,6 @@ class CommandStep(BKStepBase, extra="forbid"):
     """
 
     agents: AgentsT | None = None
-    # @TODO: Canonicalize?
     artifact_paths: Annotated[list[str], ListofStringCanonicalizer()] = Field(
         default=[],
         description="The glob path/s of artifacts to upload once this step has finished running",
@@ -284,7 +283,7 @@ class CommandStep(BKStepBase, extra="forbid"):
     retry: RetryRuleset | None = None
     signature: CommandStepSignature | None = None
     skip: SkipT | None = None
-    soft_fail: SoftFailT | None = None
+    soft_fail: SoftFailT = Field(default=[])
     timeout_in_minutes: int | None = Field(
         default=None,
         description="The number of minutes to time out a job",
@@ -292,7 +291,7 @@ class CommandStep(BKStepBase, extra="forbid"):
         ge=1,
     )
 
-    label: LabelT | None = Field(default=None)
+    label: LabelT | None = None
     type: Literal["script", "command", "commands"] | None = None
 
     name: ClassVar = FieldAlias("label", mode="prepend")
@@ -312,7 +311,7 @@ class CommandStep(BKStepBase, extra="forbid"):
 
 
 class NestedCommandStep(FieldAliasSupport, extra="forbid"):
-    command: CommandStep | None = Field(default=None)
+    command: CommandStep | None = None
 
     commands: ClassVar = FieldAlias("command")
     script: ClassVar = FieldAlias("command")

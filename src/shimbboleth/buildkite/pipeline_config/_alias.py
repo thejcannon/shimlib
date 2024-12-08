@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Literal
 from pydantic import BaseModel, AliasChoices, model_validator
-from pydantic.fields import FieldInfo
+from pydantic.fields import FieldInfo, Field
 import pydantic_core.core_schema
 import pydantic.json_schema
 
@@ -75,12 +75,19 @@ class FieldAliasSupport(BaseModel):
                 field_name = obj.alias_of
                 field_info = cls.__dict__[obj.alias_of]
                 mode = obj.mode
-            elif isinstance(obj, FieldInfo) and name in aliased_fieldnames:
+
+            elif name in aliased_fieldnames:
+                if not isinstance(obj, FieldInfo):
+                    # It's a default value
+                    setattr(cls, name, Field(default=obj))
+                    obj = getattr(cls, name)
+
                 field_name = name
                 field_info = obj
                 mode = "append"
             else:
                 continue
+
             validation_alias = field_info.validation_alias
             if validation_alias is None:
                 field_info.validation_alias = OrderedAliasChoices(
