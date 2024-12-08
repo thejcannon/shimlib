@@ -2,7 +2,6 @@ from typing_extensions import TypeAliasType
 from pydantic import (
     Field,
 )
-import pydantic_core
 from ._canonicalize import Canonicalizer
 
 from typing import Any, Annotated

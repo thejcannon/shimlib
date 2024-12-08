@@ -3,7 +3,7 @@ from typing import Literal
 from pydantic import Field, BaseModel
 
 from typing import Any, Annotated
-from ._canonicalize import Canonicalizer, ListofStringCanonicalizer, LooseBoolValidator
+from ._canonicalize import ListofStringCanonicalizer, LooseBoolValidator
 
 
 IfT = TypeAliasType(

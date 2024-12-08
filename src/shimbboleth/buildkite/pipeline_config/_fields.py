@@ -1,4 +1,4 @@
-from typing import Literal, Annotated, Pattern
+from typing import Annotated, Pattern
 from typing_extensions import TypeAliasType
 
 

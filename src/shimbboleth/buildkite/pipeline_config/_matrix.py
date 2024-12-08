@@ -1,13 +1,12 @@
 # @TODO: Validate limits? https://buildkite.com/docs/pipelines/configure/workflows/build-matrix#matrix-limits
 
-from typing import Literal, Any, Annotated, ClassVar
+from typing import Annotated
 from typing_extensions import TypeAliasType
 
 
 from pydantic import (
     BaseModel,
     Field,
-    model_validator,
 )
 
 from shimbboleth.buildkite.pipeline_config._types import SoftFailT, SkipT
