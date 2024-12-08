@@ -239,8 +239,8 @@ class CommandStep(BKStepBase, extra="forbid"):
 
     agents: AgentsT | None = None
     # @TODO: Canonicalize?
-    artifact_paths: str | list[str] | None = Field(
-        default=None,
+    artifact_paths: Annotated[list[str], ListofStringCanonicalizer()] = Field(
+        default=[],
         description="The glob path/s of artifacts to upload once this step has finished running",
         examples=[["screenshots/*"], ["dist/myapp.zip", "dist/myapp.tgz"]],
     )

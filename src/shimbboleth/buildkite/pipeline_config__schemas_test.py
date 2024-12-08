@@ -185,6 +185,7 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
 
     # Misc defaults
     our_schema["definitions"]["commandStep"]["properties"]["command"].pop("default")
+    our_schema["definitions"]["commandStep"]["properties"]["artifact_paths"].pop("default")
 
     # https://github.com/buildkite/pipeline-schema/pull/103
     bk_defs["groupStep"]["properties"].pop("type")
