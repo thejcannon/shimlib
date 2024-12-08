@@ -53,6 +53,7 @@ def get_step_tag(v: Any) -> str | None:
 
 
 class BuildkitePipeline(BaseModel, extra="allow"):
+    # @TODO: Canonicalize
     steps: Annotated[
         list[
             Annotated[

@@ -22,25 +22,13 @@ from shimbboleth.buildkite.pipeline_config._types import (
     LabelT,
     SkipT,
     LooseBoolT,
+    SoftFailT,
 )
 from shimbboleth.buildkite.pipeline_config._notify import CommandNotifyT
-
-
-class SoftFailByStatus(BaseModel, extra="allow"):
-    exit_status: Literal["*"] | int | None = Field(
-        default=None,
-        description="The exit status number that will cause this job to soft-fail",
-    )
-
-
-# @TODO: Canonicalize
-#   (IDK if we should flatten '*' exit statuses or convert 'true' to '*')
-SoftFailT = TypeAliasType(
-    "SoftFailT",
-    Annotated[
-        LooseBoolT | list[SoftFailByStatus],
-        Field(description="The conditions for marking the step as a soft-fail."),
-    ],
+from shimbboleth.buildkite.pipeline_config._matrix import (
+    SimpleMatrixT,
+    SingleDimensionMatrix,
+    MultiDimensionMatrix,
 )
 
 
@@ -176,7 +164,7 @@ class RetryRuleset(BaseModel, extra="forbid"):
 
 # @TODO: Validation: "Each item within a `matrix` must be either a string, boolean or integer"
 MatrixElementT = TypeAliasType("MatrixElementT", str | int | bool)
-SingleDimensionalMatrix = Annotated[
+ElementsListT = Annotated[
     list[MatrixElementT],
     Field(
         description="List of elements for simple single-dimension Build Matrix",
@@ -365,7 +353,7 @@ class CommandStep(BKStepBase, extra="forbid"):
         examples=["ordered"],
     )
     env: EnvT | None = None
-    matrix: SingleDimensionalMatrix | MultiDimenisonalMatrix | None = None
+    matrix: SimpleMatrixT | SingleDimensionMatrix | MultiDimensionMatrix | None = None
     notify: CommandNotifyT | None = None
     parallelism: int | None = Field(
         default=None,

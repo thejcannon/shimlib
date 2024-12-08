@@ -1,5 +1,6 @@
 from typing_extensions import TypeAliasType
-from pydantic import Field
+from typing import Literal
+from pydantic import Field, BaseModel
 
 from typing import Any, Annotated
 from ._canonicalize import Canonicalizer, ListofStringCanonicalizer, LooseBoolValidator
@@ -78,3 +79,21 @@ SkipT = TypeAliasType(
 
 # NB: Most Buildkite booleans also support the strings "true" and "false"
 LooseBoolT = Annotated[bool, LooseBoolValidator()]
+
+
+class SoftFailConditions(BaseModel, extra="allow"):
+    exit_status: Literal["*"] | int | None = Field(
+        default=None,
+        description="The exit status number that will cause this job to soft-fail",
+    )
+
+
+# @TODO: Canonicalize
+#   (IDK if we should flatten '*' exit statuses or convert 'true' to '*')
+SoftFailT = TypeAliasType(
+    "SoftFailT",
+    Annotated[
+        LooseBoolT | list[SoftFailConditions],
+        Field(description="The conditions for marking the step as a soft-fail."),
+    ],
+)

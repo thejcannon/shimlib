@@ -251,28 +251,126 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     # https://github.com/buildkite/pipeline-schema/pull/120
     bk_defs["commandStep"]["properties"]["retry"]["additionalProperties"] = False
 
-    # https://github.com/buildkite/pipeline-schema/pull/121
-    bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][1]["properties"][
-        "adjustments"
-    ]["items"]["additionalProperties"] = False
+    # NB: These are superseded by https://github.com/buildkite/pipeline-schema/pull/128
+    if False:
+        # https://github.com/buildkite/pipeline-schema/pull/121
+        bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][1]["properties"][
+            "adjustments"
+        ]["items"]["additionalProperties"] = False
 
-    # https://github.com/buildkite/pipeline-schema/pull/122
-    bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][1][
-        "additionalProperties"
-    ] = False
+        # https://github.com/buildkite/pipeline-schema/pull/122
+        bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][1][
+            "additionalProperties"
+        ] = False
+
+        # https://github.com/buildkite/pipeline-schema/pull/124
+        bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][1]["properties"][
+            "adjustments"
+        ]["items"]["properties"]["with"]["oneOf"][0]["type"] = "string"
+        bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][1]["properties"][
+            "adjustments"
+        ]["items"]["properties"]["with"]["oneOf"][0].pop("items")
+    else:
+        # https://github.com/buildkite/pipeline-schema/pull/128
+        bk_defs["commandStep"]["properties"]["matrix"] = {
+            "oneOf": [
+                {
+                    "type": "array",
+                    "description": "List of elements for simple single-dimension Build Matrix",
+                    "items": {"$ref": "#/definitions/matrixElement"},
+                    "examples": [["linux", "freebsd"]],
+                },
+                {
+                    "type": "object",
+                    "description": "Configuration for single-dimension Build Matrix",
+                    "properties": {
+                        "setup": {
+                            "type": "array",
+                            "description": "List of elements for single-dimension Build Matrix",
+                            "items": {"$ref": "#/definitions/matrixElement"},
+                            "examples": [["linux", "freebsd"]],
+                        },
+                        "adjustments": {
+                            "type": "array",
+                            "description": "List of single-dimension Build Matrix adjustments",
+                            "items": {
+                                "type": "object",
+                                "description": "An adjustment to a single-dimension Build Matrix",
+                                "properties": {
+                                    "with": {
+                                        "type": "string",
+                                        "description": "An existing or new element for single-dimension Build Matrix",
+                                    },
+                                    "skip": {"$ref": "#/definitions/skip"},
+                                    "soft_fail": {"$ref": "#/definitions/softFail"},
+                                },
+                                "required": ["with"],
+                                "additionalProperties": False,
+                            },
+                        },
+                    },
+                    "required": ["setup"],
+                    "additionalProperties": False,
+                },
+                {
+                    "type": "object",
+                    "description": "Configuration for multi-dimension Build Matrix",
+                    "properties": {
+                        "setup": {
+                            "type": "object",
+                            "description": "Mapping of Build Matrix dimension names to their lists of elements",
+                            "propertyNames": {
+                                "type": "string",
+                                "description": "Build Matrix dimension name",
+                                "pattern": "^[a-zA-Z0-9_]+$",
+                            },
+                            "additionalProperties": {
+                                "type": "array",
+                                "description": "List of elements for this Build Matrix dimension",
+                                "items": {"$ref": "#/definitions/matrixElement"},
+                            },
+                            "examples": [
+                                {"os": ["linux", "freebsd"], "arch": ["arm64", "riscv"]}
+                            ],
+                        },
+                        "adjustments": {
+                            "type": "array",
+                            "description": "List of multi-dimension Build Matrix adjustments",
+                            "items": {
+                                "type": "object",
+                                "description": "An adjustment to a multi-dimension Build Matrix",
+                                "properties": {
+                                    "with": {
+                                        "type": "object",
+                                        "description": "Specification of a new or existing Build Matrix combination",
+                                        "propertyNames": {
+                                            "type": "string",
+                                            "description": "Build Matrix dimension name",
+                                        },
+                                        "additionalProperties": {
+                                            "$ref": "#/definitions/matrixElement",
+                                            "description": "Build Matrix dimension element",
+                                        },
+                                        "examples": [{"os": "linux", "arch": "arm64"}],
+                                    },
+                                    "skip": {"$ref": "#/definitions/skip"},
+                                    "soft_fail": {"$ref": "#/definitions/softFail"},
+                                },
+                                "required": ["with"],
+                                "additionalProperties": False,
+                            },
+                        },
+                    },
+                    "required": ["setup"],
+                    "additionalProperties": False,
+                },
+            ]
+        }
 
     # https://github.com/buildkite/pipeline-schema/pull/123
     bk_defs["commandStep"]["properties"]["retry"]["properties"]["manual"]["default"] = (
         True
     )
-
-    # https://github.com/buildkite/pipeline-schema/pull/124
-    bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][1]["properties"][
-        "adjustments"
-    ]["items"]["properties"]["with"]["oneOf"][0]["type"] = "string"
-    bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][1]["properties"][
-        "adjustments"
-    ]["items"]["properties"]["with"]["oneOf"][0].pop("items")
 
     # https://github.com/buildkite/pipeline-schema/pull/125
     bk_defs["commandStep"]["properties"]["plugins"]["anyOf"][1]["deprecated"] = True
@@ -313,18 +411,20 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         "gitHubCommitStatusInfo",
         "gitHubCommitStatusNotify",
         "manualRetryConditions",
-        "matrixAdjustment",
-        "multiDimenisonalMatrix",
+        "multiDimensionMatrixAdjustment",
+        "multiDimensionMatrix",
         "pagerdutyNotify",
         "retryRuleset",
         "selectInput",
         "selectOption",
+        "singleDimensionMatrixAdjustment",
+        "singleDimensionMatrix",
         "slackNotify",
         "slackNotifyInfo",
         "textInput",
         "triggeredBuild",
         "webhookNotify",
-        "softFailByStatus",
+        "softFailConditions",
     )
 
     _replace_oneOf(our_schema, "properties.steps.items")
@@ -338,11 +438,6 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         bk_defs, "commandStep.properties.notify.items.anyOf[2].properties.slack"
     )
     _replace_oneOf(bk_defs, "commandStep.properties.matrix")
-    _replace_oneOf(
-        bk_defs,
-        "commandStep.properties.matrix.anyOf[1].properties.adjustments.items.properties.with",
-    )
-    _replace_oneOf(bk_defs, "commandStep.properties.matrix.anyOf[1].properties.setup")
     _replace_oneOf(bk_defs, "buildNotify.items")
     _replace_oneOf(bk_defs, "buildNotify.items.anyOf[3].properties.slack")
     _replace_oneOf(bk_defs, "agents")
@@ -355,11 +450,11 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     auto_retry_default.pop("signal")
     auto_retry_default.pop("signal_reason")
     jmespath.search(
-        "definitions.commandStep.properties.matrix.anyOf[1].properties.adjustments.items.properties.with.anyOf[1].propertyNames",
+        "definitions.commandStep.properties.matrix.anyOf[2].properties.adjustments.items.properties.with.propertyNames",
         our_schema,
     )["type"] = "string"
     jmespath.search(
-        "definitions.commandStep.properties.matrix.anyOf[1].properties.setup.anyOf[1].propertyNames",
+        "definitions.commandStep.properties.matrix.anyOf[2].properties.setup.propertyNames",
         our_schema,
     )["type"] = "string"
     # DONE!
