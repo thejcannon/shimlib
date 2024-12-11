@@ -39,6 +39,9 @@ class NestedWaitStep(FieldAliasSupport, extra="forbid"):
         description="Waits for previous steps to pass before continuing",
     )
 
+    # @TODO: If both are given it gets mad about `waiter`.
+    # But this actually looks like the discriminator
+    # is choosing `WaitStep` over `NestedWaitStep`.
     waiter: ClassVar = FieldAlias("wait")
 
 

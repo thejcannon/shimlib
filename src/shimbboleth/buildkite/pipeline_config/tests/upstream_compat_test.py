@@ -1,3 +1,6 @@
+# @TODO: The BK API returns the steps :O
+#   (We can use this to test canonicalization)
+
 import json
 import os
 import pydantic.json_schema
@@ -188,6 +191,13 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     our_schema["definitions"]["commandStep"]["properties"]["artifact_paths"].pop(
         "default"
     )
+    our_schema["definitions"]["commandStep"]["properties"]["soft_fail"].pop("default")
+    our_schema["definitions"]["singleDimensionMatrixAdjustment"]["properties"][
+        "soft_fail"
+    ].pop("default")
+    our_schema["definitions"]["multiDimensionMatrixAdjustment"]["properties"][
+        "soft_fail"
+    ].pop("default")
 
     # https://github.com/buildkite/pipeline-schema/pull/103
     bk_defs["groupStep"]["properties"].pop("type")
@@ -435,11 +445,11 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         "exitStatus",
     )
 
+    # anyOf/oneOf (Should probably open an issue/PR? Also `oneOf` v `anyOf` comes from `Discriminator`)
     _replace_oneOf(our_schema, "properties.steps.items")
-    # anyOf/oneOf (Should probably open an issue/PR)
     _replace_oneOf(bk_defs, "matrixElement")
-    _replace_oneOf(bk_defs, "fields.items")
-    _replace_oneOf(bk_defs, "fields.items.anyOf[1].properties.default")
+    # _replace_oneOf(bk_defs, "fields.items")
+    _replace_oneOf(bk_defs, "fields.items.oneOf[1].properties.default")
     _replace_oneOf(bk_defs, "commandStep.properties.plugins.anyOf[0].items")
     _replace_oneOf(bk_defs, "commandStep.properties.notify.items")
     _replace_oneOf(

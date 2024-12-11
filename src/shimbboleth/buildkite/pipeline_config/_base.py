@@ -52,6 +52,7 @@ class DependsOnDependency(BaseModel, extra="forbid"):
 
 DependsOnT = TypeAliasType(
     "DependsOnT",
+    # @TODO: Canonicalize
     Annotated[
         None | str | list[str | DependsOnDependency],
         Field(description="The step keys for a step to depend on"),

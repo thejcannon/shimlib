@@ -21,6 +21,8 @@ from shimbboleth.buildkite.pipeline_config._types import LooseBoolT
 
 import pytest
 
+from shimbboleth.buildkite.pipeline_config.command_step import NestedCommandStep
+
 
 STEP_EXTRA_DATA = defaultdict(
     lambda: {},
@@ -198,10 +200,25 @@ def test_command_step_command_alias(data, expected):
     assert step.command == expected
     assert step.commands == expected
 
+@pytest.mark.parametrize(
+    "data, expected",
+    [
+        ({"command": {"command": "command"}}, CommandStep(command=["command"])),
+        ({"commands": {"command": "command"}}, CommandStep(command=["command"])),
+        ({"script": {"command": "command"}}, CommandStep(command=["command"])),
+        ({"command": None}, None),
+    ],
+)
+def test_nested_command_step_command_alias(data, expected):
+    step = NestedCommandStep.model_validate(data)
+    assert step.command == expected
+    assert step.commands == expected
+    assert step.script == expected
 
-# @TODO: NestedCommandStep aliases
+
+
 # @TODO: NestedWaitStep aliases
-
+# @TODO: Test pipeline discriminator
 
 def test_agents_parsing():
     assert (
@@ -280,9 +297,17 @@ def test_branches_canonicalization(step_cls):
             {"steps": [{"command": None, "commands": None}]},
             "Step type is ambiguous: use only one of `command` or `commands`",
         ),
+        (
+            {"steps": [{"command": {"command": "command"}, "commands": {"command": "command"}}]},
+            "Step type is ambiguous: use only one of `command` or `commands`",
+        ),
+        (
+            {"steps": [{"command": {"command": "command"}, "script": {"command": "command"}}]},
+            "Step type is ambiguous: use only one of `command` or `script`",
+        ),
     ],
 )
-def test_from_yaml(config, error):
+def test_error_from_definition(config, error):
     with pytest.raises(ValidationError) as e:
         BuildkitePipeline.model_validate(config)
     assert e.value.errors()[0]["ctx"]["error"].args[0] == error

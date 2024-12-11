@@ -1,8 +1,8 @@
-from typing import Annotated, Pattern
+from typing import Annotated, Pattern, Any
 from typing_extensions import TypeAliasType
 
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, Discriminator, Tag
 
 from shimbboleth.buildkite.pipeline_config._types import LooseBoolT
 
@@ -96,11 +96,26 @@ class SelectInput(BaseModel, extra="forbid"):
     )
 
 
+def _get_fields_tag(v: Any) -> str | None:
+    # @TODO: Handle serialization
+    if not isinstance(v, dict):
+        return None
+    # @TODO: We could do better pattern-matching the fields, but this is a good first pass
+    if "options" in v:
+        return "select"
+    return "text"
+
+
 FieldsT = TypeAliasType(
     "FieldsT",
     Annotated[
-        # @TODO: Use discriminator
-        list[TextInput | SelectInput],
+        list[
+            Annotated[
+                Annotated[TextInput, Tag("text")]
+                | Annotated[SelectInput, Tag("select")],
+                Discriminator(_get_fields_tag),
+            ]
+        ],
         Field(
             description="A list of input fields required to be filled out before unblocking the step"
         ),

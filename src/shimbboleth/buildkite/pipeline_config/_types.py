@@ -1,32 +1,30 @@
 from typing_extensions import TypeAliasType
-from typing import Literal
+from typing import Literal, Any, Annotated
 from pydantic import Field, BaseModel
-
-from typing import Any, Annotated
 from ._canonicalize import Canonicalizer, ListofStringCanonicalizer
-
+from shimbboleth._dogmantic.field import Description, Examples
 
 IfT = TypeAliasType(
     "IfT",
     Annotated[
         str,
-        Field(
-            description="A boolean expression that omits the step when false",
-            examples=["build.message != 'skip me'", "build.branch == 'master'"],
-        ),
+        Description("A boolean expression that omits the step when false"),
+        Examples("build.message != 'skip me'", "build.branch == 'master'"),
     ],
 )
 
-# @TODO: RHS Should be "any JSON type": https://docs.pydantic.dev/latest/api/types/#pydantic.types.Json maybe?
-# @TODO: Find out what happens to `true`/`false`/`null`/`dict`/`list` BK-side (likely to be stringified)
+# @TODO: RHS shouldn't be `Any`, but it kinda is upstream
+# But there's a twist!
+#   `env` at the pipeline level enforces RHS `str | int | bool` (with bools coerced to `true` ro `False`)
+#   `env` at the command level just silently ignores non-int/str/bool
+# (what gives?!)
+# @TODO: Coerce RHS from strings? E.g. `"1"` -> `1` and `"true"` -> `True`
 EnvT = TypeAliasType(
     "EnvT",
     Annotated[
         dict[str, Any],
-        Field(
-            description="Environment variables for this step",
-            examples=[{"NODE_ENV": "test"}],
-        ),
+        Description("Environment variables for this step"),
+        Examples({"NODE_ENV": "test"}),
     ],
 )
 
@@ -35,10 +33,8 @@ BranchesT = TypeAliasType(
     Annotated[
         list[str],
         ListofStringCanonicalizer(),
-        Field(
-            description="Which branches will include this step in their builds",
-            examples=["master", ["feature/*", "chore/*"]],
-        ),
+        Description("Which branches will include this step in their builds"),
+        Examples("master", ["feature/*", "chore/*"]),
     ],
 )
 
@@ -46,10 +42,8 @@ LabelT = TypeAliasType(
     "LabelT",
     Annotated[
         str,
-        Field(
-            description="The label that will be displayed in the pipeline visualisation in Buildkite. Supports emoji.",
-            examples=[":docker: Build"],
-        ),
+        Description("The label that will be displayed in the pipeline visualisation in Buildkite. Supports emoji."),
+        Examples(":docker: Build"),
     ],
 )
 
@@ -57,10 +51,8 @@ PromptT = TypeAliasType(
     "PromptT",
     Annotated[
         str,
-        Field(
-            description="The instructional message displayed in the dialog box when the unblock step is activated",
-            examples=["Release to production?"],
-        ),
+        Description("The instructional message displayed in the dialog box when the unblock step is activated"),
+        Examples("Release to production?"),
     ],
 )
 
@@ -70,10 +62,8 @@ SkipT = TypeAliasType(
     Annotated[
         # NB: Passing an empty string is equivalent to false.
         bool | str,
-        Field(
-            description="Whether this step should be skipped. Passing a string provides a reason for skipping this command",
-            examples=[True, False, "My reason"],
-        ),
+        Description("Whether this step should be skipped. Passing a string provides a reason for skipping this command"),
+        Examples(True, False, "My reason"),
     ],
 )
 
@@ -102,7 +92,7 @@ class ExitStatus(BaseModel, extra="allow"):
 
 # NB: This may seem annoying (having to do `any(status == '*' for soft_fail in model.soft_fail)`)
 #   however consider if we allowed `bool`. `if model.soft_fail` would be ambiguous (because a non-empty list is truthy)
-# @TODO: Propvide helper method for this
+# @TODO: Provide helper method for this
 class _SoftFailCanonicalizer(
     Canonicalizer[LooseBoolT | list[ExitStatus] | None, list[ExitStatus]]
 ):
@@ -123,6 +113,6 @@ SoftFailT = TypeAliasType(
     Annotated[
         list[ExitStatus] | None,
         _SoftFailCanonicalizer(),
-        Field(description="The conditions for marking the step as a soft-fail."),
+        Description("The conditions for marking the step as a soft-fail."),
     ],
 )
