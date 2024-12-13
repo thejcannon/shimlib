@@ -1,30 +1,39 @@
+from typing import Callable, TypeAlias, Any, TypeVar, overload
+import dataclasses
+
+T = TypeVar("T")
+
+# @TODO: `Any` is lame, but both Anys are data/instance
+ConverterFuncT: TypeAlias = Callable[[str, Any, Any], dict[str, Any]]
+
+# @TODO: Recursive JSON type Alias?
 
 
-from typing import TYPE_CHECKING, Annotated
-from pydantic.fields import FieldInfo
-
-class Description(FieldInfo):
-    def __init__(self, description: str):
-        super().__init__(description=description)
+@overload
+def field(
+    *, json_converter: ConverterFuncT | None = None, json_default: Any | None = None
+) -> Any: ...
 
 
-class Examples(FieldInfo):
-    def __init__(self, *examples):
-        super().__init__(examples=list(examples))
+@overload
+def field(
+    *,
+    default: T,
+    json_converter: ConverterFuncT | None = None,
+    json_default: Any | None = None,
+) -> T: ...
 
-class MatchesRegex(FieldInfo):
-    def __init__(self, regex: str):
-        super().__init__(pattern=regex)
 
-
-
-class _FieldT:
-    def __class_getitem__(cls, params):
-        # @TODO: Only one of params should be ones defined above.
-        # Also typecheck examples (as best as possible)
-        return cls
-
-if TYPE_CHECKING:
-    FieldT = Annotated
-else:
-    FieldT = _FieldT
+def field(
+    *,
+    json_converter: ConverterFuncT | None = None,
+    json_default: Any | None = None,
+    **field_kwargs,
+) -> Any:
+    # @TODO Validate json default matches python default post-conversion
+    metadata = {}
+    if json_converter:
+        metadata["json_converter"] = json_converter
+    if json_default:
+        metadata["json_default"] = json_default
+    return dataclasses.field(**field_kwargs, metadata=metadata)

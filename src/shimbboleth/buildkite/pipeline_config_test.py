@@ -200,6 +200,7 @@ def test_command_step_command_alias(data, expected):
     assert step.command == expected
     assert step.commands == expected
 
+
 @pytest.mark.parametrize(
     "data, expected",
     [
@@ -216,9 +217,9 @@ def test_nested_command_step_command_alias(data, expected):
     assert step.script == expected
 
 
-
 # @TODO: NestedWaitStep aliases
 # @TODO: Test pipeline discriminator
+
 
 def test_agents_parsing():
     assert (
@@ -298,11 +299,25 @@ def test_branches_canonicalization(step_cls):
             "Step type is ambiguous: use only one of `command` or `commands`",
         ),
         (
-            {"steps": [{"command": {"command": "command"}, "commands": {"command": "command"}}]},
+            {
+                "steps": [
+                    {
+                        "command": {"command": "command"},
+                        "commands": {"command": "command"},
+                    }
+                ]
+            },
             "Step type is ambiguous: use only one of `command` or `commands`",
         ),
         (
-            {"steps": [{"command": {"command": "command"}, "script": {"command": "command"}}]},
+            {
+                "steps": [
+                    {
+                        "command": {"command": "command"},
+                        "script": {"command": "command"},
+                    }
+                ]
+            },
             "Step type is ambiguous: use only one of `command` or `script`",
         ),
     ],

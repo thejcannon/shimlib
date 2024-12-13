@@ -2,14 +2,15 @@ from typing_extensions import TypeAliasType
 from typing import Literal, Any, Annotated
 from pydantic import Field, BaseModel
 from ._canonicalize import Canonicalizer, ListofStringCanonicalizer
-from shimbboleth._dogmantic.field import Description, Examples
 
 IfT = TypeAliasType(
     "IfT",
     Annotated[
         str,
-        Description("A boolean expression that omits the step when false"),
-        Examples("build.message != 'skip me'", "build.branch == 'master'"),
+        Field(
+            description="A boolean expression that omits the step when false",
+            examples=["build.message != 'skip me'", "build.branch == 'master'"],
+        ),
     ],
 )
 
@@ -23,8 +24,10 @@ EnvT = TypeAliasType(
     "EnvT",
     Annotated[
         dict[str, Any],
-        Description("Environment variables for this step"),
-        Examples({"NODE_ENV": "test"}),
+        Field(
+            description="Environment variables for this step",
+            examples=[{"NODE_ENV": "test"}],
+        ),
     ],
 )
 
@@ -33,8 +36,10 @@ BranchesT = TypeAliasType(
     Annotated[
         list[str],
         ListofStringCanonicalizer(),
-        Description("Which branches will include this step in their builds"),
-        Examples("master", ["feature/*", "chore/*"]),
+        Field(
+            description="Which branches will include this step in their builds",
+            examples=["master", ["feature/*", "chore/*"]],
+        ),
     ],
 )
 
@@ -42,8 +47,10 @@ LabelT = TypeAliasType(
     "LabelT",
     Annotated[
         str,
-        Description("The label that will be displayed in the pipeline visualisation in Buildkite. Supports emoji."),
-        Examples(":docker: Build"),
+        Field(
+            description="The label that will be displayed in the pipeline visualisation in Buildkite. Supports emoji.",
+            examples=[":docker: Build"],
+        ),
     ],
 )
 
@@ -51,8 +58,10 @@ PromptT = TypeAliasType(
     "PromptT",
     Annotated[
         str,
-        Description("The instructional message displayed in the dialog box when the unblock step is activated"),
-        Examples("Release to production?"),
+        Field(
+            description="The instructional message displayed in the dialog box when the unblock step is activated",
+            examples=["Release to production?"],
+        ),
     ],
 )
 
@@ -62,8 +71,10 @@ SkipT = TypeAliasType(
     Annotated[
         # NB: Passing an empty string is equivalent to false.
         bool | str,
-        Description("Whether this step should be skipped. Passing a string provides a reason for skipping this command"),
-        Examples(True, False, "My reason"),
+        Field(
+            description="Whether this step should be skipped. Passing a string provides a reason for skipping this command",
+            examples=[True, False, "My reason"],
+        ),
     ],
 )
 
@@ -113,6 +124,8 @@ SoftFailT = TypeAliasType(
     Annotated[
         list[ExitStatus] | None,
         _SoftFailCanonicalizer(),
-        Description("The conditions for marking the step as a soft-fail."),
+        Field(
+            description="The conditions for marking the step as a soft-fail.",
+        ),
     ],
 )

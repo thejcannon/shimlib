@@ -16,8 +16,8 @@ from shimbboleth.buildkite.pipeline_config._alias import GenerateJsonSchemaWithA
 import jmespath
 
 
-SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/6032143864b3244bbd8f71496f05b9fcba1014c9/schema.json"
-VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/6032143864b3244bbd8f71496f05b9fcba1014c9/test/valid-pipelines"
+SCHEMA_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/2fbbfc199bd66c0ff64303a2d9c7072ad24f3ce3/schema.json"
+VALID_PIPELINES_URL = "https://raw.githubusercontent.com/buildkite/pipeline-schema/2fbbfc199bd66c0ff64303a2d9c7072ad24f3ce3/test/valid-pipelines"
 
 VALID_PIPELINE_NAMES = (
     "block.yml",
@@ -199,12 +199,6 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
         "soft_fail"
     ].pop("default")
 
-    # https://github.com/buildkite/pipeline-schema/pull/103
-    bk_defs["groupStep"]["properties"].pop("type")
-
-    # https://github.com/buildkite/pipeline-schema/pull/104
-    bk_defs["groupStep"]["required"].insert(0, "group")
-
     # https://github.com/buildkite/pipeline-schema/pull/105
     bk_defs["waitStep"]["properties"].pop("waiter")
 
@@ -213,19 +207,6 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     bk_defs["dependsOn"]["anyOf"].pop(0)
     assert bk_defs["waitStep"]["properties"]["wait"]["type"] == ["string", "null"]
     bk_defs["waitStep"]["properties"]["wait"]["type"] = "string"
-
-    # https://github.com/buildkite/pipeline-schema/pull/114
-    bk_defs["fields"]["items"]["oneOf"][1]["properties"]["options"]["minItems"] = 1
-
-    # https://github.com/buildkite/pipeline-schema/pull/115
-    bk_defs["blockStep"]["properties"]["blocked_state"]["default"] = "passed"
-
-    # https://github.com/buildkite/pipeline-schema/pull/116
-    bk_defs["triggerStep"]["properties"]["soft_fail"] = {
-        "enum": [True, False, "true", "false"],
-        "description": "The conditions for marking the step as a soft-fail.",
-        "default": False,
-    }
 
     # https://github.com/buildkite/pipeline-schema/pull/117
     bk_defs["buildNotify"]["items"]["oneOf"][7]["properties"].pop("if")
@@ -244,25 +225,6 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
     bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][4]["properties"][
         "github_check"
     ]["additionalProperties"] = False
-
-    # https://github.com/buildkite/pipeline-schema/pull/118
-    bk_defs["buildNotify"]["items"]["oneOf"][6]["properties"]["github_commit_status"][
-        "additionalProperties"
-    ] = False
-    bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][3]["properties"][
-        "github_commit_status"
-    ]["additionalProperties"] = False
-
-    # https://github.com/buildkite/pipeline-schema/pull/119
-    bk_defs["commandStep"]["properties"]["notify"]["items"]["oneOf"][2]["properties"][
-        "slack"
-    ]["oneOf"][1]["additionalProperties"] = False
-    bk_defs["buildNotify"]["items"]["oneOf"][3]["properties"]["slack"]["oneOf"][1][
-        "additionalProperties"
-    ] = False
-
-    # https://github.com/buildkite/pipeline-schema/pull/120
-    bk_defs["commandStep"]["properties"]["retry"]["additionalProperties"] = False
 
     # NB: These are superseded by https://github.com/buildkite/pipeline-schema/pull/128
     if False:
@@ -380,25 +342,13 @@ def test_schema_compatibility(pinned_bk_schema: dict[str, Any]):
             ]
         }
 
-    # https://github.com/buildkite/pipeline-schema/pull/123
-    bk_defs["commandStep"]["properties"]["retry"]["properties"]["manual"]["default"] = (
-        True
-    )
-
     # https://github.com/buildkite/pipeline-schema/pull/125
     bk_defs["commandStep"]["properties"]["plugins"]["anyOf"][1]["deprecated"] = True
 
-    # https://github.com/buildkite/pipeline-schema/pull/126
-    bk_defs["cache"]["anyOf"][2]["properties"]["paths"] = bk_defs["cache"]["anyOf"][2][
-        "properties"
-    ]["paths"].pop("anyOf")[1]
-
-    # https://github.com/buildkite/pipeline-schema/pull/127
-    bk_defs["skip"]["description"] = (
-        "Whether this step should be skipped. Passing a string provides a reason for skipping this command"
-    )
-
     # @TODO: File issue
+    bk_defs["buildNotify"]["items"]["oneOf"][3]["properties"]["slack"]["oneOf"][1][
+        "additionalProperties"
+    ] = False
     bk_defs["commandStep"]["properties"]["matrix"]["oneOf"][2]["properties"][
         "adjustments"
     ]["items"]["properties"]["with"]["propertyNames"]["pattern"] = "^[a-zA-Z0-9_]+$"

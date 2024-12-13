@@ -321,7 +321,9 @@ class NestedCommandStep(FieldAliasSupport, extra="forbid"):
     def _check_command_commands_script(cls, data: Any) -> Any:
         # @TODO: I think this should be in `_alias`.
         if isinstance(data, dict):
-            keys = [f"`{key}`" for key in ["command", "commands", "script"] if key in data]
+            keys = [
+                f"`{key}`" for key in ["command", "commands", "script"] if key in data
+            ]
             if len(keys) > 1:
                 raise ValueError(
                     f"Step type is ambiguous: use only one of {' or '.join(keys)}"

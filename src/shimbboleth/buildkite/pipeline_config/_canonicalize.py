@@ -1,7 +1,7 @@
 # @TODO: Rename this to something else, and use "canonicalize" to imply
 #   conversion/serialization into BK's form (by using the API)
 
-from typing import TypeVar, Any, Generic, cast, Literal
+from typing import TypeVar, Any, Generic, cast
 from pydantic import GetCoreSchemaHandler
 import pydantic_core
 
