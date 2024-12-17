@@ -1,4 +1,7 @@
+
+
 from dataclasses import dataclass
+import re
 
 NonEmpty = object()
 
@@ -18,4 +21,7 @@ class Examples:
 
 @dataclass(frozen=True, slots=True)
 class MatchesRegex:
-    regex: str
+    regex: re.Pattern
+
+    def __init__(self, regex: str):
+        object.__setattr__(self, "regex", re.compile(regex))

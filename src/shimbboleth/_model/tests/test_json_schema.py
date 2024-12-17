@@ -1,14 +1,19 @@
-from shimbboleth._dogmantic.json_schema import generate
-from shimbboleth._dogmantic.model import Model
-from shimbboleth._dogmantic.field_types import (
+from shimbboleth._model.json_schema import generate
+from shimbboleth._model.model import Model
+from shimbboleth._model.field_types import (
     Description,
     MatchesRegex,
     Examples,
     NonEmpty,
 )
-from typing import Annotated
+from shimbboleth._model.field import field
+from typing import Annotated, Literal
 
 import pytest
+
+
+def make_model(attrs, **kwargs):
+    return type(Model)("MyModel", (Model,), attrs, **kwargs)
 
 
 @pytest.mark.parametrize(
@@ -86,6 +91,17 @@ def test_union(field_type, expected):
 @pytest.mark.parametrize(
     ("field_type", "expected"),
     [
+        (Literal["hello"], {"enum": ["hello"]}),
+        (Literal["hello", "goodbye"], {"enum": ["hello", "goodbye"]}),
+    ],
+)
+def test_literal(field_type, expected):
+    assert generate(field_type) == expected
+
+
+@pytest.mark.parametrize(
+    ("field_type", "expected"),
+    [
         (Annotated[int, Description("")], {"type": "integer", "description": ""}),
         (Annotated[int, Examples(0, 1)], {"type": "integer", "examples": [0, 1]}),
         (Annotated[str, NonEmpty], {"type": "string", "minLength": 1}),
@@ -105,47 +121,114 @@ def test_union(field_type, expected):
     ],
 )
 def test_annotated(field_type, expected):
+    """Ensure that `Annotated` types are handled correctly."""
     assert generate(field_type) == expected
+
+
+def str_to_int(value: str) -> int:
+    return int(value)
 
 
 @pytest.mark.parametrize(
     ("field_type", "expected"),
     [
         (
-            type(Model)("MyModel", (Model,), {"__annotations__": {"field": int}}),
+            make_model(
+                {
+                    "__annotations__": {"field": int},
+                },
+            ),
             {
-                "type": "object",
                 "properties": {"field": {"type": "integer"}},
                 "required": ["field"],
-                "additionalProperties": False,
             },
         ),
         (
-            type(Model)(
-                "MyModel", (Model,), {"__annotations__": {"field": int}}, extra=False
+            make_model(
+                {
+                    "__annotations__": {"field": int},
+                    "field": field(json_converter=str_to_int),
+                },
             ),
             {
-                "type": "object",
-                "properties": {"field": {"type": "integer"}},
+                "properties": {"field": {"type": "string"}},
                 "required": ["field"],
-                "additionalProperties": False,
-            },
-        ),
-        (
-            type(Model)(
-                "MyModel", (Model,), {"__annotations__": {"field": int}}, extra=True
-            ),
-            {
-                "type": "object",
-                "properties": {"field": {"type": "integer"}},
-                "required": ["field"],
-                "additionalProperties": True,
             },
         ),
     ],
 )
 def test_model(field_type, expected):
-    assert generate(field_type) == expected
+    assert generate(field_type) == {
+        "type": "object",
+        "additionalProperties": False,
+        **expected,
+    }
+
+
+@pytest.mark.parametrize(
+    ("field_type", "expected"),
+    [
+        (make_model({}), False),
+        (make_model({}, extra=False), False),
+        (make_model({}, extra=True), True),
+    ],
+)
+def test_model__extra(field_type, expected):
+    """Ensure that `additionalProperties` matches `extra` (and is always provided)."""
+    assert generate(field_type)["additionalProperties"] == expected
+
+
+@pytest.mark.parametrize(
+    ("field_type", "expected"),
+    [
+        (
+            make_model(
+                {"__annotations__": {"field": int}, "field": 0},
+            ),
+            0,
+        ),
+        (
+            make_model(
+                {"__annotations__": {"field": int}, "field": field(default=0)},
+            ),
+            0,
+        ),
+        (
+            make_model(
+                {
+                    "__annotations__": {"field": int},
+                    "field": field(default=1, json_default=4),
+                },
+            ),
+            4,
+        ),
+        # NB: Test default being a Falsey value
+        (
+            make_model(
+                {
+                    "__annotations__": {"field": int},
+                    "field": field(default=1, json_default=0),
+                },
+            ),
+            0,
+        ),
+        # NB: Test `None` explicitly (to guard against `= None` dwfaults)
+        (
+            make_model(
+                {
+                    "__annotations__": {"field": int},
+                    "field": field(default=1, json_default=None),
+                },
+            ),
+            None,
+        ),
+    ],
+)
+def test_model__default(field_type, expected):
+    """Ensure if a default is provided, the field is not required and the default is in the schema."""
+    schema = generate(field_type)
+    assert "field" not in schema["required"]
+    assert schema["properties"]["field"]["default"] == expected, schema
 
 
 @pytest.mark.parametrize(

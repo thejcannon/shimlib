@@ -1,4 +1,4 @@
-from shimbboleth._dogmantic.field import Model, field
+from shimbboleth._model.field import Model, field
 import dataclasses
 
 
