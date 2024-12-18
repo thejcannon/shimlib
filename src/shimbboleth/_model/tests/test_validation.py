@@ -98,16 +98,10 @@ def test_nested_models():
     class MyModel(Model):
         field: Annotated[list[NestedModel], NonEmpty]
 
-    ValidationVisitor().visit(
-        objType=MyModel, obj=MyModel(field=[NestedModel(field=["a"])])
-    )
-    ValidationVisitor().visit(
-        objType=MyModel, obj=MyModel(field=[NestedModel(field=[])])
-    )
+    MyModel(field=[NestedModel(field=["a"])])
+    MyModel(field=[NestedModel(field=[])])
 
     with pytest.raises(ValidationError):
         MyModel(field=[])
     with pytest.raises(ValidationError):
-        ValidationVisitor().visit(
-            objType=MyModel, obj=MyModel(field=[NestedModel(field=[""])])
-        )
+        NestedModel(field=[""])

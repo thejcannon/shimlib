@@ -1,4 +1,4 @@
-from shimbboleth._model.json_schema import generate
+from shimbboleth._model.json_schema import JSONSchemaVisitor
 from shimbboleth._model.model import Model
 from shimbboleth._model.field_types import (
     Description,
@@ -7,7 +7,8 @@ from shimbboleth._model.field_types import (
     NonEmpty,
 )
 from shimbboleth._model.field import field
-from typing import Annotated, Literal
+from shimbboleth._model.field_alias import FieldAlias
+from typing import Annotated, Literal, ClassVar
 
 import pytest
 
@@ -30,7 +31,7 @@ def str_to_int(value: str) -> int:
     ],
 )
 def test_simple(field_type, expected):
-    assert generate(field_type) == expected
+    assert JSONSchemaVisitor().visit(field_type) == expected
 
 
 @pytest.mark.parametrize(
@@ -42,7 +43,7 @@ def test_simple(field_type, expected):
     ],
 )
 def test_list(field_type, expected):
-    assert generate(field_type) == expected
+    assert JSONSchemaVisitor().visit(field_type) == expected
 
 
 @pytest.mark.parametrize(
@@ -79,7 +80,7 @@ def test_list(field_type, expected):
     ],
 )
 def test_dict(field_type, expected):
-    assert generate(field_type) == expected
+    assert JSONSchemaVisitor().visit(field_type) == expected
 
 
 @pytest.mark.parametrize(
@@ -89,7 +90,7 @@ def test_dict(field_type, expected):
     ],
 )
 def test_union(field_type, expected):
-    assert generate(field_type) == expected
+    assert JSONSchemaVisitor().visit(field_type) == expected
 
 
 @pytest.mark.parametrize(
@@ -100,7 +101,7 @@ def test_union(field_type, expected):
     ],
 )
 def test_literal(field_type, expected):
-    assert generate(field_type) == expected
+    assert JSONSchemaVisitor().visit(field_type) == expected
 
 
 @pytest.mark.parametrize(
@@ -126,11 +127,11 @@ def test_literal(field_type, expected):
 )
 def test_annotated(field_type, expected):
     """Ensure that `Annotated` types are handled correctly."""
-    assert generate(field_type) == expected
+    assert JSONSchemaVisitor().visit(field_type) == expected
 
 
 @pytest.mark.parametrize(
-    ("field_type", "expected"),
+    ("model_def", "expected"),
     [
         (
             make_model(
@@ -157,29 +158,30 @@ def test_annotated(field_type, expected):
         ),
     ],
 )
-def test_model(field_type, expected):
-    assert generate(field_type) == {
+def test_model(model_def, expected):
+    assert model_def.model_json_schema == {
         "type": "object",
+        "definitions": {},
         "additionalProperties": False,
         **expected,
     }
 
 
 @pytest.mark.parametrize(
-    ("field_type", "expected"),
+    ("model_def", "expected"),
     [
         (make_model({}), False),
         (make_model({}, extra=False), False),
         (make_model({}, extra=True), True),
     ],
 )
-def test_model__extra(field_type, expected):
+def test_model__extra(model_def, expected):
     """Ensure that `additionalProperties` matches `extra` (and is always provided)."""
-    assert generate(field_type)["additionalProperties"] == expected
+    assert model_def.model_json_schema["additionalProperties"] == expected
 
 
 @pytest.mark.parametrize(
-    ("field_type", "expected"),
+    ("model_def", "expected"),
     [
         (
             make_model(
@@ -224,9 +226,9 @@ def test_model__extra(field_type, expected):
         ),
     ],
 )
-def test_model__default(field_type, expected):
+def test_model__default(model_def, expected):
     """Ensure if a default is provided, the field is not required and the default is in the schema."""
-    schema = generate(field_type)
+    schema = model_def.model_json_schema
     assert "field" not in schema["required"]
     assert schema["properties"]["field"]["default"] == expected, schema
 
@@ -240,4 +242,48 @@ def test_model__default(field_type, expected):
 )
 def test_bad_type(field_type, expected):
     with pytest.raises(TypeError):
-        generate(field_type)
+        JSONSchemaVisitor().visit(field_type)
+
+
+def test_field_alias():
+    class MyModel(Model):
+        field: str
+
+        alias1: ClassVar = FieldAlias("field")
+
+    assert MyModel.model_json_schema == {
+        "type": "object",
+        "additionalProperties": False,
+        "definitions": {},
+        "properties": {
+            "field": {"type": "string"},
+            "alias1": {"$ref": "#/definitions/MyModel/properties/field"},
+        },
+        "required": ["field"],
+    }
+
+def test_nested_models():
+    class NestedModel(Model):
+        pass
+
+    class MyModel(Model):
+        field: NestedModel
+
+    assert MyModel.model_json_schema == {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "field": {"$ref": "#/definitions/NestedModel"},
+        },
+        "required": ["field"],
+        "definitions": {
+            "NestedModel": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {},
+                "required": [],
+            }
+        }
+    }
+
+# @TODO: Nested Schema

@@ -8,10 +8,13 @@ from shimbboleth._model.field_types import (
     MatchesRegex,
     NonEmpty,
 )
+from shimbboleth._model.field_alias import FieldAlias
 from shimbboleth._model._visitor import Visitor
 
+@dataclasses.dataclass(frozen=True, slots=True)
+class JSONSchemaVisitor(Visitor[dict[str, Any]]):
+    model_defs: dict[str, dict[str, Any]] = dataclasses.field(default_factory=dict)
 
-class _JsonSchemaVisitor(Visitor[dict[str, Any]]):
     def visit_bool(self, objType: type[bool]) -> dict[str, Any]:
         return {"type": "boolean"}
 
@@ -79,19 +82,31 @@ class _JsonSchemaVisitor(Visitor[dict[str, Any]]):
             field_schema["default"] = field.default
         return field_schema
 
+    def visit_field_alias(
+        self, field_alias: FieldAlias, *, model_name: str
+    ) -> dict[str, Any]:
+        return {"$ref": f"#/definitions/{model_name}/properties/{field_alias.alias_of}"}
+
     def visit_model(self, objType: ModelMeta) -> dict[str, Any]:
-        fields = tuple(field for field in dataclasses.fields(objType) if field.init)
-        return {
-            "type": "object",
-            "properties": {
-                field.name: self.visit_model_field(field) for field in fields
-            },
-            "required": [
-                field.name for field in fields if field.default is dataclasses.MISSING
-            ],
-            "additionalProperties": objType.__allow_extra_properties__,
-        }
+        model_name = objType.__name__
+        if model_name not in self.model_defs:
+            fields = tuple(field for field in dataclasses.fields(objType) if field.init)
+            schema = {
+                "type": "object",
+                "properties": {
+                    **{field.name: self.visit_model_field(field) for field in fields},
+                    **{
+                        name: self.visit_field_alias(
+                            field_alias, model_name=model_name
+                        )
+                        for name, field_alias in objType.__field_aliases__.items()
+                    },
+                },
+                "required": [
+                    field.name for field in fields if field.default is dataclasses.MISSING
+                ],
+                "additionalProperties": objType.__allow_extra_properties__,
+            }
+            self.model_defs[model_name] = schema
 
-
-def generate(objType: type) -> dict[str, Any]:
-    return _JsonSchemaVisitor().visit(objType)
+        return {"$ref": f"#/definitions/{model_name}"}
