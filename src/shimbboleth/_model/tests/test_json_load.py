@@ -1,10 +1,11 @@
 import pytest
-from typing import Literal, Annotated
+from typing import Literal, Annotated, ClassVar
 
 from shimbboleth._model.model import Model
 from shimbboleth._model.field_types import MatchesRegex, NonEmpty
 from shimbboleth._model.json_load import load
 from shimbboleth._model.field import field
+from shimbboleth._model.field_alias import FieldAlias
 
 
 def make_model(attrs, **kwargs):
@@ -302,5 +303,13 @@ def test_model__extras():
 
 
 def test_nested_models():
-    # @TODOL Test list[Model] or dict[str, Model] or `Model | None`
+    # @TODO: Test list[Model] or dict[str, Model] or `Model | None`
     pass
+
+def test_field_alias():
+    class MyModel(Model):
+        field: str
+        alias: ClassVar = FieldAlias("field")
+
+    instance = load(objType=MyModel, obj={"alias": "value"})
+    assert instance.field == "value"

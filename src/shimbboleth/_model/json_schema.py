@@ -85,7 +85,7 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
     def visit_field_alias(
         self, field_alias: FieldAlias, *, model_name: str
     ) -> dict[str, Any]:
-        return {"$ref": f"#/definitions/{model_name}/properties/{field_alias.alias_of}"}
+        return {"$ref": f"#/$defs/{model_name}/properties/{field_alias.alias_of}"}
 
     def visit_model(self, objType: ModelMeta) -> dict[str, Any]:
         model_name = objType.__name__
@@ -109,4 +109,4 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
             }
             self.model_defs[model_name] = schema
 
-        return {"$ref": f"#/definitions/{model_name}"}
+        return {"$ref": f"#/$defs/{model_name}"}

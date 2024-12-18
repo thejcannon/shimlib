@@ -83,6 +83,11 @@ class _JSONLoader(Visitor[Any]):
 
         init_fields = {field for field in dataclasses.fields(objType) if field.init}
         field_names = {field.name for field in init_fields}
+        alias_map = {name: alias.alias_of for name, alias in objType.__field_aliases__.items()}
+
+        for alias, of in alias_map.items():
+            if alias in obj:
+                obj[of] = obj.pop(alias)
 
         init_kwargs = {key: value for key, value in obj.items() if key in field_names}
         extras = {key: value for key, value in obj.items() if key not in field_names}

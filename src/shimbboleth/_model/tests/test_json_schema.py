@@ -161,7 +161,7 @@ def test_annotated(field_type, expected):
 def test_model(model_def, expected):
     assert model_def.model_json_schema == {
         "type": "object",
-        "definitions": {},
+        "$defs": {},
         "additionalProperties": False,
         **expected,
     }
@@ -254,10 +254,10 @@ def test_field_alias():
     assert MyModel.model_json_schema == {
         "type": "object",
         "additionalProperties": False,
-        "definitions": {},
+        "$defs": {},
         "properties": {
             "field": {"type": "string"},
-            "alias1": {"$ref": "#/definitions/MyModel/properties/field"},
+            "alias1": {"$ref": "#/$defs/MyModel/properties/field"},
         },
         "required": ["field"],
     }
@@ -273,10 +273,10 @@ def test_nested_models():
         "type": "object",
         "additionalProperties": False,
         "properties": {
-            "field": {"$ref": "#/definitions/NestedModel"},
+            "field": {"$ref": "#/$defs/NestedModel"},
         },
         "required": ["field"],
-        "definitions": {
+        "$defs": {
             "NestedModel": {
                 "type": "object",
                 "additionalProperties": False,

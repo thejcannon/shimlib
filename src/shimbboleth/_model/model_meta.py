@@ -51,5 +51,5 @@ class ModelMeta(type):
         model_defs = json_schema_visitor.model_defs.copy()
         return {
             **model_defs.pop(cls.__name__),
-            "definitions": model_defs
+            "$defs": model_defs
         }
