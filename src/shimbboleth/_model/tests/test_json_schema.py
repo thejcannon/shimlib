@@ -16,6 +16,10 @@ def make_model(attrs, **kwargs):
     return type(Model)("MyModel", (Model,), attrs, **kwargs)
 
 
+def str_to_int(value: str) -> int:
+    return int(value)
+
+
 @pytest.mark.parametrize(
     ("field_type", "expected"),
     [
@@ -123,10 +127,6 @@ def test_literal(field_type, expected):
 def test_annotated(field_type, expected):
     """Ensure that `Annotated` types are handled correctly."""
     assert generate(field_type) == expected
-
-
-def str_to_int(value: str) -> int:
-    return int(value)
 
 
 @pytest.mark.parametrize(

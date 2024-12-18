@@ -9,6 +9,7 @@ ConverterFuncT: TypeAlias = Callable[[str, Any], dict[str, Any]]
 # @TODO: Recursive JSON type Alias?
 
 
+# @TODO: add "json_alias" (with `with_` and `if`)
 @overload
 def field(
     *, json_converter: ConverterFuncT | None = None, json_default: Any | None = None

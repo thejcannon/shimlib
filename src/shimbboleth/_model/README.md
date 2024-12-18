@@ -5,7 +5,7 @@ Features:
 - Customizing a field with a validator using `Field` (not using types)
 - Helpers to reduce `Field` usage in annotations
 
-
+- (assumes types are correct Python-side)
 
 Things required from pydantic:
 
