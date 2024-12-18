@@ -106,7 +106,7 @@ def test_nested_models():
     )
 
     with pytest.raises(ValidationError):
-        ValidationVisitor().visit(objType=MyModel, obj=MyModel(field=[]))
+        MyModel(field=[])
     with pytest.raises(ValidationError):
         ValidationVisitor().visit(
             objType=MyModel, obj=MyModel(field=[NestedModel(field=[""])])
