@@ -306,6 +306,7 @@ def test_nested_models():
     # @TODO: Test list[Model] or dict[str, Model] or `Model | None`
     pass
 
+
 def test_field_alias():
     class MyModel(Model):
         field: str
@@ -313,3 +314,13 @@ def test_field_alias():
 
     instance = load(objType=MyModel, obj={"alias": "value"})
     assert instance.field == "value"
+
+
+def test_json_alias():
+    class MyModel(Model):
+        if_condition: str = field(json_alias="if")
+
+    assert load(objType=MyModel, obj={"if": "value"}).if_condition == "value"
+
+    with pytest.raises(TypeError):
+        load(objType=MyModel, obj={"if_condition": "value"})

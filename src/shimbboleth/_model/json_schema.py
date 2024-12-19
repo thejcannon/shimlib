@@ -11,6 +11,7 @@ from shimbboleth._model.field_types import (
 from shimbboleth._model.field_alias import FieldAlias
 from shimbboleth._model._visitor import Visitor
 
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class JSONSchemaVisitor(Visitor[dict[str, Any]]):
     model_defs: dict[str, dict[str, Any]] = dataclasses.field(default_factory=dict)
@@ -96,14 +97,14 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
                 "properties": {
                     **{field.name: self.visit_model_field(field) for field in fields},
                     **{
-                        name: self.visit_field_alias(
-                            field_alias, model_name=model_name
-                        )
+                        name: self.visit_field_alias(field_alias, model_name=model_name)
                         for name, field_alias in objType.__field_aliases__.items()
                     },
                 },
                 "required": [
-                    field.name for field in fields if field.default is dataclasses.MISSING
+                    field.name
+                    for field in fields
+                    if field.default is dataclasses.MISSING
                 ],
                 "additionalProperties": objType.__allow_extra_properties__,
             }

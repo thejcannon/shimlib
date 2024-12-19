@@ -262,6 +262,7 @@ def test_field_alias():
         "required": ["field"],
     }
 
+
 def test_nested_models():
     class NestedModel(Model):
         pass
@@ -283,7 +284,5 @@ def test_nested_models():
                 "properties": {},
                 "required": [],
             }
-        }
+        },
     }
-
-# @TODO: Nested Schema

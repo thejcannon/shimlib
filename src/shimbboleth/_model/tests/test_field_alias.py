@@ -9,8 +9,8 @@ def test_field_alias():
         alias = FieldAlias("field")
 
     model = MyModel(field="value")
-    assert model.field == model.alias  == "value"
+    assert model.field == model.alias == "value"
     model.field = "other value"
-    assert model.field == model.alias =="other value"
+    assert model.field == model.alias == "other value"
     model.alias = "alias value"
-    assert model.field == model.alias =="alias value"
+    assert model.field == model.alias == "alias value"

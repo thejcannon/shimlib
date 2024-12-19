@@ -5,6 +5,10 @@ from shimbboleth._model.model import ModelMeta
 from shimbboleth._model._visitor import Visitor
 
 
+class ExtrasNotAllowedError(TypeError):
+    pass
+
+
 class _JSONLoader(Visitor[Any]):
     def visit_bool(self, objType: type[bool], *, obj: Any) -> bool:
         if type(obj) is not bool:
@@ -81,24 +85,29 @@ class _JSONLoader(Visitor[Any]):
         if not isinstance(obj, dict):
             raise TypeError
 
+        for field_alias_name, field_alias in objType.__field_aliases__.items():
+            if field_alias_name in obj:
+                obj[field_alias.alias_of] = obj.pop(field_alias_name)
+
         init_fields = {field for field in dataclasses.fields(objType) if field.init}
-        field_names = {field.name for field in init_fields}
-        alias_map = {name: alias.alias_of for name, alias in objType.__field_aliases__.items()}
-
-        for alias, of in alias_map.items():
-            if alias in obj:
-                obj[of] = obj.pop(alias)
-
+        field_names = {
+            field.metadata.get("json_alias", field.name) for field in init_fields
+        }
         init_kwargs = {key: value for key, value in obj.items() if key in field_names}
-        extras = {key: value for key, value in obj.items() if key not in field_names}
 
+        for field in init_fields:
+            json_alias = field.metadata.get("json_alias")
+            if json_alias and json_alias in init_kwargs:
+                init_kwargs[field.name] = init_kwargs.pop(json_alias)
+
+        extras = {key: value for key, value in obj.items() if key not in field_names}
         if extras and not objType.__allow_extra_properties__:
-            raise TypeError  # @TODO: what error?
+            raise ExtrasNotAllowedError
 
         for field in init_fields:
             if field.name in init_kwargs:
                 init_kwargs[field.name] = self.visit_model_field(
-                    field, obj=obj[field.name]
+                    field, obj=init_kwargs[field.name]
                 )
             else:
                 json_default = field.metadata.get("json_default", dataclasses.MISSING)

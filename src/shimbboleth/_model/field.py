@@ -12,7 +12,10 @@ ConverterFuncT: TypeAlias = Callable[[str, Any], dict[str, Any]]
 # @TODO: add "json_alias" (with `with_` and `if`)
 @overload
 def field(
-    *, json_converter: ConverterFuncT | None = None, json_default: Any | None = None
+    *,
+    json_converter: ConverterFuncT | None = None,
+    json_default: Any = dataclasses.MISSING,
+    json_alias: str | None = None,
 ) -> Any: ...
 
 
@@ -22,6 +25,7 @@ def field(
     default: T,
     json_converter: ConverterFuncT | None = None,
     json_default: Any = dataclasses.MISSING,
+    json_alias: str | None = None,
 ) -> T: ...
 
 
@@ -29,6 +33,7 @@ def field(
     *,
     json_converter: ConverterFuncT | None = None,
     json_default: Any = dataclasses.MISSING,
+    json_alias: str | None = None,
     **field_kwargs,
 ) -> Any:
     # @TODO Validate json default matches python default post-conversion?
@@ -37,4 +42,6 @@ def field(
         metadata["json_converter"] = json_converter
     if json_default is not dataclasses.MISSING:
         metadata["json_default"] = json_default
+    if json_alias:
+        metadata["json_alias"] = json_alias
     return dataclasses.field(**field_kwargs, metadata=metadata)
