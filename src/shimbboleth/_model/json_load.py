@@ -9,7 +9,7 @@ class ExtrasNotAllowedError(TypeError):
     pass
 
 
-class _JSONLoader(Visitor[Any]):
+class JSONLoadVisitor(Visitor[Any]):
     def visit_bool(self, objType: type[bool], *, obj: Any) -> bool:
         if type(obj) is not bool:
             raise TypeError
@@ -119,7 +119,3 @@ class _JSONLoader(Visitor[Any]):
             instance._extra = extras
 
         return instance
-
-
-def load(*, objType: type, obj: Any) -> Any:
-    return _JSONLoader().visit(objType, obj=obj)

@@ -3,8 +3,8 @@ from typing import Literal, Annotated, ClassVar
 
 from shimbboleth._model.model import Model
 from shimbboleth._model.field_types import MatchesRegex, NonEmpty
-from shimbboleth._model.json_load import load
 from shimbboleth._model.field import field
+from shimbboleth._model.json_load import JSONLoadVisitor
 from shimbboleth._model.field_alias import FieldAlias
 
 
@@ -29,7 +29,7 @@ def str_to_int(value: str) -> int:
     ],
 )
 def test_simple__paassing(field_type, obj):
-    assert load(objType=field_type, obj=obj) == obj
+    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
 
 
 @pytest.mark.parametrize(
@@ -43,7 +43,7 @@ def test_simple__paassing(field_type, obj):
 )
 def test_simple__invalid(field_type, obj):
     with pytest.raises(TypeError):
-        load(objType=field_type, obj=obj)
+        JSONLoadVisitor().visit(objType=field_type, obj=obj)
 
 
 @pytest.mark.parametrize(
@@ -58,7 +58,7 @@ def test_simple__invalid(field_type, obj):
     ],
 )
 def test_dict(field_type, obj):
-    assert load(objType=field_type, obj=obj) == obj
+    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
 
 
 @pytest.mark.parametrize(
@@ -74,7 +74,7 @@ def test_dict(field_type, obj):
 )
 def test_dict__invalid(field_type, obj):
     with pytest.raises(TypeError):
-        load(objType=field_type, obj=obj)
+        JSONLoadVisitor().visit(objType=field_type, obj=obj)
 
 
 @pytest.mark.parametrize(
@@ -89,7 +89,7 @@ def test_dict__invalid(field_type, obj):
     ],
 )
 def test_list(field_type, obj):
-    assert load(objType=field_type, obj=obj) == obj
+    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
 
 
 @pytest.mark.parametrize(
@@ -106,7 +106,7 @@ def test_list(field_type, obj):
 )
 def test_list__invalid(field_type, obj):
     with pytest.raises(TypeError):
-        load(objType=field_type, obj=obj)
+        JSONLoadVisitor().visit(objType=field_type, obj=obj)
 
 
 @pytest.mark.parametrize(
@@ -123,7 +123,7 @@ def test_list__invalid(field_type, obj):
     ],
 )
 def test_literal(field_type, obj):
-    assert load(objType=field_type, obj=obj) == obj
+    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
 
 
 @pytest.mark.parametrize(
@@ -139,7 +139,7 @@ def test_literal(field_type, obj):
 )
 def test_literal__invalid(field_type, obj):
     with pytest.raises(TypeError):
-        load(objType=field_type, obj=obj)
+        JSONLoadVisitor().visit(objType=field_type, obj=obj)
 
 
 @pytest.mark.parametrize(
@@ -154,7 +154,7 @@ def test_literal__invalid(field_type, obj):
     ],
 )
 def test_union(field_type, obj):
-    assert load(objType=field_type, obj=obj) == obj
+    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
 
 
 @pytest.mark.parametrize(
@@ -170,7 +170,7 @@ def test_union(field_type, obj):
 )
 def test_union__invalid(field_type, obj):
     with pytest.raises(TypeError):
-        load(objType=field_type, obj=obj)
+        JSONLoadVisitor().visit(objType=field_type, obj=obj)
 
 
 @pytest.mark.parametrize(
@@ -183,7 +183,7 @@ def test_union__invalid(field_type, obj):
     ],
 )
 def test_annotated(field_type, obj):
-    assert load(objType=field_type, obj=obj) == obj
+    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
 
 
 @pytest.mark.parametrize(
@@ -249,7 +249,7 @@ def test_annotated(field_type, obj):
     ],
 )
 def test_model(model_def, obj, expected):
-    assert load(objType=model_def, obj=obj) == model_def(**expected)
+    assert model_def.model_load(obj) == model_def(**expected)
 
 
 @pytest.mark.parametrize(
@@ -291,14 +291,14 @@ def test_model(model_def, obj, expected):
 )
 def test_model__invalid(model_def, obj):
     with pytest.raises(TypeError):
-        load(objType=model_def, obj=obj)
+        model_def.load(obj=obj)
 
 
 def test_model__extras():
     class MyModel(Model, extra=True):
         pass
 
-    instance = load(objType=MyModel, obj={"field": "value"})
+    instance = MyModel.model_load({"field": "value"})
     assert instance._extra["field"] == "value"
 
 
@@ -312,7 +312,7 @@ def test_field_alias():
         field: str
         alias: ClassVar = FieldAlias("field")
 
-    instance = load(objType=MyModel, obj={"alias": "value"})
+    instance = MyModel.model_load({"alias": "value"})
     assert instance.field == "value"
 
 
@@ -320,7 +320,7 @@ def test_json_alias():
     class MyModel(Model):
         if_condition: str = field(json_alias="if")
 
-    assert load(objType=MyModel, obj={"if": "value"}).if_condition == "value"
+    assert MyModel.model_load({"if": "value"}).if_condition == "value"
 
     with pytest.raises(TypeError):
-        load(objType=MyModel, obj={"if_condition": "value"})
+        MyModel.model_load({"if_condition": "value"})
