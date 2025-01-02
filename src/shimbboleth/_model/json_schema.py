@@ -89,6 +89,8 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
             field_schema["default"] = field.metadata["json_default"]
         elif field.default is not dataclasses.MISSING:
             field_schema["default"] = field.default
+        elif field.default_factory is not dataclasses.MISSING:
+            field_schema["default"] = field.default_factory()
         return field_schema
 
     def visit_field_alias(
@@ -112,7 +114,7 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
                 "required": [
                     field.name
                     for field in fields
-                    if field.default is dataclasses.MISSING
+                    if (field.default is dataclasses.MISSING and field.default_factory is dataclasses.MISSING)
                 ],
                 "additionalProperties": objType.__allow_extra_properties__,
             }

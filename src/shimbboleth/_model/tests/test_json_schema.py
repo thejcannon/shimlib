@@ -231,6 +231,15 @@ def test_model__extra(model_def, expected):
             ),
             None,
         ),
+        (
+            make_model(
+                {
+                    "__annotations__": {"field": int},
+                    "field": field(default_factory=list),
+                },
+            ),
+            [],
+        ),
     ],
 )
 def test_model__default(model_def, expected):
@@ -238,6 +247,7 @@ def test_model__default(model_def, expected):
     schema = model_def.model_json_schema
     assert "field" not in schema["required"]
     assert schema["properties"]["field"]["default"] == expected, schema
+
 
 
 @pytest.mark.parametrize(
