@@ -1,70 +1,68 @@
 from typing import Literal, ClassVar
 
-from pydantic import BaseModel, Field
 
-from ._alias import FieldAlias
+from shimbboleth._model import field, FieldAlias, Model
+
 from ._base import BKStepBase
 from ._types import (
-    BranchesT,
-    EnvT,
-    LabelT,
-    LooseBoolT,
-    SkipT,
+    bool_from_json,
+    env_from_json,
+    list_str_from_json,
 )
 
 
-class TriggeredBuild(BaseModel, extra="forbid"):
+class TriggeredBuild(Model, extra=False):
     """Properties of the build that will be created when the step is triggered"""
 
-    branch: str = Field(
-        "master",
-        description="The branch for the build",
-        examples=["master", "feature/xyz"],
-    )
-    commit: str = Field(
-        "HEAD",
-        description="The commit hash for the build",
-        examples=["HEAD", "b5fb108"],
-    )
-    env: EnvT | None = None
-    message: str = Field(
-        "The label of the trigger step",
-        description="The message for the build (supports emoji)",
-        examples=["Deployment 123 :rocket:"],
-    )
-    meta_data: dict | None = Field(
-        default=None,
-        description="Meta-data for the build",
-        examples=[{"server": "i-b244e37160c"}],
-    )
+    # @TODO: Default is the pipeline's default branch
+    branch: str | None = None
+    """The branch for the build"""
+
+    commit: str = "HEAD"
+    """The commit hash for the build"""
+
+    env: dict[str, str] = field(default_factory=dict, json_converter=env_from_json)
+    """Environment variables for this step"""
+
+    # @TODO: The default is the label of the trigger step
+    message: str | None = None
+    """The message for the build (supports emoji)"""
+
+    meta_data: dict | None = None
+    """Meta-data for the build"""
 
 
-class TriggerStep(BKStepBase, extra="forbid"):
+class TriggerStep(BKStepBase, extra=False):
     """
     A trigger step creates a build on another pipeline.
 
     https://buildkite.com/docs/pipelines/trigger-step
     """
 
-    trigger: str = Field(description="The slug of the pipeline to create a build")
+    trigger: str
+    """The slug of the pipeline to create a build"""
 
-    is_async: LooseBoolT = Field(
-        default=False,
-        description="Whether to continue the build without waiting for the triggered step to complete",
-        alias="async",
+    is_async: bool = field(
+        default=False, json_alias="async", json_converter=bool_from_json
     )
-    branches: BranchesT | None = None
+    """Whether to continue the build without waiting for the triggered step to complete"""
+
+    branches: list[str] = field(default_factory=list, json_converter=list_str_from_json)
+    """Which branches will include this step in their builds"""
+
     build: TriggeredBuild | None = None
-    skip: SkipT | None = None
-    soft_fail: LooseBoolT | None = Field(
-        default=False,
-        description="The conditions for marking the step as a soft-fail.",
-    )
-    label: LabelT | None = Field(default=None)
-    type: Literal["trigger"] | None = None
+    """Attributes for the triggered build"""
+
+    # NB: Passing an empty string is equivalent to false.
+    skip: str | bool = False
+    """Whether to skip this step or not. Passing a string provides a reason for skipping this command."""
+
+    soft_fail: bool = field(default=False, json_converter=bool_from_json)
+    """The conditions for marking the step as a soft-fail."""
+
+    label: str | None = None
+    "The label that will be displayed in the pipeline visualisation in Buildkite. Supports emoji."
+
+    type: Literal["trigger"] = "trigger"
 
     name: ClassVar = FieldAlias("label", mode="prepend")
-
-
-class NestedTriggerStep(BaseModel, extra="forbid"):
-    trigger: TriggerStep | None = None

@@ -1,54 +1,30 @@
-from typing import ClassVar, Literal, Annotated
-from typing_extensions import TypeAliasType
+from typing import ClassVar, Literal
 
-from pydantic import Field
 
-from shimbboleth.buildkite.pipeline_config._types import LooseBoolT
+from shimbboleth._model import FieldAlias, field
 
-from ._types import BranchesT
+from ._types import list_str_from_json, bool_from_json
 from ._base import BKStepBase
-from ._alias import FieldAlias, FieldAliasSupport
 
 
-class WaitStep(BKStepBase, extra="forbid"):
+class WaitStep(BKStepBase, extra=False):
     """
     A wait step waits for all previous steps to have successfully completed before allowing following jobs to continue.
 
     https://buildkite.com/docs/pipelines/wait-step
     """
 
-    branches: BranchesT | None = None
-    continue_on_failure: LooseBoolT | None = Field(
-        default=False,
-        description="Continue to the next steps, even if the previous group of steps fail",
-    )
-    wait: str | None = Field(
-        default=None,
-        description="Waits for previous steps to pass before continuing",
-    )
-    type: Literal["wait", "waiter"] | None = None
+    branches: list[str] = field(default_factory=list, json_converter=list_str_from_json)
+    """Which branches will include this step in their builds"""
+
+    continue_on_failure: bool = field(default=False, json_convert=bool_from_json)
+    """Continue to the next steps, even if the previous group of steps fail"""
+
+    wait: str | None = None
+    """Waits for previous steps to pass before continuing"""
+
+    type: Literal["wait", "waiter"] = "wait"
 
     # (NB: These are somewhat meaningless, since they never appear in the UI)
     label: ClassVar = FieldAlias("wait", mode="prepend")
     name: ClassVar = FieldAlias("wait", mode="prepend")
-
-
-class NestedWaitStep(FieldAliasSupport, extra="forbid"):
-    wait: WaitStep | None = Field(
-        default=None,
-        description="Waits for previous steps to pass before continuing",
-    )
-
-    # @TODO: If both are given it gets mad about `waiter`.
-    # But this actually looks like the discriminator
-    # is choosing `WaitStep` over `NestedWaitStep`.
-    waiter: ClassVar = FieldAlias("wait")
-
-
-StringWaitStep = TypeAliasType(
-    "StringWaitStep",
-    Annotated[
-        Literal["wait", "waiter"],
-        Field(description="Waits for previous steps to pass before continuing"),
-    ],
-)

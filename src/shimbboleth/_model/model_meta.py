@@ -1,13 +1,14 @@
 from typing import dataclass_transform, Any, ClassVar
 import dataclasses
 
+from shimbboleth._model.field import field
 from shimbboleth._model.field_alias import FieldAlias
 
 # NB: This is just a heirarchical Model helper, with kw_only=True and slots=True.
 #   (@TODO: Ideally we ensure none of the other nonsense is there? But also meh?)
 
 
-@dataclass_transform(kw_only_default=True, field_specifiers=(dataclasses.field,))
+@dataclass_transform(kw_only_default=True, field_specifiers=(dataclasses.field, field))
 class ModelMeta(type):
     __allow_extra_properties__: bool
     __field_aliases__: dict[str, FieldAlias]

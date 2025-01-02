@@ -1,5 +1,6 @@
 import pytest
 from typing import Annotated
+from typing_extensions import TypeAliasType
 
 from shimbboleth._model.model import Model
 from shimbboleth._model.field_types import MatchesRegex, NonEmpty
@@ -87,6 +88,17 @@ def test_list(field_type, obj):
     ],
 )
 def test_list__invalid(field_type, obj):
+    with pytest.raises(ValidationError):
+        ValidationVisitor().visit(objType=field_type, obj=obj)
+
+
+@pytest.mark.parametrize(
+    ("field_type", "obj"),
+    [
+        (TypeAliasType("TAT", Annotated[list, NonEmpty]), []),
+    ],
+)
+def test_type_alias_types__invalid(field_type, obj):
     with pytest.raises(ValidationError):
         ValidationVisitor().visit(objType=field_type, obj=obj)
 

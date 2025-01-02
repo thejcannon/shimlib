@@ -2,6 +2,7 @@ from types import UnionType, GenericAlias
 import dataclasses
 from typing import Any
 from shimbboleth._model.model import ModelMeta
+from typing_extensions import TypeAliasType
 from shimbboleth._model.field_types import (
     Description,
     Examples,
@@ -45,6 +46,9 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
     def visit_union_type(self, objType: UnionType) -> dict[str, Any]:
         return {"oneOf": [self.visit(argT) for argT in objType.__args__]}
 
+    def visit_literal(self, objType: type) -> dict[str, Any]:
+        return {"enum": list(objType.__args__)}
+
     def visit_annotated(self, objType: type) -> dict[str, Any]:
         ret = self.visit(objType.__origin__)
         for annotation in objType.__metadata__:
@@ -61,8 +65,12 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
                 raise TypeError(f"Unsupported annotation: {annotation}")
         return ret
 
-    def visit_literal(self, objType: type) -> dict[str, Any]:
-        return {"enum": list(objType.__args__)}
+    def visit_type_alias_type(self, objType: TypeAliasType) -> dict[str, Any]:
+        if objType.__name__ not in self.model_defs:
+            schema = self.visit(objType.__value__)
+            self.model_defs[objType.__name__] = schema
+
+        return {"$ref": f"#/$defs/{objType.__name__}"}
 
     def _get_field_type_schema(self, field: dataclasses.Field) -> dict[str, Any]:
         json_converter = field.metadata.get("json_converter", None)

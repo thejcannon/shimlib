@@ -1,107 +1,56 @@
 # @TODO: Validate limits? https://buildkite.com/docs/pipelines/configure/workflows/build-matrix#matrix-limits
+# @TODO: Should adjustment classes be inner classes?
 
-from typing import Annotated
-from typing_extensions import TypeAliasType
+from typing import TypeAlias
 
-
-from pydantic import (
-    BaseModel,
-    Field,
-)
-
-from shimbboleth.buildkite.pipeline_config._types import SoftFailT, SkipT
+from shimbboleth._model import Model, field
+from ._types import ExitStatus
 
 
-MatrixElementT = TypeAliasType("MatrixElementT", str | int | bool)
-SimpleMatrixT = Annotated[
-    list[MatrixElementT],
-    Field(
-        description="List of elements for simple single-dimension Build Matrix",
-        examples=[["linux", "freebsd"]],
-    ),
-]
+MatrixElementT: TypeAlias = str | int | bool
+MatrixArray: TypeAlias = list[MatrixElementT]
 
 
-class SingleDimensionMatrixAdjustment(BaseModel, extra="forbid"):
-    """An adjustment to a single-dimension Build Matrix"""
+class _AdjustmentBase(Model):
+    # NB: Passing an empty string is equivalent to false.
+    skip: str | bool = False
+    """Whether to skip this step or not. Passing a string provides a reason for skipping this command."""
 
-    with_value: Annotated[
-        str,
-        Field(
-            description="An existing or new element for single-dimension Build Matrix"
-        ),
-    ] = Field(alias="with")
-
-    skip: SkipT | None = None
-    soft_fail: SoftFailT = Field(default=[])
+    # @TODO: JSON Converter
+    soft_fail: list[ExitStatus] = field(default_factory=list)
+    """Allow specified non-zero exit statuses not to fail the build."""
 
 
-class SingleDimensionMatrix(BaseModel, extra="forbid"):
-    """Configuration for single-dimension Build Matrix"""
+class ScalarAdjustment(_AdjustmentBase, Model, extra=False):
+    """An adjustment to a Build Matrix scalar element (e.g. single-dimension matrix)."""
 
-    setup: Annotated[
-        list[MatrixElementT],
-        Field(
-            description="List of elements for single-dimension Build Matrix",
-            examples=[["linux", "freebsd"]],
-        ),
-    ]
+    with_value: str = field(json_alias="with")
+    """An existing (or new) element to adjust"""
 
-    adjustments: list[SingleDimensionMatrixAdjustment] | None = Field(
-        default=None, description="List of single-dimension Build Matrix adjustments"
-    )
+    # NB: other fields from base
 
 
-class MultiDimensionMatrixAdjustment(BaseModel, extra="forbid"):
+class SingleDimensionMatrix(Model, extra=False):
+    """Configuration for single-dimension Build Matrix (e.g. list of elements/adjustments)."""
+
+    setup: list[MatrixElementT]
+
+    adjustments: list[ScalarAdjustment] | None = None
+
+
+class MultiDimensionMatrixAdjustment(_AdjustmentBase, Model):
     """An adjustment to a multi-dimension Build Matrix"""
 
-    with_value: Annotated[
-        dict[
-            Annotated[
-                str,
-                Field(
-                    description="Build Matrix dimension name",
-                    pattern="^[a-zA-Z0-9_]+$",
-                ),
-            ],
-            Annotated[
-                MatrixElementT,
-                Field(description="Build Matrix dimension element"),
-            ],
-        ],
-        Field(
-            description="Specification of a new or existing Build Matrix combination",
-            examples=[{"os": "linux", "arch": "arm64"}],
-        ),
-    ] = Field(alias="with")
+    with_value: dict[str, list[MatrixElementT]] = field(alias="with")
+    """Specification of a new or existing Build Matrix combination"""
 
-    skip: SkipT | None = None
-    soft_fail: SoftFailT = Field(default=[])
+    # NB: other fields from base
 
 
-class MultiDimensionMatrix(BaseModel, extra="forbid"):
-    """Configuration for multi-dimension Build Matrix"""
+class MultiDimensionMatrix(Model, extra=False):
+    """Configuration for multi-dimension Build Matrix (e.g. map of elements/adjustments)."""
 
-    setup: Annotated[
-        dict[
-            Annotated[
-                str,
-                Field(
-                    description="Build Matrix dimension name",
-                    pattern="^[a-zA-Z0-9_]+$",
-                ),
-            ],
-            Annotated[
-                list[MatrixElementT],
-                Field(description="List of elements for this Build Matrix dimension"),
-            ],
-        ],
-        Field(
-            description="Mapping of Build Matrix dimension names to their lists of elements",
-            examples=[{"arch": ["arm64", "riscv"], "os": ["linux", "freebsd"]}],
-        ),
-    ]
+    setup: dict[str, list[MatrixElementT]]
+    """Maps dimension names to a lists of elements"""
 
-    adjustments: list[MultiDimensionMatrixAdjustment] | None = Field(
-        default=None, description="List of multi-dimension Build Matrix adjustments"
-    )
+    adjustments: list[MultiDimensionMatrixAdjustment] | None = None

@@ -2,6 +2,7 @@ from types import UnionType, GenericAlias
 import dataclasses
 from typing import Any
 from shimbboleth._model.model import ModelMeta
+from typing_extensions import TypeAliasType
 from shimbboleth._model._visitor import Visitor
 
 
@@ -53,10 +54,6 @@ class JSONLoadVisitor(Visitor[Any]):
                 continue
         raise TypeError
 
-    def visit_annotated(self, objType: type, *, obj: Any) -> Any:
-        baseType = objType.__origin__
-        return self.visit(baseType, obj=obj)
-
     def visit_literal(self, objType: type, *, obj: Any) -> Any:
         for possibility in objType.__args__:
             if (
@@ -67,6 +64,13 @@ class JSONLoadVisitor(Visitor[Any]):
                 if obj == possibility:
                     return obj
         raise TypeError
+
+    def visit_annotated(self, objType: type, *, obj: Any) -> Any:
+        baseType = objType.__origin__
+        return self.visit(baseType, obj=obj)
+
+    def visit_type_alias_type(self, field: TypeAliasType, *, obj: Any) -> Any:
+        return self.visit(field.__value__, obj=obj)
 
     def visit_model_field(self, field: dataclasses.Field, *, obj: Any) -> Any:
         expected_type = field.type

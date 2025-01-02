@@ -8,6 +8,7 @@ from typing import (
     Concatenate,
     Any,
 )
+from typing_extensions import TypeAliasType
 from types import UnionType, GenericAlias
 from shimbboleth._model.model_meta import ModelMeta
 
@@ -29,8 +30,9 @@ class Visitor(Protocol, Generic[RetT]):
     visit_list: Callable[Concatenate["Visitor", GenericAlias, ...], RetT]
     visit_dict: Callable[Concatenate["Visitor", GenericAlias, ...], RetT]
     visit_union_type: Callable[Concatenate["Visitor", UnionType, ...], RetT]
-    visit_annotated: Callable[Concatenate["Visitor", type, ...], RetT]
     visit_literal: Callable[Concatenate["Visitor", type, ...], RetT]
+    visit_annotated: Callable[Concatenate["Visitor", type, ...], RetT]
+    visit_type_alias_type: Callable[Concatenate["Visitor", TypeAliasType, ...], RetT]
     visit_model: Callable[Concatenate["Visitor", ModelMeta, ...], RetT]
 
     def visit(self, objType: Any, **kwargs) -> RetT:
@@ -59,6 +61,8 @@ class Visitor(Protocol, Generic[RetT]):
             return self.visit_literal(objType, **kwargs)
         if isinstance(objType, _AnnotationType):
             return self.visit_annotated(objType, **kwargs)
+        if isinstance(objType, TypeAliasType):
+            return self.visit_type_alias_type(objType, **kwargs)
         if isinstance(objType, ModelMeta):
             return self.visit_model(objType, **kwargs)
 

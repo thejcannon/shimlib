@@ -23,3 +23,18 @@ class MatchesRegex:
 
     def __init__(self, regex: str):
         object.__setattr__(self, "regex", re.compile(regex))
+
+
+@dataclass(frozen=True, slots=True)
+class Ge:
+    bound: int
+
+
+@dataclass(frozen=True, slots=True)
+class Le:
+    bound: int
+
+
+# TODO: Instead of `Annotated[..., NonEmpty]`, what about 'NonEmptyList' and 'NonEmptyString'?
+
+# @TODO: add `Not[]`, UUID, Pattern

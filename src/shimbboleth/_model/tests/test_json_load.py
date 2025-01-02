@@ -1,5 +1,6 @@
 import pytest
 from typing import Literal, Annotated, ClassVar
+from typing_extensions import TypeAliasType
 
 from shimbboleth._model.model import Model
 from shimbboleth._model.field_types import MatchesRegex, NonEmpty
@@ -177,12 +178,20 @@ def test_union__invalid(field_type, obj):
     ("field_type", "obj"),
     [
         (Annotated[str, MatchesRegex(r"^.*$")], ""),
-        (Annotated[str, MatchesRegex(r"^.*$")], "a"),
-        (Annotated[str, MatchesRegex(r"^a{4}$")], "aaaa"),
-        (Annotated[str, MatchesRegex(r"^a{4}$"), NonEmpty], "aaaa"),
     ],
 )
 def test_annotated(field_type, obj):
+    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
+
+
+@pytest.mark.parametrize(
+    ("field_type", "obj"),
+    [
+        (TypeAliasType("TAT", int), 0),
+        (TypeAliasType("TAT", list[str]), [""]),
+    ],
+)
+def test_type_alias_type(field_type, obj):
     assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
 
 
@@ -291,7 +300,7 @@ def test_model(model_def, obj, expected):
 )
 def test_model__invalid(model_def, obj):
     with pytest.raises(TypeError):
-        model_def.load(obj=obj)
+        model_def.model_load(obj=obj)
 
 
 def test_model__extras():

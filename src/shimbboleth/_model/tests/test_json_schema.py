@@ -9,6 +9,7 @@ from shimbboleth._model.field_types import (
 from shimbboleth._model.field import field
 from shimbboleth._model.field_alias import FieldAlias
 from typing import Annotated, Literal, ClassVar
+from typing_extensions import TypeAliasType
 
 import pytest
 
@@ -128,6 +129,12 @@ def test_literal(field_type, expected):
 def test_annotated(field_type, expected):
     """Ensure that `Annotated` types are handled correctly."""
     assert JSONSchemaVisitor().visit(field_type) == expected
+
+
+def test_type_alias_type():
+    visitor = JSONSchemaVisitor()
+    assert visitor.visit(TypeAliasType("TAT", int)) == {"$ref": "#/$defs/TAT"}
+    assert visitor.model_defs == {"TAT": {"type": "integer"}}
 
 
 @pytest.mark.parametrize(

@@ -1,70 +1,57 @@
-from ._types import IfT, LooseBoolT
-from ._alias import FieldAlias, FieldAliasSupport
-from typing_extensions import TypeAliasType
+from shimbboleth._model import Model, field, FieldAlias
+from ._types import bool_from_json
 from uuid import UUID
-from pydantic import Field, AfterValidator, BaseModel
-from pydantic_core import PydanticCustomError
-from typing import Annotated, ClassVar
+from typing import ClassVar
 
 
-def _not_a_uuid(value: str) -> str:
+# @TODO: Belongs in _model validation
+def _ensure_not_uuid(value: str) -> str:
     try:
         UUID(value)
     except ValueError:
         return value
     else:
-        raise PydanticCustomError("not_uuid_error", "Value must not be a valid UUID")
+        raise ValueError("not_uuid_error", "Value must not be a valid UUID")
 
 
-KeyT = TypeAliasType(
-    "KeyT",
-    Annotated[
-        str,
-        Field(
-            description="A unique identifier for a step, must not resemble a UUID",
-            examples=["deploy-staging", "test-integration"],
-            json_schema_extra={
-                "not": {
-                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-                }
-            },
-        ),
-        AfterValidator(_not_a_uuid),
-    ],
-)
-
-AllowDependencyFailureT = TypeAliasType(
-    "AllowDependencyFailureT",
-    Annotated[
-        LooseBoolT,
-        Field(
-            default=False,
-            description="Whether to proceed with this step and further steps if a step named in the depends_on attribute fails",
-        ),
-    ],
-)
-
-
-class DependsOnDependency(BaseModel, extra="forbid"):
-    allow_failure: LooseBoolT | None = False
+class Dependency(Model, extra=False):
+    allow_failure: bool = field(default=False, json_converter=bool_from_json)
     step: str | None = None
 
 
-DependsOnT = TypeAliasType(
-    "DependsOnT",
-    # @TODO: Canonicalize
-    Annotated[
-        None | str | list[str | DependsOnDependency],
-        Field(description="The step keys for a step to depend on"),
-    ],
-)
+class BKStepBase(Model):
+    # @TODO: Annotate `Not[UUID]`
+    key: str | None = field(default=None)
+    """A unique identifier for a step, must not resemble a UUID"""
 
+    allow_dependency_failure: bool = field(default=False, json_converter=bool_from_json)
+    """Whether to proceed with this step and further steps if a step named in the depends_on attribute fails"""
 
-class BKStepBase(FieldAliasSupport):
-    key: KeyT | None = Field(default=None)
-    allow_dependency_failure: AllowDependencyFailureT = False
-    depends_on: DependsOnT | None = None
-    if_condition: IfT | None = Field(default=None, alias="if")
+    # @TODO: Use converter to allow a `str` or even `list[str]` here
+    depends_on: list[Dependency] = field(default_factory=list)
+    """The step keys for a step to depend on"""
 
-    id: ClassVar[FieldAlias] = FieldAlias("key", deprecated=True)
-    identifier: ClassVar[FieldAlias] = FieldAlias("key")
+    # @TEST: Is an empty string considered a skip?
+    if_condition: str | None = field(default=None, json_alias="if")
+    """A boolean expression that omits the step when false"""
+
+    id: ClassVar = FieldAlias("key", deprecated=True)
+    identifier: ClassVar = FieldAlias("key")
+
+    # @TODO Remove `type` fields, and move them solely to the JSON
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.key:
+            _ensure_not_uuid(self.key)
+
+    @Model._json_converter_(depends_on)
+    @classmethod
+    def _convert_depends_on(
+        cls, value: str | list[str | Dependency]
+    ) -> list[Dependency]:
+        if isinstance(value, str):
+            return [Dependency(step=value)]
+        return [
+            Dependency(step=elem) if isinstance(elem, str) else elem for elem in value
+        ]

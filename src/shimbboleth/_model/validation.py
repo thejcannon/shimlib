@@ -1,6 +1,7 @@
 from types import UnionType, GenericAlias
 import dataclasses
 from typing import Any
+from typing_extensions import TypeAliasType
 from shimbboleth._model.field_types import (
     MatchesRegex,
     NonEmpty,
@@ -42,6 +43,9 @@ class ValidationVisitor(Visitor[None]):
         # @TODO: We might want to validate UnionType, but that's pretty hard
         pass
 
+    def visit_literal(self, objType: type, *, obj: Any) -> None:
+        pass
+
     def visit_annotated(self, objType: type, *, obj: Any) -> None:
         for annotation in objType.__metadata__:
             if isinstance(annotation, MatchesRegex) and not annotation.regex.match(obj):
@@ -50,8 +54,8 @@ class ValidationVisitor(Visitor[None]):
                 raise ValidationError
         self.visit(objType=objType.__origin__, obj=obj)
 
-    def visit_literal(self, objType: type, *, obj: Any) -> None:
-        pass
+    def visit_type_alias_type(self, objType: TypeAliasType, *, obj: Any) -> None:
+        self.visit(objType=objType.__value__, obj=obj)
 
     def visit_model(self, objType: "ModelMeta", *, obj: Any) -> None:
         fields = dataclasses.fields(objType)

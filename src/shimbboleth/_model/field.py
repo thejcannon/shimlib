@@ -1,37 +1,33 @@
-from typing import Callable, TypeAlias, Any, TypeVar, overload
+from typing import Callable, Any, TypeVar, overload
 import dataclasses
 
 T = TypeVar("T")
-
-# @TODO: `Any` is lame, but its the data
-ConverterFuncT: TypeAlias = Callable[[str, Any], dict[str, Any]]
-
-# @TODO: Recursive JSON type Alias?
-
-
-# @TODO: add "json_alias" (with `with_` and `if`)
-@overload
-def field(
-    *,
-    json_converter: ConverterFuncT | None = None,
-    json_default: Any = dataclasses.MISSING,
-    json_alias: str | None = None,
-) -> Any: ...
 
 
 @overload
 def field(
     *,
     default: T,
-    json_converter: ConverterFuncT | None = None,
+    json_converter: Callable | None = None,
     json_default: Any = dataclasses.MISSING,
     json_alias: str | None = None,
+    **field_kwargs,
 ) -> T: ...
+
+
+@overload
+def field(
+    *,
+    json_converter: Callable | None = None,
+    json_default: Any = dataclasses.MISSING,
+    json_alias: str | None = None,
+    **field_kwargs,
+) -> Any: ...
 
 
 def field(
     *,
-    json_converter: ConverterFuncT | None = None,
+    json_converter: Callable | None = None,
     json_default: Any = dataclasses.MISSING,
     json_alias: str | None = None,
     **field_kwargs,
