@@ -1,17 +1,13 @@
 steps:
-  - type: trigger
-    trigger: trigger
+  - type: command
     branches: branch
-  - type: trigger
-    trigger: trigger
+  - type: command
     branches:
       - branch1
       - branch2
 ---
 steps:
-  - type: trigger
-    trigger: trigger
+  - type: command
     branches: [branch]
-  - type: trigger
-    trigger: trigger
+  - type: command
     branches: [branch1, branch2]

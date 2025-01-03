@@ -3,7 +3,3 @@ steps:
 ---
 steps:
   - type: input
----
-steps:
-  - type: manual
-    label: ~
