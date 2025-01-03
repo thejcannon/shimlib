@@ -65,4 +65,4 @@ class TriggerStep(StepBase, extra=False):
 
     type: Literal["trigger"] = "trigger"
 
-    name: ClassVar = FieldAlias("label", mode="prepend")
+    name: ClassVar = FieldAlias("label", json_mode="prepend")

@@ -17,5 +17,5 @@ class InputStep(ManualStepBase, extra=False):
 
     type: Literal["input"] = "input"
 
-    label: ClassVar = FieldAlias("input", mode="prepend")
-    name: ClassVar = FieldAlias("input", mode="prepend")
+    label: ClassVar = FieldAlias("input", json_mode="prepend")
+    name: ClassVar = FieldAlias("input", json_mode="prepend")

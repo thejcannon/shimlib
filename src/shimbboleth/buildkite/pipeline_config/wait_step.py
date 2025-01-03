@@ -26,5 +26,5 @@ class WaitStep(StepBase, extra=False):
     type: Literal["wait", "waiter"] = "wait"
 
     # (NB: These are somewhat meaningless, since they never appear in the UI)
-    label: ClassVar = FieldAlias("wait", mode="prepend")
-    name: ClassVar = FieldAlias("wait", mode="prepend")
+    label: ClassVar = FieldAlias("wait", json_mode="prepend")
+    name: ClassVar = FieldAlias("wait", json_mode="prepend")

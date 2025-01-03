@@ -42,8 +42,8 @@ class GroupStep(StepBase, extra=False):
     ] = field()
     """A list of steps"""
 
-    name: ClassVar = FieldAlias("group", mode="append")
-    label: ClassVar = FieldAlias("group", mode="append")
+    name: ClassVar = FieldAlias("group", json_mode="append")
+    label: ClassVar = FieldAlias("group", json_mode="append")
 
     @Model._json_converter_(steps)
     @staticmethod

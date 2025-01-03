@@ -12,10 +12,10 @@ import dataclasses
 from typing import Literal
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(slots=True, frozen=True)
 class FieldAlias:
     alias_of: str
-    mode: Literal["prepend", "append"] = "append"
+    json_mode: Literal["prepend", "append"] = "append"
     deprecated: bool = False
 
     def __get__(self, obj, objtype=None):

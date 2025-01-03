@@ -186,7 +186,7 @@ class CommandStep(StepBase, extra=False):
 
     type: Literal["script", "command", "commands"] = "command"
 
-    name: ClassVar = FieldAlias("label", mode="prepend")
+    name: ClassVar = FieldAlias("label", json_mode="prepend")
     commands: ClassVar = FieldAlias("command")
 
     # @model_validator(mode="before")

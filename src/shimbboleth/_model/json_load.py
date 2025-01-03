@@ -99,7 +99,9 @@ class JSONLoadVisitor(Visitor[Any]):
                 if local_obj is obj:
                     local_obj = obj.copy()
 
-                local_obj[field_alias.alias_of] = local_obj.pop(field_alias_name)
+                value = local_obj.pop(field_alias_name)
+                if field_alias.json_mode == "prepend" or local_obj.get(field_alias.alias_of) is None:
+                    local_obj[field_alias.alias_of] = value
 
         init_fields = {field for field in dataclasses.fields(objType) if field.init}
         field_names = {

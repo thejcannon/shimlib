@@ -22,5 +22,5 @@ class BlockStep(ManualStepBase, extra=False):
 
     type: Literal["block", "manual"] = "block"
 
-    label: ClassVar = FieldAlias("block", mode="prepend")
-    name: ClassVar = FieldAlias("block", mode="prepend")
+    label: ClassVar = FieldAlias("block", json_mode="prepend")
+    name: ClassVar = FieldAlias("block", json_mode="prepend")
