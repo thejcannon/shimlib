@@ -75,12 +75,6 @@ class SelectInput(Model, extra=False):
     """The text input name"""
 
 
-def input_from_json(
-    value: list[TextInput | SelectInput],
-) -> list[TextInput | SelectInput]:
-    return []
-
-
 class ManualStepBase(StepBase, extra=False):
     """
     (The base of both Input and Block steps)
@@ -89,10 +83,13 @@ class ManualStepBase(StepBase, extra=False):
     branches: list[str] = field(default_factory=list, json_converter=list_str_from_json)
     """Which branches will include this step in their builds"""
 
-    fields: list[TextInput | SelectInput] = field(
-        default_factory=list, json_converter=input_from_json
-    )
+    fields: list[TextInput | SelectInput] = field(default_factory=list)
     """A list of input fields required to be filled out before unblocking the step"""
 
     prompt: str | None = None
     """The instructional message displayed in the dialog box when the unblock step is activated"""
+
+    @Model._json_converter_(fields)
+    @staticmethod
+    def _fields_from_json(value: list[dict[str, str]]) -> list[TextInput | SelectInput]:
+        return []

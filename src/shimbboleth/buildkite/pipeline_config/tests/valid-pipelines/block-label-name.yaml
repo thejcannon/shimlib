@@ -1,0 +1,28 @@
+steps:
+  - block: block
+  - block: block
+    label: label
+  - type: block
+    label: label
+  - block: block
+    name: name
+  - label: label
+    name: name
+    type: block
+  - block: block
+    label: label
+    name: name
+---
+steps:
+  - type: block
+    block: block
+  - type: block
+    block: label
+  - type: block
+    block: label
+  - type: block
+    block: name
+  - type: block
+    block: name
+  - type: block
+    block: name

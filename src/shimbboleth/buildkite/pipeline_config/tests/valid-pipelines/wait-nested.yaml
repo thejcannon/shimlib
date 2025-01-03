@@ -1,11 +1,9 @@
 steps:
+  - wait:
+      wait: ~
   - waiter:
       wait: ~
 ---
-# shimbboleth
 steps:
   - type: wait
----
-# upstream
-steps:
-  - type: waiter
+  - type: wait

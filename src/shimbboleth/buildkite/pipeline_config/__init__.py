@@ -52,7 +52,7 @@ class BuildkitePipeline(Model, extra=True):
 
     @Model._json_converter_(steps)
     @staticmethod
-    def __steps__from_json(
+    def _steps__from_json(
         value: list[
             BlockStep
             | InputStep

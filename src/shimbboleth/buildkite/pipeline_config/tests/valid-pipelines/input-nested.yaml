@@ -1,0 +1,6 @@
+steps:
+  - input:
+      input: ~
+---
+steps:
+  - type: input

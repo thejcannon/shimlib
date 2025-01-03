@@ -1,0 +1,13 @@
+steps:
+  - type: block
+    branches: branch
+  - type: block
+    branches:
+      - branch1
+      - branch2
+---
+steps:
+  - type: block
+    branches: [branch]
+  - type: block
+    branches: [branch1, branch2]

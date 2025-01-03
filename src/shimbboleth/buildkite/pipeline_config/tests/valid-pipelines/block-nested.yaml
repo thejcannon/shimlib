@@ -1,0 +1,9 @@
+steps:
+  - block:
+      block: ~
+  - manual:
+      block: ~
+---
+steps:
+  - type: block
+  - type: block

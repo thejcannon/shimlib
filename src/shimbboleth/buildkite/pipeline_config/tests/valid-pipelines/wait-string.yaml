@@ -1,0 +1,7 @@
+steps:
+  - wait
+  - waiter
+---
+steps:
+  - type: wait
+  - type: wait

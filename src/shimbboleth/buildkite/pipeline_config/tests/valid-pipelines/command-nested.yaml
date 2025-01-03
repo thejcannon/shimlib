@@ -1,0 +1,12 @@
+steps:
+  - command:
+      type: command
+  - commands:
+      type: command
+  - script:
+      type: command
+---
+steps:
+  - type: command
+  - type: command
+  - type: command
