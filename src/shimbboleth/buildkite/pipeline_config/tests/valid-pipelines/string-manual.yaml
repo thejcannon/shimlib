@@ -3,7 +3,7 @@ steps:
 ---
 # shimbboleth
 steps:
-  - type: manual
+  - type: block
 ---
 # upstream
 steps:

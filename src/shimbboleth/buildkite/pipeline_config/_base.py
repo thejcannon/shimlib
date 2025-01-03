@@ -38,9 +38,11 @@ class StepBase(Model):
     identifier: ClassVar = FieldAlias("key")
 
     @final
-    def _get_canonical_type(self) -> str | None:
-        if hasattr(self, "type"):
-            return type(self).type
+    @classmethod
+    def _get_canonical_type(cls) -> str | None:
+        type_field = cls.__dataclass_fields__.get("type")
+        if type_field is not None:
+            return type_field.default
         return None  # GroupStep :|
 
     def model_dump(self) -> dict[str, Any]:

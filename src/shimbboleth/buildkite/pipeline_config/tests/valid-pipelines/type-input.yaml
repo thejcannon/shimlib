@@ -3,7 +3,7 @@ steps:
 ---
 # shimbboleth
 steps:
-  - type: manual
+  - type: block
 ---
 # upstream
 # NB: This looks like a bug in the API
