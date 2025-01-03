@@ -1,7 +1,7 @@
 from shimbboleth._model import Model, field, FieldAlias
 from ._types import bool_from_json
 from uuid import UUID
-from typing import ClassVar, Any
+from typing import ClassVar, Any, final
 
 
 # @TODO: Belongs in _model validation
@@ -37,11 +37,19 @@ class StepBase(Model):
     id: ClassVar = FieldAlias("key", deprecated=True)
     identifier: ClassVar = FieldAlias("key")
 
+    @final
+    def _get_canonical_type(self) -> str | None:
+        if hasattr(self, "type"):
+            return type(self).type
+        return None  # GroupStep :|
+
     def model_dump(self) -> dict[str, Any]:
         val = super().model_dump()
-        step_type = getattr(self, "type", None)
-        if step_type is not None:
-            val["type"] = step_type
+
+        type_tag = self._get_canonical_type()
+        if type_tag is not None:
+            val["type"] = type_tag
+
         return val
 
     # def __post_init__(self):
