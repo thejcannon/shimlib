@@ -20,6 +20,11 @@ class ModelMeta(type):
             bases,
             namespace,
         )
+
+        # NB: Copy the classcell so `super()` works and doesn't cause `TypeError` issues.
+        if classcell := namespace.get("__classcell__"):
+            cls.__classcell__ = classcell
+
         # NB: Because you get a new type when adding `__slots__`,
         #   `dataclass` actualy returns a new type when using `slots=True`.
         #   That means this constructor will run again, but this time we
@@ -27,7 +32,7 @@ class ModelMeta(type):
         #   We can tell if it's a dataclass if it has the magic attribute.
         if "__dataclass_fields__" in cls.__dict__:
             return cls
-        return dataclasses.dataclass(slots=True)(cls)
+        return dataclasses.dataclass(slots=True, kw_only=True)(cls)
 
     def __init__(cls, name, bases, namespace, *, extra: bool | None = None):
         cls.__allow_extra_properties__ = bool(extra)

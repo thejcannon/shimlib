@@ -8,6 +8,7 @@ from typing import (
     Concatenate,
     Any,
 )
+import re
 from typing_extensions import TypeAliasType
 from types import UnionType, GenericAlias
 from shimbboleth._model.model_meta import ModelMeta
@@ -32,6 +33,7 @@ class Visitor(Protocol, Generic[RetT]):
     visit_union_type: Callable[Concatenate["Visitor", UnionType, ...], RetT]
     visit_literal: Callable[Concatenate["Visitor", type, ...], RetT]
     visit_annotated: Callable[Concatenate["Visitor", type, ...], RetT]
+    visit_pattern: Callable[Concatenate["Visitor", re.Pattern, ...], RetT]
     visit_type_alias_type: Callable[Concatenate["Visitor", TypeAliasType, ...], RetT]
     visit_model: Callable[Concatenate["Visitor", ModelMeta, ...], RetT]
 
@@ -42,7 +44,7 @@ class Visitor(Protocol, Generic[RetT]):
             return self.visit_int(objType, **kwargs)
         if objType is str:
             return self.visit_str(objType, **kwargs)
-        if objType is None:
+        if objType is None or objType is type(None):
             return self.visit_none(objType, **kwargs)
         if isinstance(objType, GenericAlias):
             container_t = objType.__origin__
@@ -65,5 +67,7 @@ class Visitor(Protocol, Generic[RetT]):
             return self.visit_type_alias_type(objType, **kwargs)
         if isinstance(objType, ModelMeta):
             return self.visit_model(objType, **kwargs)
+        if objType is re.Pattern:
+            return self.visit_pattern(objType, **kwargs)
 
         raise TypeError(f"Unsupported type: {objType}")

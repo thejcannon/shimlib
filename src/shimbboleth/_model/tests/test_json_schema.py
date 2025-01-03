@@ -1,10 +1,15 @@
 from shimbboleth._model.json_schema import JSONSchemaVisitor
+import re
 from shimbboleth._model.model import Model
 from shimbboleth._model.field_types import (
     Description,
     MatchesRegex,
     Examples,
     NonEmpty,
+    Ge,
+    Le,
+    NonEmptyList,
+    NonEmptyString,
 )
 from shimbboleth._model.field import field
 from shimbboleth._model.field_alias import FieldAlias
@@ -22,86 +27,82 @@ def str_to_int(value: str) -> int:
     return int(value)
 
 
-@pytest.mark.parametrize(
-    ("field_type", "expected"),
-    [
-        (bool, {"type": "boolean"}),
-        (int, {"type": "integer"}),
-        (str, {"type": "string"}),
-        (None, {"type": "null"}),
-    ],
-)
-def test_simple(field_type, expected):
-    assert JSONSchemaVisitor().visit(field_type) == expected
+param = pytest.param
 
 
 @pytest.mark.parametrize(
     ("field_type", "expected"),
     [
-        (list[bool], {"type": "array", "items": {"type": "boolean"}}),
-        (list[str], {"type": "array", "items": {"type": "string"}}),
-        (list[int], {"type": "array", "items": {"type": "integer"}}),
-    ],
-)
-def test_list(field_type, expected):
-    assert JSONSchemaVisitor().visit(field_type) == expected
-
-
-@pytest.mark.parametrize(
-    ("field_type", "expected"),
-    [
-        (
+        pytest.param(bool, {"type": "boolean"}, id="simple"),
+        pytest.param(int, {"type": "integer"}, id="simple"),
+        pytest.param(str, {"type": "string"}, id="simple"),
+        pytest.param(None, {"type": "null"}, id="simple"),
+        pytest.param(
+            list[bool], {"type": "array", "items": {"type": "boolean"}}, id="list"
+        ),
+        pytest.param(
+            list[str], {"type": "array", "items": {"type": "string"}}, id="list"
+        ),
+        pytest.param(
+            list[int], {"type": "array", "items": {"type": "integer"}}, id="list"
+        ),
+        pytest.param(
             dict[str, bool],
             {"type": "object", "additionalProperties": {"type": "boolean"}},
+            id="dict",
         ),
-        (
+        pytest.param(
             dict[str, int],
             {"type": "object", "additionalProperties": {"type": "integer"}},
+            id="dict",
         ),
-        (
+        pytest.param(
             dict[str, str],
             {"type": "object", "additionalProperties": {"type": "string"}},
+            id="dict",
         ),
-        (
+        pytest.param(
             dict[Annotated[str, Description("")], str],
             {
                 "type": "object",
                 "additionalProperties": {"type": "string"},
                 "propertyNames": {"description": ""},
             },
+            id="dict_with_annotation",
         ),
-        (
+        pytest.param(
             dict[Annotated[str, MatchesRegex("^.*$")], str],
             {
                 "type": "object",
                 "additionalProperties": {"type": "string"},
                 "propertyNames": {"pattern": "^.*$"},
             },
+            id="dict_with_annotation",
+        ),
+        pytest.param(
+            bool | int,
+            {"oneOf": [{"type": "boolean"}, {"type": "integer"}]},
+            id="union",
+        ),
+        pytest.param(
+            str | None, {"oneOf": [{"type": "string"}, {"type": "null"}]}, id="union"
+        ),
+        pytest.param(Literal["hello"], {"enum": ["hello"]}, id="literal"),
+        pytest.param(
+            Literal["hello", "goodbye"], {"enum": ["hello", "goodbye"]}, id="literal"
+        ),
+        pytest.param(re.Pattern, {"type": "string", "format": "regex"}, id="pattern"),
+        pytest.param(
+            NonEmptyList[int],
+            {"type": "array", "items": {"type": "integer"}, "minLength": 1},
+            id="non-empty-list",
+        ),
+        pytest.param(
+            NonEmptyString, {"type": "string", "minLength": 1}, id="non-empty-string"
         ),
     ],
 )
-def test_dict(field_type, expected):
-    assert JSONSchemaVisitor().visit(field_type) == expected
-
-
-@pytest.mark.parametrize(
-    ("field_type", "expected"),
-    [
-        (bool | int, {"oneOf": [{"type": "boolean"}, {"type": "integer"}]}),
-    ],
-)
-def test_union(field_type, expected):
-    assert JSONSchemaVisitor().visit(field_type) == expected
-
-
-@pytest.mark.parametrize(
-    ("field_type", "expected"),
-    [
-        (Literal["hello"], {"enum": ["hello"]}),
-        (Literal["hello", "goodbye"], {"enum": ["hello", "goodbye"]}),
-    ],
-)
-def test_literal(field_type, expected):
+def test_schema(field_type, expected):
     assert JSONSchemaVisitor().visit(field_type) == expected
 
 
@@ -123,6 +124,12 @@ def test_literal(field_type, expected):
                 "minLength": 1,
                 "pattern": "^.*$",
             },
+        ),
+        (Annotated[int, Ge(5)], {"type": "integer", "minimum": 5}),
+        (Annotated[int, Le(10)], {"type": "integer", "maximum": 10}),
+        (
+            Annotated[int, Ge(0), Le(100)],
+            {"type": "integer", "minimum": 0, "maximum": 100},
         ),
     ],
 )
@@ -247,7 +254,6 @@ def test_model__default(model_def, expected):
     schema = model_def.model_json_schema
     assert "field" not in schema["required"]
     assert schema["properties"]["field"]["default"] == expected, schema
-
 
 
 @pytest.mark.parametrize(

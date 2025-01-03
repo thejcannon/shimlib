@@ -1,7 +1,9 @@
-from typing import Annotated, Pattern, TypeAlias
-from shimbboleth._model import MatchesRegex, field, Model, NonEmpty
+from typing import Annotated, TypeAlias
+import re
+from shimbboleth._model import MatchesRegex, field, Model, NonEmptyList
 from ._types import bool_from_json
 from ._types import list_str_from_json
+from ._base import StepBase
 
 MetaDataKey: TypeAlias = Annotated[str, MatchesRegex("^[a-zA-Z0-9-_]+$")]
 
@@ -24,7 +26,7 @@ class TextInput(Model, extra=False):
     default: str | None = None
     """The value that is pre-filled in the text field"""
 
-    format: Pattern | None = None
+    format: re.Pattern | None = None
     """The format must be a regular expression implicitly anchored to the beginning and end of the input and is functionally equivalent to the HTML5 pattern attribute."""
 
     text: str | None = None
@@ -55,8 +57,7 @@ class SelectInput(Model, extra=False):
     key: MetaDataKey
     """The meta-data key that stores the field's input"""
 
-    # @TODO: Change validation error to: "`options` can't be empty"
-    options: Annotated[list[SelectOption], NonEmpty]
+    options: NonEmptyList[list[SelectOption]]
 
     default: str | list[str] | None = None
     """The value of the option(s) that will be pre-selected in the dropdown"""
@@ -80,7 +81,7 @@ def input_from_json(
     return []
 
 
-class InteractiveStepBase(Model, extra=False):
+class InteractiveStepBase(StepBase, extra=False):
     """
     (The base of both Input and Block steps)
     """

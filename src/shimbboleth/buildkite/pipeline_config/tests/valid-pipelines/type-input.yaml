@@ -1,0 +1,13 @@
+steps:
+  - type: manual
+---
+# shimbboleth
+steps:
+  - type: manual
+---
+# upstream
+# NB: This looks like a bug in the API
+# See: https://forum.buildkite.community/t/ambiguity-of-type-manual-steps/4140
+steps:
+  - type: manual
+    label: ~

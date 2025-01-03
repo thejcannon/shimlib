@@ -11,7 +11,6 @@ import yaml
 from typing import Any
 
 from shimbboleth.buildkite.pipeline_config import BuildkitePipeline, ALL_STEP_TYPES
-from shimbboleth.buildkite.pipeline_config._alias import GenerateJsonSchemaWithAliases
 
 import jmespath
 

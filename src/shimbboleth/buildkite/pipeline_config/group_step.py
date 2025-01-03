@@ -1,8 +1,7 @@
 from typing import Annotated, ClassVar, TypeAlias, Literal, Any
 
 
-from shimbboleth.buildkite.pipeline_config._types import bool_from_json
-from shimbboleth._model import Model, field, FieldAlias, NonEmpty, Description
+from shimbboleth._model import Model, field, FieldAlias, NonEmptyList
 
 from .block_step import BlockStep
 from .input_step import InputStep
@@ -10,7 +9,7 @@ from .wait_step import WaitStep
 from .trigger_step import TriggerStep
 from .command_step import CommandStep
 from ._notify import BuildNotifyT
-from ._base import BKStepBase
+from ._base import StepBase
 from ._nested_steps import (
     NestedWaitStep,
     NestedInputStep,
@@ -34,7 +33,7 @@ GROUP_STEP_INPUT_TYPES: TypeAlias = (
 )
 
 
-class GroupStep(BKStepBase, extra=False):
+class GroupStep(StepBase, extra=False):
     """
     A group step can contain various sub-steps, and display them in a single logical group on the Build page.
 
@@ -44,14 +43,14 @@ class GroupStep(BKStepBase, extra=False):
     group: str | None = None
     """The name to give to this group of steps"""
 
-    notify: BuildNotifyT | None = None
+    notify: BuildNotifyT = field(default_factory=list)
 
     # NB: Passing an empty string is equivalent to false.
-    skip: bool | str = field(default=False, json_converter=bool_from_json)
+    skip: bool | str = field(default=False)
     "Whether this step should be skipped. Passing a string provides a reason for skipping this command"
 
-    steps: Annotated[
-        list[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep], NonEmpty
+    steps: NonEmptyList[
+        BlockStep | InputStep | CommandStep | WaitStep | TriggerStep
     ] = field()
     """A list of steps"""
 
@@ -62,22 +61,19 @@ class GroupStep(BKStepBase, extra=False):
     @classmethod
     def __steps__from_json(
         cls,
-        value: Annotated[
-            list[
-                BlockStep
-                | InputStep
-                | CommandStep
-                | WaitStep
-                | TriggerStep
-                | NestedBlockStep
-                | NestedInputStep
-                | NestedCommandStep
-                | NestedWaitStep
-                | NestedTriggerStep
-                | Literal["block", "wait", "waiter", "input"]
-            ],
-            Description("A list of steps"),
+        value: list[
+            BlockStep
+            | InputStep
+            | CommandStep
+            | WaitStep
+            | TriggerStep
+            | NestedBlockStep
+            | NestedInputStep
+            | NestedCommandStep
+            | NestedWaitStep
+            | NestedTriggerStep
+            | Literal["block", "wait", "waiter", "input"]
         ],
         data: Any,
-    ) -> list[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep]:
+    ) -> NonEmptyList[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep]:
         return []

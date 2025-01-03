@@ -1,4 +1,5 @@
 from typing import Any, Self, TypeVar, Callable
+import copy
 import dataclasses
 
 from shimbboleth._model.validation import ValidationVisitor
@@ -8,23 +9,32 @@ from shimbboleth._model.json_load import JSONLoadVisitor
 T = TypeVar("T")
 
 
-class Model(metaclass=ModelMeta):
-    _extra: dict[str, Any] = dataclasses.field(
-        default_factory=dict, init=False, repr=False, compare=False, hash=False
-    )
+class _ModelBase:
+    _extra: dict[str, Any]
     """
     If `extra` is `True`, then this contains any extra fields provided when loading.
     """
 
+    def __init__(self):
+        self._extra = {}
+
+
+class Model(_ModelBase, metaclass=ModelMeta):
     def __post_init__(self):
         ValidationVisitor().visit(type(self), obj=self)
 
     @staticmethod
     def _json_converter_(field) -> Callable[[T], T]:
-        assert "json_converter" not in field.metadata
+        assert isinstance(field, dataclasses.Field), "Did you forget to = field(...)?"
+        assert (
+            "json_converter" not in field.metadata
+        ), f"Only one converter per field. Already: {field.metadata['json_converter']}"
 
         def decorator(func: T) -> T:
-            field.metadata["json_converter"] = func
+            # NB: `metadata` is immutable, so copy/reassign
+            field.metadata = type(field.metadata)(
+                field.metadata | {"json_converter": func}
+            )
             return func
 
         return decorator
@@ -34,5 +44,27 @@ class Model(metaclass=ModelMeta):
         return JSONLoadVisitor().visit(cls, obj=value)
 
     def model_dump(self) -> dict[str, Any]:
-        # @TODO: asdict(self), but with aliases, and maybe some filtering
-        raise NotImplementedError
+        ret = {}
+        for field in dataclasses.fields(self):
+            value = getattr(self, field.name)
+            if value == field.default or (
+                field.default_factory is not dataclasses.MISSING
+                and value == field.default_factory()
+            ):
+                continue
+
+            if isinstance(value, dict):
+                ret[field.name] = {
+                    k: v.model_dump() if isinstance(v, Model) else copy.deepcopy(v)
+                    for k, v in value.items()
+                }
+            elif isinstance(value, list):
+                ret[field.name] = [
+                    v.model_dump() if isinstance(v, Model) else copy.deepcopy(v)
+                    for v in value
+                ]
+            elif isinstance(value, Model):
+                ret[field.name] = value.model_dump()
+            else:
+                ret[field.name] = copy.deepcopy(value)
+        return ret

@@ -2,9 +2,15 @@ from typing import Literal, Any, Annotated, ClassVar
 
 from shimbboleth._model import Model, field, MatchesRegex, FieldAlias, Ge, Le
 
-from ._base import BKStepBase
+from ._base import StepBase
 from ._agents import agents_from_json
-from ._types import list_str_from_json, bool_from_json, env_from_json, ExitStatus
+from ._types import (
+    list_str_from_json,
+    bool_from_json,
+    env_from_json,
+    ExitStatus,
+    skip_from_json,
+)
 from ._notify import (
     BasecampCampfireNotify,
     SlackNotify,
@@ -72,22 +78,24 @@ class AutomaticRetry(Model, extra=False):
 
 class RetryConditions(Model, extra=False):
     # @TODO: From JSON
-    automatic: list[AutomaticRetry] = [AutomaticRetry(limit=2)]
+    automatic: list[AutomaticRetry] = field(
+        default_factory=lambda: [AutomaticRetry(limit=2)]
+    )
     """Whether to allow a job to retry automatically"""
 
     # @TODO: From JSON
-    manual: ManualRetry = ManualRetry(allowed=True)
+    manual: ManualRetry = field(default_factory=lambda: ManualRetry(allowed=True))
     """Whether (and when) to allow a job to be retried manually"""
 
 
-class CacheMap(Model, extra=True):
+class CommandCache(Model, extra=True):
     paths: list[str]
 
     name: str | None = None
     size: Annotated[str, MatchesRegex("^\\d+g$")] | None = None
 
 
-class CommandStep(BKStepBase, extra=False):
+class CommandStep(StepBase, extra=False):
     """
     A command step runs one or more shell commands on one or more agents.
 
@@ -107,14 +115,14 @@ class CommandStep(BKStepBase, extra=False):
     branches: list[str] = field(default_factory=list, json_converter=list_str_from_json)
     """Which branches will include this step in their builds"""
 
-    cache: CacheMap | None = None
+    cache: CommandCache = field(default_factory=lambda: CommandCache(paths=[]))
     """(@TODO) See: https://buildkite.com/docs/pipelines/hosted-agents/linux"""
 
     cancel_on_build_failing: bool = field(default=False, json_converter=bool_from_json)
     """Whether to cancel the job as soon as the build is marked as failing"""
 
     # @TODO: Empty?
-    command: list[str] = field(default=[], json_converter=list_str_from_json)
+    command: list[str] = field(default_factory=list, json_converter=list_str_from_json)
     """The commands to run on the agent"""
 
     # @TODO: Validate concurrency fields together
@@ -128,7 +136,9 @@ class CommandStep(BKStepBase, extra=False):
     concurrency_method: Literal["ordered", "eager"] | None = None
     """Control command order, allowed values are 'ordered' (default) and 'eager'. If you use this attribute, you must also define concurrency_group and concurrency."""
 
-    env: dict[str, Any] = field(default_factory=dict, json_converter=env_from_json)
+    env: dict[str, str | int | bool] = field(
+        default_factory=dict, json_converter=env_from_json
+    )
     """Environment variables for this step"""
 
     matrix: MatrixArray | SingleDimensionMatrix | MultiDimensionMatrix | None = None
@@ -160,7 +170,7 @@ class CommandStep(BKStepBase, extra=False):
     signature: CommandStepSignature | None = None
 
     # NB: Passing an empty string is equivalent to false.
-    skip: str | bool = False
+    skip: str | bool = field(default=False, json_converter=skip_from_json)
     """Whether to skip this step or not. Passing a string provides a reason for skipping this command."""
 
     # @TODO: JSON Converter
@@ -191,14 +201,16 @@ class CommandStep(BKStepBase, extra=False):
 
     @Model._json_converter_(cache)
     @classmethod
-    def _cache_map_from_json(cls, value: str | list[str] | CacheMap) -> CacheMap:
+    def _cache_map_from_json(
+        cls, value: str | list[str] | CommandCache
+    ) -> CommandCache:
         if isinstance(value, str):
-            return CacheMap(paths=[value])
+            return CommandCache(paths=[value])
         if isinstance(value, list):
-            return CacheMap(paths=value)
+            return CommandCache(paths=value)
         return value
 
-    @Model._json_converter_(cache)
+    @Model._json_converter_(plugins)
     @classmethod
     def _plugins_from_json(
         cls, value: list[str | dict[str, Any]] | dict[str, Any]

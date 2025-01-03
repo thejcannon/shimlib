@@ -8,6 +8,8 @@ from shimbboleth._model.field import field
 from shimbboleth._model.json_load import JSONLoadVisitor
 from shimbboleth._model.field_alias import FieldAlias
 
+param = pytest.param
+
 
 def make_model(attrs, **kwargs):
     return type(Model)("MyModel", (Model,), attrs, **kwargs)
@@ -20,179 +22,98 @@ def str_to_int(value: str) -> int:
 @pytest.mark.parametrize(
     ("field_type", "obj"),
     [
-        (bool, True),
-        (bool, False),
-        (int, 0),
-        (int, 1),
-        (str, "a string"),
-        (str, ""),
-        (None, None),
+        param(bool, True, id="simple"),
+        param(bool, False, id="simple"),
+        param(int, 0, id="simple"),
+        param(int, 1, id="simple"),
+        param(str, "a string", id="simple"),
+        param(str, "", id="simple"),
+        param(None, None, id="simple"),
+        # dict
+        param(dict[str, int], {}, id="dict"),
+        param(dict[str, int], {"key": 0}, id="dict"),
+        param(dict[str, int], {"key1": 0, "key2": 1}, id="dict"),
+        param(Annotated[dict[str, int], NonEmpty], {"key": 0}, id="dict"),
+        param(Annotated[dict[str, int], NonEmpty], {"": 0}, id="dict"),
+        param(
+            Annotated[dict[Annotated[str, NonEmpty], int], NonEmpty],
+            {"key": 0},
+            id="dict",
+        ),
+        # list
+        param(list[int], [], id="list"),
+        param(list[int], [1, 2, 3], id="list"),
+        param(list[str], ["a", "b", "c"], id="list"),
+        param(list[bool], [True, False], id="list"),
+        param(list[Annotated[str, NonEmpty]], [""], id="list"),
+        param(Annotated[list[str], NonEmpty], [], id="list"),
+        # literal
+        param(Literal["a", "b", "c"], "a", id="literal"),
+        param(Literal["a", "b", "c"], "b", id="literal"),
+        param(Literal["a", "b", "c"], "c", id="literal"),
+        param(Literal[1, 2, 3], 1, id="literal"),
+        param(Literal[1, 2, 3], 2, id="literal"),
+        param(Literal[1, 2, 3], 3, id="literal"),
+        param(Literal[True, False, "true", "false"], True, id="literal"),
+        param(Literal[True, False, "true", "false"], "true", id="literal"),
+        # union
+        param(int | str, 42, id="union"),
+        param(int | str, "hello", id="union"),
+        param(bool | str, True, id="union"),
+        param(bool | str, "true", id="union"),
+        param(list[str] | dict[str, int], ["1", "2", "3"], id="union"),
+        param(list[str] | dict[str, int], {"a": 1, "b": 2}, id="union"),
+        # misc
+        param(Annotated[str, MatchesRegex(r"^.*$")], "", id="annotated"),
+        param(TypeAliasType("TAT", int), 0, id="type_alias_type"),
+        param(TypeAliasType("TAT", list[str]), [""], id="type_alias_type"),
     ],
 )
-def test_simple__paassing(field_type, obj):
+def test_paassing(field_type, obj):
     assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
 
 
 @pytest.mark.parametrize(
     ("field_type", "obj"),
     [
-        (bool, 0),
-        (bool, None),
-        (int, True),
-        (int, False),
+        param(bool, 0, id="simple"),
+        param(bool, None, id="simple"),
+        param(int, True, id="simple"),
+        param(int, False, id="simple"),
+        # dict
+        param(dict[str, int], [], id="dict"),
+        param(dict[str, int], {0: 0}, id="dict"),
+        param(dict[str, int], {0: None}, id="dict"),
+        param(dict[str, int], {"key": False}, id="dict"),
+        param(dict[str, bool], {"key": 1}, id="dict"),
+        param(dict[str, int], {"key1": 0, "key2": "value"}, id="dict"),
+        # list
+        param(list[int], dict(), id="list"),
+        param(list[int], [1, "2", 3], id="list"),
+        param(list[str], ["a", 1, "c"], id="list"),
+        param(list[int], [True], id="list"),
+        param(list[bool], [True, "False"], id="list"),
+        param(list[bool], [0], id="list"),
+        param(list[int], "not a list", id="list"),
+        # literal
+        param(Literal["a", "b", "c"], "d", id="literal"),
+        param(Literal["a", "b", "c"], 1, id="literal"),
+        param(Literal[True], 1, id="literal"),
+        param(Literal[1], True, id="literal"),
+        param(Literal[False], 0, id="literal"),
+        param(Literal[0], False, id="literal"),
+        # union
+        param(int | str, True, id="union"),
+        param(int | str, [], id="union"),
+        param(bool | str, 0, id="union"),
+        param(bool | int, "string", id="union"),
+        param(list[str] | dict[str, int], set(), id="union"),
+        param(list[str] | dict[str, int], "string", id="union"),
     ],
 )
-def test_simple__invalid(field_type, obj):
+def test_invalid(field_type, obj):
     with pytest.raises(TypeError):
         JSONLoadVisitor().visit(objType=field_type, obj=obj)
-
-
-@pytest.mark.parametrize(
-    ("field_type", "obj"),
-    [
-        (dict[str, int], {}),
-        (dict[str, int], {"key": 0}),
-        (dict[str, int], {"key1": 0, "key2": 1}),
-        (Annotated[dict[str, int], NonEmpty], {"key": 0}),
-        (Annotated[dict[str, int], NonEmpty], {"": 0}),
-        (Annotated[dict[Annotated[str, NonEmpty], int], NonEmpty], {"key": 0}),
-    ],
-)
-def test_dict(field_type, obj):
-    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
-
-
-@pytest.mark.parametrize(
-    ("field_type", "obj"),
-    [
-        (dict[str, int], []),
-        (dict[str, int], {0: 0}),
-        (dict[str, int], {0: None}),
-        (dict[str, int], {"key": False}),
-        (dict[str, bool], {"key": 1}),
-        (dict[str, int], {"key1": 0, "key2": "value"}),
-    ],
-)
-def test_dict__invalid(field_type, obj):
-    with pytest.raises(TypeError):
-        JSONLoadVisitor().visit(objType=field_type, obj=obj)
-
-
-@pytest.mark.parametrize(
-    ("field_type", "obj"),
-    [
-        (list[int], []),
-        (list[int], [1, 2, 3]),
-        (list[str], ["a", "b", "c"]),
-        (list[bool], [True, False]),
-        (list[Annotated[str, NonEmpty]], [""]),
-        (Annotated[list[str], NonEmpty], []),
-    ],
-)
-def test_list(field_type, obj):
-    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
-
-
-@pytest.mark.parametrize(
-    ("field_type", "obj"),
-    [
-        (list[int], dict()),
-        (list[int], [1, "2", 3]),
-        (list[str], ["a", 1, "c"]),
-        (list[int], [True]),
-        (list[bool], [True, "False"]),
-        (list[bool], [0]),
-        (list[int], "not a list"),
-    ],
-)
-def test_list__invalid(field_type, obj):
-    with pytest.raises(TypeError):
-        JSONLoadVisitor().visit(objType=field_type, obj=obj)
-
-
-@pytest.mark.parametrize(
-    ("field_type", "obj"),
-    [
-        (Literal["a", "b", "c"], "a"),
-        (Literal["a", "b", "c"], "b"),
-        (Literal["a", "b", "c"], "c"),
-        (Literal[1, 2, 3], 1),
-        (Literal[1, 2, 3], 2),
-        (Literal[1, 2, 3], 3),
-        (Literal[True, False, "true", "false"], True),
-        (Literal[True, False, "true", "false"], "true"),
-    ],
-)
-def test_literal(field_type, obj):
-    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
-
-
-@pytest.mark.parametrize(
-    ("field_type", "obj"),
-    [
-        (Literal["a", "b", "c"], "d"),
-        (Literal["a", "b", "c"], 1),
-        (Literal[True], 1),
-        (Literal[1], True),
-        (Literal[False], 0),
-        (Literal[0], False),
-    ],
-)
-def test_literal__invalid(field_type, obj):
-    with pytest.raises(TypeError):
-        JSONLoadVisitor().visit(objType=field_type, obj=obj)
-
-
-@pytest.mark.parametrize(
-    ("field_type", "obj"),
-    [
-        (int | str, 42),
-        (int | str, "hello"),
-        (bool | str, True),
-        (bool | str, "true"),
-        (list[str] | dict[str, int], ["1", "2", "3"]),
-        (list[str] | dict[str, int], {"a": 1, "b": 2}),
-    ],
-)
-def test_union(field_type, obj):
-    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
-
-
-@pytest.mark.parametrize(
-    ("field_type", "obj"),
-    [
-        (int | str, True),
-        (int | str, []),
-        (bool | str, 0),
-        (bool | int, "string"),
-        (list[str] | dict[str, int], set()),
-        (list[str] | dict[str, int], "string"),
-    ],
-)
-def test_union__invalid(field_type, obj):
-    with pytest.raises(TypeError):
-        JSONLoadVisitor().visit(objType=field_type, obj=obj)
-
-
-@pytest.mark.parametrize(
-    ("field_type", "obj"),
-    [
-        (Annotated[str, MatchesRegex(r"^.*$")], ""),
-    ],
-)
-def test_annotated(field_type, obj):
-    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
-
-
-@pytest.mark.parametrize(
-    ("field_type", "obj"),
-    [
-        (TypeAliasType("TAT", int), 0),
-        (TypeAliasType("TAT", list[str]), [""]),
-    ],
-)
-def test_type_alias_type(field_type, obj):
-    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
 
 
 @pytest.mark.parametrize(

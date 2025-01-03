@@ -1,14 +1,10 @@
-from typing import Literal, ClassVar
+from typing import Literal, ClassVar, Any
 
 
 from shimbboleth._model import field, FieldAlias, Model
 
-from ._base import BKStepBase
-from ._types import (
-    bool_from_json,
-    env_from_json,
-    list_str_from_json,
-)
+from ._base import StepBase
+from ._types import bool_from_json, env_from_json, list_str_from_json, skip_from_json
 
 
 class TriggeredBuild(Model, extra=False):
@@ -21,18 +17,20 @@ class TriggeredBuild(Model, extra=False):
     commit: str = "HEAD"
     """The commit hash for the build"""
 
-    env: dict[str, str] = field(default_factory=dict, json_converter=env_from_json)
+    env: dict[str, str | int | bool] = field(
+        default_factory=dict, json_converter=env_from_json
+    )
     """Environment variables for this step"""
 
     # @TODO: The default is the label of the trigger step
     message: str | None = None
     """The message for the build (supports emoji)"""
 
-    meta_data: dict | None = None
+    meta_data: dict[str, Any] | None = None
     """Meta-data for the build"""
 
 
-class TriggerStep(BKStepBase, extra=False):
+class TriggerStep(StepBase, extra=False):
     """
     A trigger step creates a build on another pipeline.
 
@@ -54,7 +52,7 @@ class TriggerStep(BKStepBase, extra=False):
     """Attributes for the triggered build"""
 
     # NB: Passing an empty string is equivalent to false.
-    skip: str | bool = False
+    skip: str | bool = field(default=False, json_converter=skip_from_json)
     """Whether to skip this step or not. Passing a string provides a reason for skipping this command."""
 
     soft_fail: bool = field(default=False, json_converter=bool_from_json)

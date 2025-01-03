@@ -3,7 +3,6 @@ from typing_extensions import TypeAliasType
 
 
 from shimbboleth._model import Model, field
-from ._types import IfT
 
 
 class GitHubCommitStatusInfo(Model, extra=False):
@@ -11,7 +10,8 @@ class GitHubCommitStatusInfo(Model, extra=False):
 
 
 class _NotifyBase(Model, extra=False):
-    if_condition: IfT | None = field(default=None, json_alias="if")
+    # @TEST: Is an empty string considered a skip?
+    if_condition: str | None = field(default=None, json_alias="if")
 
 
 class GitHubCommitStatusNotify(_NotifyBase):

@@ -1,6 +1,6 @@
-from typing import Annotated, Any, Literal
+from typing import Any, Literal
 
-from shimbboleth._model import Model, Description, field
+from shimbboleth._model import Model, field
 
 from ._agents import agents_from_json
 from .block_step import BlockStep
@@ -30,7 +30,8 @@ ALL_STEP_TYPES = (
 
 
 class BuildkitePipeline(Model, extra=True):
-    # @TODO: Non empty?
+    # @TODO: (Why does BK allow this to be empty? lol)
+    #   (make a test case)
     steps: list[
         BlockStep | InputStep | CommandStep | WaitStep | TriggerStep | GroupStep
     ] = field()
@@ -39,33 +40,61 @@ class BuildkitePipeline(Model, extra=True):
         default_factory=dict, json_converter=agents_from_json
     )
     """Query rules to target specific agents. See https://buildkite.com/docs/agent/v3/cli-start#agent-targeting"""
-    env: dict[str, Any] = field(default_factory=dict, json_converter=env_from_json)
+
+    env: dict[str, str | int | bool] = field(
+        default_factory=dict, json_converter=env_from_json
+    )
     """Environment variables for this pipeline"""
-    notify: BuildNotifyT | None = None
+
+    notify: BuildNotifyT = field(default_factory=list)
 
     # @TODO: Missing cache? https://buildkite.com/docs/pipelines/hosted-agents/linux#cache-volumes
 
     @Model._json_converter_(steps)
-    @classmethod
+    @staticmethod
     def __steps__from_json(
-        cls,
-        value: Annotated[
-            list[
-                BlockStep
-                | InputStep
-                | CommandStep
-                | WaitStep
-                | TriggerStep
-                | GroupStep
-                | NestedBlockStep
-                | NestedInputStep
-                | NestedCommandStep
-                | NestedWaitStep
-                | NestedTriggerStep
-                | Literal["block", "wait", "waiter", "input"]
-            ],
-            Description("A list of steps"),
+        value: list[
+            BlockStep
+            | InputStep
+            | CommandStep
+            | WaitStep
+            | TriggerStep
+            | GroupStep
+            | NestedBlockStep
+            | NestedInputStep
+            | NestedCommandStep
+            | NestedWaitStep
+            | NestedTriggerStep
+            | Literal["block", "manual"]
+            | Literal["input"]
+            | Literal["command"]
+            | Literal["wait", "waiter"]
         ],
-        data: Any,
+        # data: Any,
     ) -> list[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep | GroupStep]:
-        return []
+        ret = []
+        for step in value:
+            if isinstance(
+                step,
+                (BlockStep, InputStep, CommandStep, WaitStep, TriggerStep, GroupStep),
+            ):
+                ret.append(step)
+            elif isinstance(step, NestedBlockStep):
+                ret.append(step.block)
+            elif isinstance(step, NestedInputStep):
+                ret.append(step.input)
+            elif isinstance(step, NestedCommandStep):
+                ret.append(step.command)
+            elif isinstance(step, NestedWaitStep):
+                ret.append(step.wait)
+            elif isinstance(step, NestedTriggerStep):
+                ret.append(step.trigger)
+            elif step == "block" or step == "manual":
+                ret.append(BlockStep(type=step))
+            elif step == "input":
+                ret.append(InputStep(type=step))
+            elif step == "command":
+                ret.append(CommandStep(type=step))
+            elif step == "wait" or step == "waiter":
+                ret.append(WaitStep(type=step))
+        return ret

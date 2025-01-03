@@ -1,0 +1,11 @@
+steps:
+  - type: input
+---
+# shimbboleth
+steps:
+  - type: input
+---
+# upstream
+steps:
+  - type: manual
+    label: ~

@@ -10,19 +10,23 @@ from .command_step import CommandStep
 
 
 class NestedBlockStep(Model, extra=False):
-    block: BlockStep | None = None
+    block: BlockStep
+
+    # NB: No way to know if we should prepend or not, due to
+    # https://forum.buildkite.community/t/ambiguity-of-type-manual-steps/4140
+    manual: ClassVar = FieldAlias("block")
 
 
 class NestedInputStep(Model, extra=False):
-    input: InputStep | None = None
+    input: InputStep
 
 
 class NestedTriggerStep(Model, extra=False):
-    trigger: TriggerStep | None = None
+    trigger: TriggerStep
 
 
 class NestedWaitStep(Model, extra=False):
-    wait: WaitStep | None = None
+    wait: WaitStep
     """Waits for previous steps to pass before continuing"""
 
     # @TODO: If both are given it gets mad about `waiter`.
@@ -32,7 +36,7 @@ class NestedWaitStep(Model, extra=False):
 
 
 class NestedCommandStep(Model, extra=False):
-    command: CommandStep | None = None
+    command: CommandStep
 
     commands: ClassVar = FieldAlias("command")
     script: ClassVar = FieldAlias("command")

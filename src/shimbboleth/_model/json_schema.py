@@ -1,4 +1,5 @@
 from types import UnionType, GenericAlias
+import re
 import dataclasses
 from typing import Any
 from shimbboleth._model.model import ModelMeta
@@ -8,6 +9,8 @@ from shimbboleth._model.field_types import (
     Examples,
     MatchesRegex,
     NonEmpty,
+    Ge,
+    Le,
 )
 from shimbboleth._model.field_alias import FieldAlias
 from shimbboleth._model._visitor import Visitor
@@ -49,6 +52,9 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
     def visit_literal(self, objType: type) -> dict[str, Any]:
         return {"enum": list(objType.__args__)}
 
+    def visit_pattern(self, objType: type[re.Pattern]) -> dict[str, Any]:
+        return {"type": "string", "format": "regex"}
+
     def visit_annotated(self, objType: type) -> dict[str, Any]:
         ret = self.visit(objType.__origin__)
         for annotation in objType.__metadata__:
@@ -61,6 +67,10 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
                 ret["pattern"] = annotation.regex.pattern
             elif annotation is NonEmpty:
                 ret["minLength"] = 1
+            elif isinstance(annotation, Ge):
+                ret["minimum"] = annotation.bound
+            elif isinstance(annotation, Le):
+                ret["maximum"] = annotation.bound
             else:
                 raise TypeError(f"Unsupported annotation: {annotation}")
         return ret
@@ -79,7 +89,9 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
             output_type = json_converter.__annotations__["return"]
             assert (
                 output_type == field.type
-            ), f"{output_type=} {field.type=}"  # @TODO: what about `Annotated`?
+            ), (
+                f"for {json_converter} {output_type=} {field.type=}"
+            )  # @TODO: what about `Annotated`? or subset (for unions)
             return self.visit(input_type)
         return self.visit(field.type)
 
@@ -114,7 +126,10 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
                 "required": [
                     field.name
                     for field in fields
-                    if (field.default is dataclasses.MISSING and field.default_factory is dataclasses.MISSING)
+                    if (
+                        field.default is dataclasses.MISSING
+                        and field.default_factory is dataclasses.MISSING
+                    )
                 ],
                 "additionalProperties": objType.__allow_extra_properties__,
             }

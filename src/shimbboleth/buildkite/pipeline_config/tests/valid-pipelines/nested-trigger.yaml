@@ -1,0 +1,18 @@
+steps:
+  - trigger:
+      trigger: trigger
+---
+# shimbboleth
+steps:
+  - type: trigger
+    trigger: trigger
+---
+# upstream
+steps:
+  - type: trigger
+    pipeline: trigger
+    name: ~
+    async: ~
+    branch_configuration: ~
+    concurrency: ~
+    parallelism: ~

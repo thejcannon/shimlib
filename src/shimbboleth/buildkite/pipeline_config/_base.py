@@ -1,7 +1,7 @@
 from shimbboleth._model import Model, field, FieldAlias
 from ._types import bool_from_json
 from uuid import UUID
-from typing import ClassVar
+from typing import ClassVar, Any
 
 
 # @TODO: Belongs in _model validation
@@ -19,7 +19,7 @@ class Dependency(Model, extra=False):
     step: str | None = None
 
 
-class BKStepBase(Model):
+class StepBase(Model):
     # @TODO: Annotate `Not[UUID]`
     key: str | None = field(default=None)
     """A unique identifier for a step, must not resemble a UUID"""
@@ -27,7 +27,6 @@ class BKStepBase(Model):
     allow_dependency_failure: bool = field(default=False, json_converter=bool_from_json)
     """Whether to proceed with this step and further steps if a step named in the depends_on attribute fails"""
 
-    # @TODO: Use converter to allow a `str` or even `list[str]` here
     depends_on: list[Dependency] = field(default_factory=list)
     """The step keys for a step to depend on"""
 
@@ -38,12 +37,17 @@ class BKStepBase(Model):
     id: ClassVar = FieldAlias("key", deprecated=True)
     identifier: ClassVar = FieldAlias("key")
 
-    # @TODO Remove `type` fields, and move them solely to the JSON
+    def model_dump(self) -> dict[str, Any]:
+        val = super().model_dump()
+        step_type = getattr(self, "type", None)
+        if step_type is not None:
+            val["type"] = step_type
+        return val
 
-    def __post_init__(self):
-        super().__post_init__()
-        if self.key:
-            _ensure_not_uuid(self.key)
+    # def __post_init__(self):
+    #     super().__post_init__()
+    #     if self.key:
+    #         _ensure_not_uuid(self.key)
 
     @Model._json_converter_(depends_on)
     @classmethod

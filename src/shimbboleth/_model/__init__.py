@@ -10,4 +10,6 @@ from shimbboleth._model.field_types import (
     MatchesRegex,
     Ge,
     Le,
+    NonEmptyList,
+    NonEmptyString,
 )

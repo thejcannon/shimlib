@@ -4,7 +4,7 @@
 from typing import TypeAlias
 
 from shimbboleth._model import Model, field
-from ._types import ExitStatus
+from ._types import ExitStatus, skip_from_json
 
 
 MatrixElementT: TypeAlias = str | int | bool
@@ -13,7 +13,7 @@ MatrixArray: TypeAlias = list[MatrixElementT]
 
 class _AdjustmentBase(Model):
     # NB: Passing an empty string is equivalent to false.
-    skip: str | bool = False
+    skip: str | bool = field(default=False, json_converter=skip_from_json)
     """Whether to skip this step or not. Passing a string provides a reason for skipping this command."""
 
     # @TODO: JSON Converter
@@ -41,7 +41,7 @@ class SingleDimensionMatrix(Model, extra=False):
 class MultiDimensionMatrixAdjustment(_AdjustmentBase, Model):
     """An adjustment to a multi-dimension Build Matrix"""
 
-    with_value: dict[str, list[MatrixElementT]] = field(alias="with")
+    with_value: dict[str, list[MatrixElementT]] = field(json_alias="with")
     """Specification of a new or existing Build Matrix combination"""
 
     # NB: other fields from base

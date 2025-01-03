@@ -1,0 +1,4 @@
+# Error: `type` is not a valid property on the `block` step. Please check the documentation to get a full list of supported properties.
+steps:
+  - block:
+      type: block

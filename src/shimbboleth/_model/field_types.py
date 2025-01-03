@@ -1,5 +1,8 @@
 from dataclasses import dataclass
 import re
+from typing import Annotated, TypeVar
+
+T = TypeVar("T")
 
 NonEmpty = object()
 
@@ -35,6 +38,8 @@ class Le:
     bound: int
 
 
-# TODO: Instead of `Annotated[..., NonEmpty]`, what about 'NonEmptyList' and 'NonEmptyString'?
+NonEmptyList = Annotated[list[T], NonEmpty]
+NonEmptyString = Annotated[str, NonEmpty]
 
-# @TODO: add `Not[]`, UUID, Pattern
+
+# @TODO: add `Not[]`, UUID?

@@ -4,7 +4,7 @@ from typing import Literal, ClassVar
 from shimbboleth._model import field, FieldAlias
 
 
-from ._interactive_step import InteractiveStepBase
+from ._manual_step import InteractiveStepBase
 
 
 class BlockStep(InteractiveStepBase, extra=False):
@@ -20,7 +20,7 @@ class BlockStep(InteractiveStepBase, extra=False):
     block: str | None = field(default=None)
     """The label of the block step"""
 
-    type: Literal["block"] = "block"
+    type: Literal["block", "manual"] = "block"
 
     label: ClassVar = FieldAlias("block", mode="prepend")
     name: ClassVar = FieldAlias("block", mode="prepend")

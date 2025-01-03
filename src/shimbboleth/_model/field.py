@@ -40,4 +40,7 @@ def field(
         metadata["json_default"] = json_default
     if json_alias:
         metadata["json_alias"] = json_alias
+
+    # @TODO: If the default is mutable, replace it with `default_factory: deepcopy.copy(default)` or something?
+
     return dataclasses.field(**field_kwargs, metadata=metadata)

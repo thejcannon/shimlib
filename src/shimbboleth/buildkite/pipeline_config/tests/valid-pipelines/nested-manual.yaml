@@ -1,0 +1,12 @@
+steps:
+  - block:
+      block: ~
+---
+# shimbboleth
+steps:
+  - type: block
+---
+# upstream
+steps:
+  - type: manual
+    label: ~
