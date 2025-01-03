@@ -1,0 +1,28 @@
+steps:
+  - wait: wait
+  - wait: wait
+    label: label
+  - type: wait
+    label: label
+  - wait: wait
+    name: name
+  - label: label
+    name: name
+    type: wait
+  - wait: wait
+    label: label
+    name: name
+---
+steps:
+  - type: wait
+    wait: wait
+  - type: wait
+    wait: label
+  - type: wait
+    wait: label
+  - type: wait
+    wait: name
+  - type: wait
+    wait: name
+  - type: wait
+    wait: name

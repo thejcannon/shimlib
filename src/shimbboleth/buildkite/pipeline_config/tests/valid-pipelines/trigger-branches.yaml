@@ -1,0 +1,13 @@
+steps:
+  - type: wait
+    branches: branch
+  - type: wait
+    branches:
+      - branch1
+      - branch2
+---
+steps:
+  - type: wait
+    branches: [branch]
+  - type: wait
+    branches: [branch1, branch2]

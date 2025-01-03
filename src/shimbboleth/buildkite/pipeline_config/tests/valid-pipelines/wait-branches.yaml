@@ -1,0 +1,13 @@
+steps:
+  - type: input
+    branches: branch
+  - type: input
+    branches:
+      - branch1
+      - branch2
+---
+steps:
+  - type: input
+    branches: [branch]
+  - type: input
+    branches: [branch1, branch2]

@@ -58,6 +58,8 @@ class TriggerStep(StepBase, extra=False):
     soft_fail: bool = field(default=False, json_converter=bool_from_json)
     """The conditions for marking the step as a soft-fail."""
 
+    # @TODO: This has some default from the trigger
+    #   In canvas view it's "Trigger build on xyz", on classic its "Trigger Build"
     label: str | None = None
     "The label that will be displayed in the pipeline visualisation in Buildkite. Supports emoji."
 

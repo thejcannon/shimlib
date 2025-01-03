@@ -1,0 +1,19 @@
+steps:
+  - command: command
+    label: label
+  - command: command
+    name: name
+  - command: command
+    label: label
+    name: name
+---
+steps:
+  - type: command
+    command: [command]
+    label: label
+  - type: command
+    command: [command]
+    label: name
+  - type: command
+    command: [command]
+    label: name

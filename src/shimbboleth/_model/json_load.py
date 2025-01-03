@@ -4,6 +4,9 @@ from typing import Any
 from shimbboleth._model.model import ModelMeta
 from typing_extensions import TypeAliasType
 from shimbboleth._model._visitor import Visitor
+import logging
+
+LOG = logging.getLogger()
 
 
 class ExtrasNotAllowedError(TypeError):
@@ -50,7 +53,8 @@ class JSONLoadVisitor(Visitor[Any]):
         for t in objType.__args__:
             try:
                 return self.visit(t, obj=obj)
-            except TypeError:
+            except TypeError as e:
+                LOG.debug(f"{e=} for {t=}")
                 continue
         raise TypeError
 
@@ -89,24 +93,33 @@ class JSONLoadVisitor(Visitor[Any]):
         if not isinstance(obj, dict):
             raise TypeError
 
+        local_obj = obj
         for field_alias_name, field_alias in objType.__field_aliases__.items():
             if field_alias_name in obj:
-                obj[field_alias.alias_of] = obj.pop(field_alias_name)
+                if local_obj is obj:
+                    local_obj = obj.copy()
+
+                local_obj[field_alias.alias_of] = local_obj.pop(field_alias_name)
 
         init_fields = {field for field in dataclasses.fields(objType) if field.init}
         field_names = {
             field.metadata.get("json_alias", field.name) for field in init_fields
         }
-        init_kwargs = {key: value for key, value in obj.items() if key in field_names}
+        init_kwargs = {
+            key: value for key, value in local_obj.items() if key in field_names
+        }
 
         for field in init_fields:
             json_alias = field.metadata.get("json_alias")
             if json_alias and json_alias in init_kwargs:
                 init_kwargs[field.name] = init_kwargs.pop(json_alias)
 
-        extras = {key: value for key, value in obj.items() if key not in field_names}
+        extras = {
+            key: value for key, value in local_obj.items() if key not in field_names
+        }
         if extras and not objType.__allow_extra_properties__:
-            raise ExtrasNotAllowedError
+            # @TODO: Include more info
+            raise ExtrasNotAllowedError(extras)
 
         for field in init_fields:
             if field.name in init_kwargs:

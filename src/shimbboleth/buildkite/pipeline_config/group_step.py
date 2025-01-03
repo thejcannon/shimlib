@@ -1,4 +1,4 @@
-from typing import Annotated, ClassVar, TypeAlias, Literal, Any
+from typing import ClassVar, Literal
 
 
 from shimbboleth._model import Model, field, FieldAlias, NonEmptyList
@@ -19,20 +19,6 @@ from ._nested_steps import (
 )
 
 
-GROUP_STEP_INPUT_TYPES: TypeAlias = (
-    BlockStep
-    | NestedBlockStep
-    | InputStep
-    | NestedInputStep
-    | CommandStep
-    | NestedCommandStep
-    | WaitStep
-    | NestedWaitStep
-    | TriggerStep
-    | Literal["block", "wait", "waiter", "input"]
-)
-
-
 class GroupStep(StepBase, extra=False):
     """
     A group step can contain various sub-steps, and display them in a single logical group on the Build page.
@@ -40,7 +26,9 @@ class GroupStep(StepBase, extra=False):
     https://buildkite.com/docs/pipelines/group-step
     """
 
-    group: str | None = None
+    # NB: `group` is required, but can be null.
+    # (e.g. BK complains about `steps: [{"steps": ["wait"]}]` not having a type)
+    group: str | None
     """The name to give to this group of steps"""
 
     notify: BuildNotifyT = field(default_factory=list)
@@ -54,13 +42,12 @@ class GroupStep(StepBase, extra=False):
     ] = field()
     """A list of steps"""
 
-    name: ClassVar = FieldAlias("group")
-    label: ClassVar = FieldAlias("group")
+    name: ClassVar = FieldAlias("group", mode="append")
+    label: ClassVar = FieldAlias("group", mode="append")
 
     @Model._json_converter_(steps)
-    @classmethod
+    @staticmethod
     def __steps__from_json(
-        cls,
         value: list[
             BlockStep
             | InputStep
@@ -72,8 +59,14 @@ class GroupStep(StepBase, extra=False):
             | NestedCommandStep
             | NestedWaitStep
             | NestedTriggerStep
-            | Literal["block", "wait", "waiter", "input"]
+            | Literal["block", "manual"]
+            | Literal["input"]
+            | Literal["command", "commands", "script"]
+            | Literal["wait", "waiter"]
         ],
-        data: Any,
     ) -> NonEmptyList[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep]:
-        return []
+        from ._parse_steps import parse_steps
+
+        # NB: Because `GroupStep` is not a valid type of value`, we know this will never return
+        #    a `GroupStep` instance.
+        return parse_steps(value)  # type: ignore

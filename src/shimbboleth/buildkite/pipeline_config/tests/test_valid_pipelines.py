@@ -23,18 +23,16 @@ def test_valid_pipeline(pipeline_path: Path):
 # @TEST: test that every one of the test cases are equivalent (if not identical)
 
 UPSTREAM_DEFAULTS = {
-    "script":   {
-      "name": None,
-      "command": None,
-      "artifact_paths": None,
-      "branch_configuration": None,
-      "env": {},
-      "timeout_in_minutes": None,
-      "agent_query_rules": [],
-      "concurrency": None,
-      "parallelism": None
+    "script": {
+        "name": None,
+        "command": None,
+        "artifact_paths": None,
+        "branch_configuration": None,
+        "env": {},
+        "timeout_in_minutes": None,
+        "agent_query_rules": [],
+        "concurrency": None,
+        "parallelism": None,
     },
-    "manual": {
-        "label": None
-    }
+    "manual": {"label": None},
 }

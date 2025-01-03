@@ -1,4 +1,4 @@
-from typing import ClassVar, Literal, Any
+from typing import ClassVar, Literal
 
 
 from shimbboleth._model import FieldAlias, field

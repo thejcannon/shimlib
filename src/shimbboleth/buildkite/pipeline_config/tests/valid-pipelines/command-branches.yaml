@@ -1,0 +1,17 @@
+steps:
+  - type: trigger
+    trigger: trigger
+    branches: branch
+  - type: trigger
+    trigger: trigger
+    branches:
+      - branch1
+      - branch2
+---
+steps:
+  - type: trigger
+    trigger: trigger
+    branches: [branch]
+  - type: trigger
+    trigger: trigger
+    branches: [branch1, branch2]

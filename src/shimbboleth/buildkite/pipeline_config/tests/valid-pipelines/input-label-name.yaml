@@ -1,0 +1,28 @@
+steps:
+  - input: input
+  - input: input
+    label: label
+  - type: input
+    label: label
+  - input: input
+    name: name
+  - label: label
+    name: name
+    type: input
+  - input: input
+    label: label
+    name: name
+---
+steps:
+  - type: input
+    input: input
+  - type: input
+    input: label
+  - type: input
+    input: label
+  - type: input
+    input: name
+  - type: input
+    input: name
+  - type: input
+    input: name
