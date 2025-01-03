@@ -4,10 +4,10 @@ from typing import Literal, ClassVar
 from shimbboleth._model import field, FieldAlias
 
 
-from ._manual_step import InteractiveStepBase
+from ._manual_step import ManualStepBase
 
 
-class BlockStep(InteractiveStepBase, extra=False):
+class BlockStep(ManualStepBase, extra=False):
     """
     A block step is used to pause the execution of a build and wait on a team member to unblock it using the web or the API.
 

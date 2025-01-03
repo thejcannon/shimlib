@@ -81,7 +81,7 @@ def input_from_json(
     return []
 
 
-class InteractiveStepBase(StepBase, extra=False):
+class ManualStepBase(StepBase, extra=False):
     """
     (The base of both Input and Block steps)
     """
