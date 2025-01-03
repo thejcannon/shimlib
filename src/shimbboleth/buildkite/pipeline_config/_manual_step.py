@@ -8,12 +8,7 @@ from ._base import StepBase
 MetaDataKey: TypeAlias = Annotated[str, MatchesRegex("^[a-zA-Z0-9-_]+$")]
 
 
-class TextInput(Model, extra=False):
-    """
-    For Input Step: https://buildkite.com/docs/pipelines/input-step#text-input-attributes
-    For Block Step: https://buildkite.com/docs/pipelines/block-step#text-input-attributes
-    """
-
+class _OptionBaseModel(Model):
     key: MetaDataKey
     """The meta-data key that stores the field's input"""
 
@@ -22,6 +17,13 @@ class TextInput(Model, extra=False):
 
     required: bool = field(default=True, json_converter=bool_from_json)
     """Whether the field is required for form submission"""
+
+
+class TextInput(_OptionBaseModel, extra=False):
+    """
+    For Input Step: https://buildkite.com/docs/pipelines/input-step#text-input-attributes
+    For Block Step: https://buildkite.com/docs/pipelines/block-step#text-input-attributes
+    """
 
     default: str | None = None
     """The value that is pre-filled in the text field"""
@@ -48,31 +50,23 @@ class SelectOption(Model, extra=False):
 
 
 # @TODO: If `multiple` is falsey, then `default` cant be a list of strings
-class SelectInput(Model, extra=False):
+class SelectInput(_OptionBaseModel, extra=False):
     """
     For Input Step: https://buildkite.com/docs/pipelines/input-step#select-input-attributes
     For Block Step: https://buildkite.com/docs/pipelines/block-step#select-input-attributes
     """
 
-    key: MetaDataKey
-    """The meta-data key that stores the field's input"""
+    select: str
+    """The select input name"""
 
-    options: NonEmptyList[list[SelectOption]]
+    options: NonEmptyList[SelectOption]
+    """The list of select field options."""
 
     default: str | list[str] | None = None
     """The value of the option(s) that will be pre-selected in the dropdown"""
 
-    hint: str | None = None
-    """The explanatory text that is shown after the label"""
-
     multiple: bool = field(default=False, json_converter=bool_from_json)
     """Whether more than one option may be selected"""
-
-    required: bool = field(default=True, json_converter=bool_from_json)
-    """Whether the field is required for form submission"""
-
-    select: str | None = None
-    """The text input name"""
 
 
 class ManualStepBase(StepBase, extra=False):
@@ -83,13 +77,10 @@ class ManualStepBase(StepBase, extra=False):
     branches: list[str] = field(default_factory=list, json_converter=list_str_from_json)
     """Which branches will include this step in their builds"""
 
+    # @TODO: From json, we could do better than trying each union, since we know
+    #   "text" or "select" must be present
     fields: list[TextInput | SelectInput] = field(default_factory=list)
     """A list of input fields required to be filled out before unblocking the step"""
 
     prompt: str | None = None
     """The instructional message displayed in the dialog box when the unblock step is activated"""
-
-    @Model._json_converter_(fields)
-    @staticmethod
-    def _fields_from_json(value: list[dict[str, str]]) -> list[TextInput | SelectInput]:
-        return []

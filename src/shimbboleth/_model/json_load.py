@@ -13,36 +13,41 @@ class ExtrasNotAllowedError(TypeError):
     pass
 
 
+class WrongTypeError(TypeError):
+    def __init__(self, expected, obj):
+        super().__init__(f"Expected {expected}, got {type(obj)}")
+
+
 class JSONLoadVisitor(Visitor[Any]):
     def visit_bool(self, objType: type[bool], *, obj: Any) -> bool:
         if type(obj) is not bool:
-            raise TypeError
+            raise WrongTypeError(objType, obj)
         return obj
 
     def visit_int(self, objType: type[int], *, obj: Any) -> int:
         if type(obj) is not int:
-            raise TypeError
+            raise WrongTypeError(objType, obj)
         return obj
 
     def visit_str(self, objType: type[str], *, obj: Any) -> str:
         if type(obj) is not str:
-            raise TypeError
+            raise WrongTypeError(objType, obj)
         return obj
 
     def visit_none(self, objType: None, *, obj: Any) -> None:
         if obj is not None:
-            raise TypeError
+            raise WrongTypeError(objType, obj)
         return None
 
     def visit_list(self, objType: GenericAlias, *, obj: Any) -> list:
         if type(obj) is not list:
-            raise TypeError
+            raise WrongTypeError(list, obj)
         (argT,) = objType.__args__
         return [self.visit(argT, obj=item) for item in obj]
 
     def visit_dict(self, objType: GenericAlias, *, obj: Any) -> dict[str, Any]:
         if type(obj) is not dict:
-            raise TypeError
+            raise WrongTypeError(dict, obj)
         keyT, valueT = objType.__args__
         return {
             self.visit(keyT, obj=key): self.visit(valueT, obj=value)
@@ -56,7 +61,7 @@ class JSONLoadVisitor(Visitor[Any]):
             except TypeError as e:
                 LOG.debug(f"{e=} for {t=}")
                 continue
-        raise TypeError
+        raise WrongTypeError(objType, obj)
 
     def visit_literal(self, objType: type, *, obj: Any) -> Any:
         for possibility in objType.__args__:
@@ -67,7 +72,7 @@ class JSONLoadVisitor(Visitor[Any]):
             if isinstance(possibility, str) and isinstance(obj, str):
                 if obj == possibility:
                     return obj
-        raise TypeError
+        raise WrongTypeError(objType, obj)
 
     def visit_annotated(self, objType: type, *, obj: Any) -> Any:
         baseType = objType.__origin__
@@ -91,7 +96,7 @@ class JSONLoadVisitor(Visitor[Any]):
 
     def visit_model(self, objType: ModelMeta, *, obj: Any) -> Any:
         if not isinstance(obj, dict):
-            raise TypeError
+            raise WrongTypeError(dict, obj)
 
         local_obj = obj
         for field_alias_name, field_alias in objType.__field_aliases__.items():
@@ -100,7 +105,10 @@ class JSONLoadVisitor(Visitor[Any]):
                     local_obj = obj.copy()
 
                 value = local_obj.pop(field_alias_name)
-                if field_alias.json_mode == "prepend" or local_obj.get(field_alias.alias_of) is None:
+                if (
+                    field_alias.json_mode == "prepend"
+                    or local_obj.get(field_alias.alias_of) is None
+                ):
                     local_obj[field_alias.alias_of] = value
 
         init_fields = {field for field in dataclasses.fields(objType) if field.init}
