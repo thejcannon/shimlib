@@ -2,7 +2,7 @@ steps:
   - "command"
 ---
 steps:
-  type: command
+  - type: command
 ---
 steps:
   type: script

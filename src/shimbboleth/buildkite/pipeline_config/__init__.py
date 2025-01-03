@@ -70,7 +70,6 @@ class BuildkitePipeline(Model, extra=True):
             | Literal["command"]
             | Literal["wait", "waiter"]
         ],
-        # data: Any,
     ) -> list[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep | GroupStep]:
         ret = []
         for step in value:
