@@ -1,13 +1,13 @@
 steps:
-  - type: input
+  - type: command
     branches: branch
-  - type: input
+  - type: command
     branches:
       - branch1
       - branch2
 ---
 steps:
-  - type: input
+  - type: command
     branches: [branch]
-  - type: input
+  - type: command
     branches: [branch1, branch2]
