@@ -1,13 +1,15 @@
 steps:
-  - type: wait
+  - trigger: trigger
     branches: branch
-  - type: wait
+  - trigger: trigger
     branches:
       - branch1
       - branch2
 ---
 steps:
-  - type: wait
+  - type: trigger
+    trigger: trigger
     branches: [branch]
-  - type: wait
+  - type: trigger
+    trigger: trigger
     branches: [branch1, branch2]
