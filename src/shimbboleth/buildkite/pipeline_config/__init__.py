@@ -67,7 +67,7 @@ class BuildkitePipeline(Model, extra=True):
             | NestedTriggerStep
             | Literal["block", "manual"]
             | Literal["input"]
-            | Literal["command", "script"]
+            | Literal["command", "commands", "script"]
             | Literal["wait", "waiter"]
         ],
     ) -> list[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep | GroupStep]:
@@ -92,7 +92,7 @@ class BuildkitePipeline(Model, extra=True):
                 ret.append(BlockStep(type=step))
             elif step == "input":
                 ret.append(InputStep(type=step))
-            elif step in ("command", "script"):
+            elif step in ("command", "commands", "script"):
                 ret.append(CommandStep(type=step))
             elif step == "wait" or step == "waiter":
                 ret.append(WaitStep(type=step))

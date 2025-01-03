@@ -1,0 +1,17 @@
+steps:
+  - "commands"
+---
+steps:
+  - type: commands
+---
+steps:
+  type: script
+  name: null
+  command: null
+  artifact_paths: null
+  branch_configuration: null
+  env: {}
+  timeout_in_minutes: null
+  agent_query_rules: []
+  concurrency: null
+  parallelism: null
