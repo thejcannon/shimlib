@@ -41,5 +41,8 @@ class Le:
 class Not(Generic[T]):
     inner: T
 
+    def __class_getitem__(cls, key):
+        return Not(key)
+
 NonEmptyList = Annotated[list[T], NonEmpty]
 NonEmptyString = Annotated[str, NonEmpty]

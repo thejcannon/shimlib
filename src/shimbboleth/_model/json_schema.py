@@ -11,6 +11,7 @@ from shimbboleth._model.field_types import (
     NonEmpty,
     Ge,
     Le,
+    Not,
 )
 from shimbboleth._model.field_alias import FieldAlias
 from shimbboleth._model._visitor import Visitor
@@ -55,24 +56,29 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
     def visit_pattern(self, objType: type[re.Pattern]) -> dict[str, Any]:
         return {"type": "string", "format": "regex"}
 
+    def _visit_annotation_type(self, annotation: Any) -> dict[str, Any]:
+        if isinstance(annotation, Description):
+            return {"description": annotation.description}
+        elif isinstance(annotation, Examples):
+            # @TODO: Typecheck the examples
+            return {"examples": annotation.examples}
+        elif isinstance(annotation, MatchesRegex):
+            return {"pattern": annotation.regex.pattern}
+        elif annotation is NonEmpty:
+            return {"minLength": 1}
+        elif isinstance(annotation, Ge):
+            return {"minimum": annotation.bound}
+        elif isinstance(annotation, Le):
+            return {"maximum": annotation.bound}
+        elif isinstance(annotation, Not):
+            return {"not": self._visit_annotation_type(annotation.inner)}
+        else:
+            raise TypeError(f"Unsupported annotation: {annotation}")
+
     def visit_annotated(self, objType: type) -> dict[str, Any]:
         ret = self.visit(objType.__origin__)
         for annotation in objType.__metadata__:
-            if isinstance(annotation, Description):
-                ret["description"] = annotation.description
-            elif isinstance(annotation, Examples):
-                # @TODO: Typecheck the examples
-                ret["examples"] = annotation.examples
-            elif isinstance(annotation, MatchesRegex):
-                ret["pattern"] = annotation.regex.pattern
-            elif annotation is NonEmpty:
-                ret["minLength"] = 1
-            elif isinstance(annotation, Ge):
-                ret["minimum"] = annotation.bound
-            elif isinstance(annotation, Le):
-                ret["maximum"] = annotation.bound
-            else:
-                raise TypeError(f"Unsupported annotation: {annotation}")
+            ret.update(self._visit_annotation_type(annotation))
         return ret
 
     def visit_type_alias_type(self, objType: TypeAliasType) -> dict[str, Any]:

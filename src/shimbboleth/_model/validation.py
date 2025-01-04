@@ -5,6 +5,9 @@ from typing_extensions import TypeAliasType
 from shimbboleth._model.field_types import (
     MatchesRegex,
     NonEmpty,
+    Not,
+    Ge,
+    Le,
 )
 from shimbboleth._model._visitor import Visitor
 from shimbboleth._model.model_meta import ModelMeta
@@ -46,13 +49,28 @@ class ValidationVisitor(Visitor[None]):
     def visit_literal(self, objType: type, *, obj: Any) -> None:
         pass
 
+    def _visit_annotation_type(self, annotation: Any, *, obj: Any) -> None:
+        if isinstance(annotation, MatchesRegex) and not annotation.regex.match(obj):
+            raise ValidationError
+        elif annotation is NonEmpty and len(obj) == 0:
+            raise ValidationError
+        elif isinstance(annotation, Ge) and obj < annotation.bound:
+            raise ValidationError
+        elif isinstance(annotation, Le) and obj > annotation.bound:
+            raise ValidationError
+        elif isinstance(annotation, Not):
+            try:
+                self._visit_annotation_type(annotation.inner, obj=obj)
+            except ValidationError:
+                pass
+            else:
+                raise ValidationError
+
+
     def visit_annotated(self, objType: type, *, obj: Any) -> None:
-        for annotation in objType.__metadata__:
-            if isinstance(annotation, MatchesRegex) and not annotation.regex.match(obj):
-                raise ValidationError
-            if annotation is NonEmpty and len(obj) == 0:
-                raise ValidationError
         self.visit(objType=objType.__origin__, obj=obj)
+        for annotation in objType.__metadata__:
+            self._visit_annotation_type(annotation, obj=obj)
 
     def visit_type_alias_type(self, objType: TypeAliasType, *, obj: Any) -> None:
         self.visit(objType=objType.__value__, obj=obj)

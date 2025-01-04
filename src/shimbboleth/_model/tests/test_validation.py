@@ -4,7 +4,7 @@ from typing_extensions import TypeAliasType
 from pytest import param
 
 from shimbboleth._model.model import Model
-from shimbboleth._model.field_types import MatchesRegex, NonEmpty
+from shimbboleth._model.field_types import MatchesRegex, NonEmpty, Not, Ge
 from shimbboleth._model.validation import ValidationVisitor, ValidationError
 
 
@@ -34,6 +34,9 @@ def make_model(attrs, **kwargs):
         param(list[str], ["a", "b"], id="list"),
         param(list[Annotated[str, MatchesRegex("^a$")]], ["a"], id="list"),
         param(list[Annotated[str, NonEmpty]], ["a", "b", "c"], id="list"),
+        # Not
+        param(Annotated[int, Not[Ge(10)]], 5, id="not"),
+        param(Annotated[int, Not[Ge(10)]], 9, id="not"),
     ],
 )
 def test_valid(field_type, obj):
@@ -55,6 +58,10 @@ def test_valid(field_type, obj):
         param(list[Annotated[str, NonEmpty]], [""], id="list"),
         param(list[Annotated[str, MatchesRegex("^a$")]], [""], id="list"),
         param(Annotated[list[str], NonEmpty], [], id="list"),
+        # Not
+        param(Annotated[int, Not[Ge(10)]], 10, id="not"),
+        param(Annotated[int, Not[Ge(10)]], 11, id="not"),
+        param(Annotated[int, Not[Ge(10)]], 100, id="not"),
     ],
 )
 def test_invalid(field_type, obj):
@@ -65,7 +72,7 @@ def test_invalid(field_type, obj):
 @pytest.mark.parametrize(
     ("field_type", "obj"),
     [
-        (TypeAliasType("TAT", Annotated[list, NonEmpty]), []),
+        (TypeAliasType("TAT", Annotated[list[str], NonEmpty]), []),
     ],
 )
 def test_type_alias_types__invalid(field_type, obj):

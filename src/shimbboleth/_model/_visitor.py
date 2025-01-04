@@ -18,7 +18,6 @@ _AnnotationType = type(Annotated[None, None])
 _GenericUnionType = type(Annotated[None, None] | None)
 _LiteralType = type(Literal[None])
 
-
 # @TODO: Handle Enums
 # @TODO: Framework for "attaching" errors during bubble up
 #   (E.g. if a field has type `list[Union[list...]])` and we complain about a single type

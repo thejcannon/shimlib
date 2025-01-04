@@ -10,6 +10,7 @@ from shimbboleth._model.field_types import (
     Le,
     NonEmptyList,
     NonEmptyString,
+    Not,
 )
 from shimbboleth._model.field import field
 from shimbboleth._model.field_alias import FieldAlias
@@ -98,6 +99,10 @@ def str_to_int(value: str) -> int:
         pytest.param(
             NonEmptyString, {"type": "string", "minLength": 1}, id="non-empty-string"
         ),
+        pytest.param(
+            Annotated[int, Not[Ge(10)]], {"type": "integer", "not": {"minimum": 10}},
+            id="simple"
+        )
     ],
 )
 def test_schema(field_type, expected):
