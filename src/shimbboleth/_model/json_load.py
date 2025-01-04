@@ -1,6 +1,7 @@
 from types import UnionType, GenericAlias
 import dataclasses
 from typing import Any
+import uuid
 from shimbboleth._model.model import ModelMeta
 from typing_extensions import TypeAliasType
 from shimbboleth._model._visitor import Visitor
@@ -10,6 +11,10 @@ LOG = logging.getLogger()
 
 
 class ExtrasNotAllowedError(TypeError):
+    pass
+
+
+class NotAValidUUIDError(TypeError):
     pass
 
 
@@ -33,6 +38,14 @@ class JSONLoadVisitor(Visitor[Any]):
         if type(obj) is not str:
             raise WrongTypeError(objType, obj)
         return obj
+
+    def visit_uuid(self, objType: type[uuid.UUID], *, obj: Any) -> uuid.UUID:
+        if not isinstance(obj, str):
+            raise WrongTypeError(objType, obj)
+        try:
+            return uuid.UUID(obj)
+        except ValueError:
+            raise NotAValidUUIDError(obj)
 
     def visit_none(self, objType: None, *, obj: Any) -> None:
         if obj is not None:

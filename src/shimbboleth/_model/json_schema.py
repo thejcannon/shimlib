@@ -1,5 +1,6 @@
 from types import UnionType, GenericAlias
 import re
+import uuid
 import dataclasses
 from typing import Any
 from shimbboleth._model.model import ModelMeta
@@ -55,6 +56,12 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
 
     def visit_pattern(self, objType: type[re.Pattern]) -> dict[str, Any]:
         return {"type": "string", "format": "regex"}
+
+    def visit_uuid(self, objType: type[uuid.UUID]) -> dict[str, Any]:
+        return {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+        }
 
     def _visit_annotation_type(self, annotation: Any) -> dict[str, Any]:
         if isinstance(annotation, Description):

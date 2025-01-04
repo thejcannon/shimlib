@@ -1,4 +1,5 @@
 import pytest
+import uuid
 from typing import Annotated
 from typing_extensions import TypeAliasType
 from pytest import param
@@ -21,7 +22,11 @@ def make_model(attrs, **kwargs):
         param(dict[str, int], {"key1": 0, "key2": 1}, id="dict"),
         param(Annotated[dict[str, int], NonEmpty], {"key": 0}, id="dict"),
         param(Annotated[dict[str, int], NonEmpty], {"": 0}, id="dict"),
-        param(Annotated[dict[Annotated[str, NonEmpty], int], NonEmpty], {"key": 0}, id="dict"),
+        param(
+            Annotated[dict[Annotated[str, NonEmpty], int], NonEmpty],
+            {"key": 0},
+            id="dict",
+        ),
         param(dict[Annotated[str, MatchesRegex("^a$")], int], {"a": 0}, id="dict"),
         # str
         param(Annotated[str, MatchesRegex(r"^.*$")], "", id="str"),
@@ -37,11 +42,15 @@ def make_model(attrs, **kwargs):
         # Not
         param(Annotated[int, Not[Ge(10)]], 5, id="not"),
         param(Annotated[int, Not[Ge(10)]], 9, id="not"),
+        param(Annotated[int, Not[uuid.UUID]], "not-a-uuid", id="not"),
+        # UUID
+        param(
+            Annotated[str, uuid.UUID], "123e4567-e89b-12d3-a456-426614174000", id="uuid"
+        ),
     ],
 )
 def test_valid(field_type, obj):
     ValidationVisitor().visit(objType=field_type, obj=obj)
-
 
 
 @pytest.mark.parametrize(
@@ -49,7 +58,9 @@ def test_valid(field_type, obj):
     [
         # dict
         param(Annotated[dict[str, int], NonEmpty], {}, id="dict"),
-        param(Annotated[dict[Annotated[str, NonEmpty], int], NonEmpty], {"": 0}, id="dict"),
+        param(
+            Annotated[dict[Annotated[str, NonEmpty], int], NonEmpty], {"": 0}, id="dict"
+        ),
         param(dict[Annotated[str, MatchesRegex("^a$")], int], {"": 0}, id="dict"),
         # str
         param(Annotated[str, MatchesRegex(r"^a$")], "", id="str"),
@@ -62,6 +73,13 @@ def test_valid(field_type, obj):
         param(Annotated[int, Not[Ge(10)]], 10, id="not"),
         param(Annotated[int, Not[Ge(10)]], 11, id="not"),
         param(Annotated[int, Not[Ge(10)]], 100, id="not"),
+        param(
+            Annotated[str, Not[uuid.UUID]],
+            "123e4567-e89b-12d3-a456-426614174000",
+            id="not",
+        ),
+        # UUID
+        param(Annotated[str, uuid.UUID], "not-a-uuid", id="uuid"),
     ],
 )
 def test_invalid(field_type, obj):

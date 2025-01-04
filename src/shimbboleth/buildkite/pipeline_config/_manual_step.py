@@ -6,7 +6,6 @@ from ._types import list_str_from_json
 from ._base import StepBase
 
 
-
 class _OptionBaseModel(Model):
     key: Annotated[str, MatchesRegex("^[a-zA-Z0-9-_]+$")]
     """The meta-data key that stores the field's input"""

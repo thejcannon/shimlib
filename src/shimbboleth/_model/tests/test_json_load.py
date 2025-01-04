@@ -1,6 +1,7 @@
 import pytest
 from typing import Literal, Annotated, ClassVar
 from typing_extensions import TypeAliasType
+import uuid
 from pytest import param
 
 from shimbboleth._model.model import Model
@@ -8,6 +9,7 @@ from shimbboleth._model.field_types import MatchesRegex, NonEmpty
 from shimbboleth._model.field import field
 from shimbboleth._model.json_load import JSONLoadVisitor
 from shimbboleth._model.field_alias import FieldAlias
+
 
 def make_model(attrs, **kwargs):
     return type(Model)("MyModel", (Model,), attrs, **kwargs)
@@ -67,8 +69,19 @@ def str_to_int(value: str) -> int:
         param(TypeAliasType("TAT", list[str]), [""], id="type_alias_type"),
     ],
 )
-def test_paassing(field_type, obj):
+def test_passing(field_type, obj):
     assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == obj
+
+
+@pytest.mark.parametrize(
+    ("field_type", "obj"),
+    [
+        param(uuid.UUID, "123e4567-e89b-12d3-a456-426614174000", id="uuid"),
+        param(uuid.UUID, "550e8400-e29b-41d4-a716-446655440000", id="uuid"),
+    ],
+)
+def test_passing_uuid(field_type, obj):
+    assert JSONLoadVisitor().visit(objType=field_type, obj=obj) == uuid.UUID(obj)
 
 
 @pytest.mark.parametrize(
@@ -93,6 +106,10 @@ def test_paassing(field_type, obj):
         param(list[bool], [True, "False"], id="list"),
         param(list[bool], [0], id="list"),
         param(list[int], "not a list", id="list"),
+        # uuid
+        param(uuid.UUID, "not-a-uuid", id="uuid"),
+        param(uuid.UUID, 123, id="uuid"),
+        param(uuid.UUID, True, id="uuid"),
         # literal
         param(Literal["a", "b", "c"], "d", id="literal"),
         param(Literal["a", "b", "c"], 1, id="literal"),

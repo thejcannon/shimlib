@@ -9,14 +9,16 @@ from typing import (
     Any,
 )
 import re
+import uuid
 from typing_extensions import TypeAliasType
 from types import UnionType, GenericAlias
 from shimbboleth._model.model_meta import ModelMeta
 
 RetT = TypeVar("RetT", covariant=True)
-_AnnotationType = type(Annotated[None, None])
+AnnotationType = type(Annotated[None, None])
 _GenericUnionType = type(Annotated[None, None] | None)
 _LiteralType = type(Literal[None])
+
 
 # @TODO: Handle Enums
 # @TODO: Framework for "attaching" errors during bubble up
@@ -35,6 +37,7 @@ class Visitor(Protocol, Generic[RetT]):
     visit_pattern: Callable[Concatenate["Visitor", re.Pattern, ...], RetT]
     visit_type_alias_type: Callable[Concatenate["Visitor", TypeAliasType, ...], RetT]
     visit_model: Callable[Concatenate["Visitor", ModelMeta, ...], RetT]
+    visit_uuid: Callable[Concatenate["Visitor", type[uuid.UUID], ...], RetT]
 
     def visit(self, objType: Any, **kwargs) -> RetT:
         if objType is bool:
@@ -60,7 +63,7 @@ class Visitor(Protocol, Generic[RetT]):
             return self.visit_union_type(objType, **kwargs)
         if isinstance(objType, _LiteralType):
             return self.visit_literal(objType, **kwargs)
-        if isinstance(objType, _AnnotationType):
+        if isinstance(objType, AnnotationType):
             return self.visit_annotated(objType, **kwargs)
         if isinstance(objType, TypeAliasType):
             return self.visit_type_alias_type(objType, **kwargs)
@@ -68,5 +71,7 @@ class Visitor(Protocol, Generic[RetT]):
             return self.visit_model(objType, **kwargs)
         if objType is re.Pattern:
             return self.visit_pattern(objType, **kwargs)
+        if objType is uuid.UUID:
+            return self.visit_uuid(objType, **kwargs)
 
         raise TypeError(f"Unsupported type: {objType}")

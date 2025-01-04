@@ -1,5 +1,6 @@
 from shimbboleth._model.json_schema import JSONSchemaVisitor
 import re
+import uuid
 from shimbboleth._model.model import Model
 from shimbboleth._model.field_types import (
     Description,
@@ -100,9 +101,18 @@ def str_to_int(value: str) -> int:
             NonEmptyString, {"type": "string", "minLength": 1}, id="non-empty-string"
         ),
         pytest.param(
-            Annotated[int, Not[Ge(10)]], {"type": "integer", "not": {"minimum": 10}},
-            id="simple"
-        )
+            Annotated[int, Not[Ge(10)]],
+            {"type": "integer", "not": {"minimum": 10}},
+            id="simple",
+        ),
+        pytest.param(
+            uuid.UUID,
+            {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            },
+            id="uuid",
+        ),
     ],
 )
 def test_schema(field_type, expected):

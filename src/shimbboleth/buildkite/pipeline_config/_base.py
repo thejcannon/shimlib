@@ -4,16 +4,6 @@ from uuid import UUID
 from typing import ClassVar, Any, final, Annotated
 
 
-# @TODO: Belongs in _model validation
-def _ensure_not_uuid(value: str) -> str:
-    try:
-        UUID(value)
-    except ValueError:
-        return value
-    else:
-        raise ValueError("not_uuid_error", "Value must not be a valid UUID")
-
-
 class Dependency(Model, extra=False):
     allow_failure: bool = field(default=False, json_converter=bool_from_json)
     step: str | None = None

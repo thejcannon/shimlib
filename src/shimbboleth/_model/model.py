@@ -21,6 +21,7 @@ class _ModelBase:
 
 class Model(_ModelBase, metaclass=ModelMeta):
     def __post_init__(self):
+        # @TODO: Validation should also happen on property setting
         ValidationVisitor().visit(type(self), obj=self)
 
     @staticmethod

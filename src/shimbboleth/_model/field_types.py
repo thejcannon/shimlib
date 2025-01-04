@@ -37,12 +37,14 @@ class Ge:
 class Le:
     bound: int
 
+
 @dataclass(frozen=True, slots=True)
 class Not(Generic[T]):
     inner: T
 
     def __class_getitem__(cls, key):
         return Not(key)
+
 
 NonEmptyList = Annotated[list[T], NonEmpty]
 NonEmptyString = Annotated[str, NonEmpty]

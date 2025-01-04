@@ -1,5 +1,6 @@
 from types import UnionType, GenericAlias
 import dataclasses
+import uuid
 from typing import Any
 from typing_extensions import TypeAliasType
 from shimbboleth._model.field_types import (
@@ -9,7 +10,7 @@ from shimbboleth._model.field_types import (
     Ge,
     Le,
 )
-from shimbboleth._model._visitor import Visitor
+from shimbboleth._model._visitor import Visitor, AnnotationType
 from shimbboleth._model.model_meta import ModelMeta
 
 
@@ -43,8 +44,25 @@ class ValidationVisitor(Visitor[None]):
             self.visit(valueT, obj=value)
 
     def visit_union_type(self, objType: UnionType, *, obj: Any) -> None:
-        # @TODO: We might want to validate UnionType, but that's pretty hard
-        pass
+        # @TODO: Needs tests!
+        rawtypes = set()
+        matched_type = None
+        for decltype in objType.__args__:
+            rawtype = decltype
+            while hasattr(rawtype, "__origin__"):
+                rawtype = rawtype.__origin__
+
+            if rawtype in rawtypes:
+                raise TypeError(
+                    "shimbboleth doesn't yet support UnionType with duplicate raw types"
+                )
+            if isinstance(obj, rawtype):
+                matched_type = decltype
+
+        if matched_type is None:
+            # @TODO: Better error
+            raise TypeError("No UnionType matched the object")
+        self.visit(matched_type, obj=obj)
 
     def visit_literal(self, objType: type, *, obj: Any) -> None:
         pass
@@ -65,7 +83,12 @@ class ValidationVisitor(Visitor[None]):
                 pass
             else:
                 raise ValidationError
-
+        elif annotation is uuid.UUID:
+            # NB: We allow `UUID` as an annotation type
+            try:
+                uuid.UUID(obj)
+            except ValueError:
+                raise ValidationError from None
 
     def visit_annotated(self, objType: type, *, obj: Any) -> None:
         self.visit(objType=objType.__origin__, obj=obj)
