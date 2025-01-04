@@ -1,15 +1,13 @@
 import pytest
 from typing import Literal, Annotated, ClassVar
 from typing_extensions import TypeAliasType
+from pytest import param
 
 from shimbboleth._model.model import Model
 from shimbboleth._model.field_types import MatchesRegex, NonEmpty
 from shimbboleth._model.field import field
 from shimbboleth._model.json_load import JSONLoadVisitor
 from shimbboleth._model.field_alias import FieldAlias
-
-param = pytest.param
-
 
 def make_model(attrs, **kwargs):
     return type(Model)("MyModel", (Model,), attrs, **kwargs)

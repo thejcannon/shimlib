@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import re
-from typing import Annotated, TypeVar
+from typing import Annotated, TypeVar, Generic
 
 T = TypeVar("T")
 
@@ -37,9 +37,9 @@ class Ge:
 class Le:
     bound: int
 
+@dataclass(frozen=True, slots=True)
+class Not(Generic[T]):
+    inner: T
 
 NonEmptyList = Annotated[list[T], NonEmpty]
 NonEmptyString = Annotated[str, NonEmpty]
-
-
-# @TODO: add `Not[]`, UUID?

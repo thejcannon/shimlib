@@ -1,15 +1,14 @@
-from typing import Annotated, TypeAlias
+from typing import Annotated
 import re
 from shimbboleth._model import MatchesRegex, field, Model, NonEmptyList
 from ._types import bool_from_json
 from ._types import list_str_from_json
 from ._base import StepBase
 
-MetaDataKey: TypeAlias = Annotated[str, MatchesRegex("^[a-zA-Z0-9-_]+$")]
 
 
 class _OptionBaseModel(Model):
-    key: MetaDataKey
+    key: Annotated[str, MatchesRegex("^[a-zA-Z0-9-_]+$")]
     """The meta-data key that stores the field's input"""
 
     hint: str | None = None

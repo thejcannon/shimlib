@@ -1,7 +1,7 @@
-from shimbboleth._model import Model, field, FieldAlias
+from shimbboleth._model import Model, field, FieldAlias, Not
 from ._types import bool_from_json
 from uuid import UUID
-from typing import ClassVar, Any, final
+from typing import ClassVar, Any, final, Annotated
 
 
 # @TODO: Belongs in _model validation
@@ -20,8 +20,7 @@ class Dependency(Model, extra=False):
 
 
 class StepBase(Model):
-    # @TODO: Annotate `Not[UUID]`
-    key: str | None = field(default=None)
+    key: Annotated[str, Not[UUID]] | None = field(default=None)
     """A unique identifier for a step, must not resemble a UUID"""
 
     allow_dependency_failure: bool = field(default=False, json_converter=bool_from_json)
@@ -53,11 +52,6 @@ class StepBase(Model):
             val["type"] = type_tag
 
         return val
-
-    # def __post_init__(self):
-    #     super().__post_init__()
-    #     if self.key:
-    #         _ensure_not_uuid(self.key)
 
     @Model._json_converter_(depends_on)
     @classmethod

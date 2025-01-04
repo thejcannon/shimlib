@@ -12,4 +12,5 @@ from shimbboleth._model.field_types import (
     Le,
     NonEmptyList,
     NonEmptyString,
+    Not,
 )
