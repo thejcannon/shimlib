@@ -25,8 +25,6 @@ from dataclasses import dataclass
 from shimbboleth.buildkite.pipeline_config.tests.conftest import STEP_TYPE_PARAMS
 
 import yaml
-import pytest
-from xml.etree.ElementTree import PI
 
 
 

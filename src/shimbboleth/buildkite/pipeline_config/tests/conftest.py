@@ -31,6 +31,7 @@ class StepTypeParam(Generic[T]):
     def dumped_default(self) -> dict[str, Any]:
         return self.ctor().model_dump()
 
+
 STEP_TYPE_PARAMS = [
     StepTypeParam(BlockStep, {}),
     StepTypeParam(CommandStep, {}),
@@ -40,9 +41,12 @@ STEP_TYPE_PARAMS = [
     StepTypeParam(GroupStep, {"group": "group", "steps": [WaitStep()]}),
 ]
 
-@pytest.fixture(params=[
-    pytest.param(step_type_param, id=step_type_param.cls.__name__)
-    for step_type_param in STEP_TYPE_PARAMS
-])
+
+@pytest.fixture(
+    params=[
+        pytest.param(step_type_param, id=step_type_param.cls.__name__)
+        for step_type_param in STEP_TYPE_PARAMS
+    ]
+)
 def all_step_types(request) -> StepTypeParam:
     return request.param
