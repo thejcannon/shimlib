@@ -27,7 +27,6 @@ from shimbboleth.buildkite.pipeline_config.tests.conftest import STEP_TYPE_PARAM
 import yaml
 
 
-
 @dataclass(slots=True, frozen=True)
 class ValidPipeline:
     name: str
@@ -57,13 +56,25 @@ class ValidPipeline:
             if name.startswith("all-"):
                 for step_type_param in STEP_TYPE_PARAMS:
                     docs = copy.deepcopy(yaml_docs)
-                    cls._replace_type(docs, lambda step: step.update(step_type_param.dumped_default))
-                    yield ValidPipeline(f"*{step_type_param.lowercase}-{name.removeprefix('all-')}", docs[0], docs[-1])
+                    cls._replace_type(
+                        docs, lambda step: step.update(step_type_param.dumped_default)
+                    )
+                    yield ValidPipeline(
+                        f"*{step_type_param.lowercase}-{name.removeprefix('all-')}",
+                        docs[0],
+                        docs[-1],
+                    )
             elif name.startswith("manual-"):
                 for step_type in ("block", "input"):
                     docs = copy.deepcopy(yaml_docs)
-                    cls._replace_type(docs, lambda step: step.__setitem__("type", step_type))
-                    yield ValidPipeline(f"*{step_type}-{name.removeprefix('manual-')}", docs[0], docs[-1])
+                    cls._replace_type(
+                        docs, lambda step: step.__setitem__("type", step_type)
+                    )
+                    yield ValidPipeline(
+                        f"*{step_type}-{name.removeprefix('manual-')}",
+                        docs[0],
+                        docs[-1],
+                    )
             else:
                 yield ValidPipeline(name, yaml_docs[0], yaml_docs[-1])
                 if not name.startswith(("pipeline-", "group-")):
@@ -72,10 +83,11 @@ class ValidPipeline:
                     yield ValidPipeline(f"*group-{name}", pipeline, expected)
 
 
-
 def pytest_generate_tests(metafunc):
     if "pipeline_info" in metafunc.fixturenames:
-        metafunc.parametrize("pipeline_info", list(ValidPipeline.load_all()), ids=lambda info: info.name)
+        metafunc.parametrize(
+            "pipeline_info", list(ValidPipeline.load_all()), ids=lambda info: info.name
+        )
 
 
 # @TODO: "manual" and "all" pipelines
