@@ -35,7 +35,9 @@ class ValidPipeline:
     expected: dict[str, Any]
 
     @classmethod
-    def _replaced_type(cls, docs: list[dict[str, Any]], replacer: Callable[[dict[str, Any]], None]) -> list[dict[str, Any]]:
+    def _replaced_type(
+        cls, docs: list[dict[str, Any]], replacer: Callable[[dict[str, Any]], None]
+    ) -> list[dict[str, Any]]:
         docs = copy.deepcopy(docs)
         for doc in docs:
             for step in doc["steps"]:
@@ -61,7 +63,8 @@ class ValidPipeline:
             if name.startswith("all-"):
                 for step_type_param in STEP_TYPE_PARAMS:
                     docs = cls._replaced_type(
-                        yaml_docs, lambda step: step.update(step_type_param.dumped_default)
+                        yaml_docs,
+                        lambda step: step.update(step_type_param.dumped_default),
                     )
                     yield ValidPipeline(
                         f"*{step_type_param.lowercase}-{name.removeprefix('all-')}",
@@ -83,7 +86,8 @@ class ValidPipeline:
                     if step_type_param.cls is GroupStep:
                         continue
                     docs = cls._replaced_type(
-                        yaml_docs, lambda step: step.update(step_type_param.dumped_default)
+                        yaml_docs,
+                        lambda step: step.update(step_type_param.dumped_default),
                     )
                     yield ValidPipeline(
                         f"*{step_type_param.lowercase}-{name.removeprefix('substep-')}",

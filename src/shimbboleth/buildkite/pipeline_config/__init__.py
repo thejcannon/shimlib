@@ -20,6 +20,7 @@ ALL_STEP_TYPES = (
     GroupStep,
 )
 
+
 # @TODO: When loading yaml, you can omit steps and just inline the steps themselves
 class BuildkitePipeline(Model, extra=True):
     steps: list[
@@ -42,9 +43,6 @@ class BuildkitePipeline(Model, extra=True):
     @staticmethod
     def _convert_env(
         # NB: Unlike Command steps, invalid value types aren't allowed
-        value: dict[str, str | int | bool]
+        value: dict[str, str | int | bool],
     ) -> dict[str, str]:
-        return {
-            k: rubystr(v)
-            for k, v in value.items()
-        }
+        return {k: rubystr(v) for k, v in value.items()}

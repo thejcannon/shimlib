@@ -11,7 +11,7 @@ from ._types import rubystr
 def agents_from_json(value: dict[str, Any] | list[str]) -> dict[str, str]:
     if isinstance(value, list):
         # @TODO: ignore non-strings
-        return dict((elem.split("=", 1) if "=" in elem else (elem, "true")) for elem in value)
-    return {
-        k: rubystr(v) for k, v in value.items() if v is not None
-    }
+        return dict(
+            (elem.split("=", 1) if "=" in elem else (elem, "true")) for elem in value
+        )
+    return {k: rubystr(v) for k, v in value.items() if v is not None}

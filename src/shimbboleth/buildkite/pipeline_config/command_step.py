@@ -204,7 +204,7 @@ class CommandStep(StepBase, extra=False):
     @staticmethod
     def _convert_env(
         # @TODO: Upstream allows value to be anything and ignores non-dict. WTF
-        value: dict[str, Any]
+        value: dict[str, Any],
     ) -> dict[str, str]:
         return {
             k: rubystr(v)
@@ -215,9 +215,7 @@ class CommandStep(StepBase, extra=False):
 
     @Model._json_converter_(cache)
     @staticmethod
-    def _convert_cache(
-        value: str | list[str] | CommandCache
-    ) -> CommandCache:
+    def _convert_cache(value: str | list[str] | CommandCache) -> CommandCache:
         if isinstance(value, str):
             return CommandCache(paths=[value])
         if isinstance(value, list):
@@ -227,7 +225,7 @@ class CommandStep(StepBase, extra=False):
     @Model._json_converter_(plugins)
     @staticmethod
     def _convert_plugins(
-        value: list[str | dict[str, Any]] | dict[str, Any]
+        value: list[str | dict[str, Any]] | dict[str, Any],
     ) -> list[dict[str, Any]]:
         # @TODO: ...
         return []
