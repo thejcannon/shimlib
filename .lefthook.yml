@@ -4,7 +4,7 @@ pre-commit:
     prettier-format:
       tags:
         - formatter
-      glob: "*.{md,yaml}"
+      glob: "*.{md,yaml,yml}"
       run: npx prettier --write {staged_files}
     ruff-format:
       tags:
