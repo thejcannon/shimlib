@@ -1,11 +1,12 @@
-from typing import Literal
+from typing import Literal, Annotated
 from typing_extensions import TypeAliasType
 
 
-from shimbboleth._model import Model, field
+from shimbboleth._model import Model, field, NonEmpty
 
 
 class GitHubCommitStatusInfo(Model, extra=False):
+    # somehow not required?
     context: str | None = None
 
 
@@ -15,7 +16,7 @@ class _NotifyBase(Model, extra=False):
 
 
 class GitHubCommitStatusNotify(_NotifyBase):
-    github_commit_status: GitHubCommitStatusInfo | None = None
+    github_commit_status: GitHubCommitStatusInfo
 
 
 class GitHubCheckNotify(Model, extra=False):
@@ -24,28 +25,31 @@ class GitHubCheckNotify(Model, extra=False):
 
 
 class EmailNotify(_NotifyBase):
-    email: str | None = None
+    email: str
 
 
 class BasecampCampfireNotify(_NotifyBase):
-    basecamp_campfire: str | None = None
+    basecamp_campfire: str
 
 
 class SlackNotifyInfo(Model, extra=False):
-    channels: list[str] | None = None
+    channels: Annotated[list[str], NonEmpty] = field()
     message: str | None = None
 
 
 class SlackNotify(_NotifyBase):
-    slack: str | SlackNotifyInfo | None = None
+    # The `slack` notification is invalid: Each channel should be defined as `#channel-name`, `team-name#channel-name`, 'team-name@user-name', '@user-name', 'U12345678', 'W12345678', or 'S12345678'
+    slack: str | SlackNotifyInfo
+
+    # @TODO: JSON conversion to SlackNotifyInfo with str -> channels: [string]
 
 
 class WebhookNotify(_NotifyBase):
-    webhook: str | None = None
+    webhook: str
 
 
 class PagerdutyNotify(_NotifyBase):
-    pagerduty_change_event: str | None = None
+    pagerduty_change_event: str
 
 
 BuildNotifyT = TypeAliasType(

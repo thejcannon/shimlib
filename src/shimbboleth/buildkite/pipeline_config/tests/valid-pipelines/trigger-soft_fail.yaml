@@ -1,0 +1,12 @@
+steps:
+  - trigger: trigger
+    soft_fail: "true"
+  - trigger: trigger
+    soft_fail: "false"
+---
+steps:
+  - type: trigger
+    trigger: trigger
+    soft_fail: true
+  - type: trigger
+    trigger: trigger

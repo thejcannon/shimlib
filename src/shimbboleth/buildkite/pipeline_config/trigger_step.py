@@ -4,7 +4,7 @@ from typing import Literal, ClassVar, Any
 from shimbboleth._model import field, FieldAlias, Model
 
 from ._base import StepBase
-from ._types import bool_from_json, env_from_json, list_str_from_json, skip_from_json
+from ._types import bool_from_json, list_str_from_json, skip_from_json
 
 
 class TriggeredBuild(Model, extra=False):
@@ -17,16 +17,16 @@ class TriggeredBuild(Model, extra=False):
     commit: str = "HEAD"
     """The commit hash for the build"""
 
-    env: dict[str, str | int | bool] = field(
-        default_factory=dict, json_converter=env_from_json
-    )
+    # @TODO: allows list and object
+    env: dict[str, str | int | bool] = field(default_factory=dict)
     """Environment variables for this step"""
 
     # @TODO: The default is the label of the trigger step
     message: str | None = None
     """The message for the build (supports emoji)"""
 
-    meta_data: dict[str, Any] | None = None
+    # @TODO: Not "Any" but "any JSON type
+    meta_data: dict[str, Any] = field(default_factory=dict)
     """Meta-data for the build"""
 
 

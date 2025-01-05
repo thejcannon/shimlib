@@ -1,0 +1,25 @@
+steps:
+  - group: group
+    steps:
+      - type: wait
+    notify:
+      - github_check
+      - github_commit_status
+      # - email: email  (not supported on steps)
+      # - webhook: webhook  (not supported on steps)
+      # - pagerduty_change_event: pagerduty_change_event  (not supported on steps)
+      #
+      # @TODO: "The `basecamp_campfire` notification is invalid: is invalid""
+      - basecamp_campfire: "https://3.basecamp.com/1234567/integrations/qwertyuiop/buckets/1234567/chats/1234567/lines"
+      - slack: "#general"
+      - slack:
+          channels:
+            - "#general"
+      - slack:
+          channels:
+            - "#general"
+          message: message
+      - github_commit_status:
+          context: context
+      - github_check:
+          name: name

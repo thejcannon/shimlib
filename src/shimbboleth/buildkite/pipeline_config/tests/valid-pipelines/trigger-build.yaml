@@ -1,0 +1,50 @@
+steps:
+  - trigger: trigger
+    build:
+      branch: branch
+  - trigger: trigger
+    build:
+      commit: commit
+  - trigger: trigger
+    build:
+      env:
+        str: string
+        int: 0
+        bool: true
+  - trigger: trigger
+    build:
+      message: message
+  - trigger: trigger
+    build:
+      meta_data:
+        str: string
+        int: 0
+        bool: true
+---
+steps:
+  - type: trigger
+    trigger: trigger
+    build:
+      branch: branch
+  - type: trigger
+    trigger: trigger
+    build:
+      commit: commit
+  - type: trigger
+    trigger: trigger
+    build:
+      env:
+        str: string
+        int: 0
+        bool: true
+  - type: trigger
+    trigger: trigger
+    build:
+      message: message
+  - type: trigger
+    trigger: trigger
+    build:
+      meta_data:
+        str: string
+        int: 0
+        bool: true

@@ -2,6 +2,7 @@ from typing import ClassVar, Literal
 
 
 from shimbboleth._model import Model, field, FieldAlias, NonEmptyList
+from shimbboleth.buildkite.pipeline_config._types import skip_from_json
 
 from .block_step import BlockStep
 from .input_step import InputStep
@@ -34,7 +35,7 @@ class GroupStep(StepBase, extra=False):
     notify: BuildNotifyT = field(default_factory=list)
 
     # NB: Passing an empty string is equivalent to false.
-    skip: bool | str = field(default=False)
+    skip: bool | str = field(default=False, json_converter=skip_from_json)
     "Whether this step should be skipped. Passing a string provides a reason for skipping this command"
 
     steps: NonEmptyList[

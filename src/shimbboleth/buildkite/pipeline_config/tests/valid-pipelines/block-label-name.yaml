@@ -6,9 +6,9 @@ steps:
     label: label
   - block: block
     name: name
-  - label: label
+  - type: block
+    label: label
     name: name
-    type: block
   - block: block
     label: label
     name: name

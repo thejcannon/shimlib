@@ -51,6 +51,8 @@ def make_model(attrs, **kwargs):
 )
 def test_valid(field_type, obj):
     ValidationVisitor().visit(objType=field_type, obj=obj)
+    # Also test a union type
+    ValidationVisitor().visit(objType=None | field_type, obj=obj)
 
 
 @pytest.mark.parametrize(
@@ -85,6 +87,9 @@ def test_valid(field_type, obj):
 def test_invalid(field_type, obj):
     with pytest.raises(ValidationError):
         ValidationVisitor().visit(objType=field_type, obj=obj)
+    # Also test a union type
+    with pytest.raises(ValidationError):
+        ValidationVisitor().visit(objType=None | field_type, obj=obj)
 
 
 @pytest.mark.parametrize(
@@ -112,3 +117,9 @@ def test_nested_models():
         MyModel(field=[])
     with pytest.raises(ValidationError):
         NestedModel(field=[""])
+
+
+@pytest.mark.xfail
+def test_complicated_union():
+    # NB: shimbboleth doesn't support unions with a duplicate "outer" type.
+    ValidationVisitor().visit(objType=list[str] | list[int], obj=[])

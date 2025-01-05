@@ -1,0 +1,10 @@
+steps:
+  - type: ~
+    allow_dependency_failure: "true"
+  - type: ~
+    allow_dependency_failure: "false"
+---
+steps:
+  - type: ~
+    allow_dependency_failure: true
+  - type: ~

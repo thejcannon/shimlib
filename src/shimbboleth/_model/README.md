@@ -1,6 +1,7 @@
 (TODO: Flesh out morex)
 
 Features:
+
 - Rich alias support
 - Customizing a field with a validator using `Field` (not using types)
 - Helpers to reduce `Field` usage in annotations
@@ -18,6 +19,6 @@ Things required from pydantic:
 - Discriminators
 - (reading from annotations)
 
-
 For heirarchical aliases:
+
 - the converter should take in the entire input and choose, then the descriptors are simple

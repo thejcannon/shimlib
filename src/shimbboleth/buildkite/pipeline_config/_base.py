@@ -1,3 +1,7 @@
+"""
+Contains the base class for all steps: StepBase.
+"""
+
 from shimbboleth._model import Model, field, FieldAlias, Not
 from ._types import bool_from_json
 from uuid import UUID
@@ -5,8 +9,10 @@ from typing import ClassVar, Any, final, Annotated
 
 
 class Dependency(Model, extra=False):
+    # @TODO: Make a PR upstream, this isn't required upstream?
+    step: str
+
     allow_failure: bool = field(default=False, json_converter=bool_from_json)
-    step: str | None = None
 
 
 class StepBase(Model):
@@ -44,10 +50,8 @@ class StepBase(Model):
         return val
 
     @Model._json_converter_(depends_on)
-    @classmethod
-    def _convert_depends_on(
-        cls, value: str | list[str | Dependency]
-    ) -> list[Dependency]:
+    @staticmethod
+    def _convert_depends_on(value: str | list[str | Dependency]) -> list[Dependency]:
         if isinstance(value, str):
             return [Dependency(step=value)]
         return [

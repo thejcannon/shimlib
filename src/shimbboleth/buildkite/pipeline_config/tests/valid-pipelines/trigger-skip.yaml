@@ -1,0 +1,21 @@
+steps:
+  - trigger: trigger
+    skip: "true"
+  - trigger: trigger
+    skip: "false"
+  - trigger: trigger
+    skip: ""
+  - trigger: trigger
+    skip: "reason"
+---
+steps:
+  - type: trigger
+    trigger: trigger
+    skip: true
+  - type: trigger
+    trigger: trigger
+  - type: trigger
+    trigger: trigger
+  - type: trigger
+    trigger: trigger
+    skip: "reason"

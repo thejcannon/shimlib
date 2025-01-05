@@ -1,5 +1,0 @@
-steps:
-  - type: block
-    fields:
-      - text: text
-        key: key

@@ -19,7 +19,6 @@ from typing import Annotated, Literal, ClassVar
 from typing_extensions import TypeAliasType
 
 import pytest
-from pytest import param
 
 
 def make_model(attrs, **kwargs):

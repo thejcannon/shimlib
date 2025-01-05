@@ -1,6 +1,7 @@
 from types import UnionType, GenericAlias
 import dataclasses
 import uuid
+import re
 from typing import Any
 from typing_extensions import TypeAliasType
 from shimbboleth._model.field_types import (
@@ -10,7 +11,7 @@ from shimbboleth._model.field_types import (
     Ge,
     Le,
 )
-from shimbboleth._model._visitor import Visitor, AnnotationType
+from shimbboleth._model._visitor import Visitor
 from shimbboleth._model.model_meta import ModelMeta
 
 
@@ -41,7 +42,8 @@ class ValidationVisitor(Visitor[None]):
         for key, value in obj.items():
             keyT, valueT = objType.__args__
             self.visit(keyT, obj=key)
-            self.visit(valueT, obj=value)
+            if valueT is not Any:
+                self.visit(valueT, obj=value)
 
     def visit_union_type(self, objType: UnionType, *, obj: Any) -> None:
         # @TODO: Needs tests!
@@ -56,13 +58,11 @@ class ValidationVisitor(Visitor[None]):
                 raise TypeError(
                     "shimbboleth doesn't yet support UnionType with duplicate raw types"
                 )
-            if isinstance(obj, rawtype):
+            if isinstance(rawtype, type) and isinstance(obj, rawtype):
                 matched_type = decltype
 
-        if matched_type is None:
-            # @TODO: Better error
-            raise TypeError("No UnionType matched the object")
-        self.visit(matched_type, obj=obj)
+        if matched_type is not None:
+            self.visit(matched_type, obj=obj)
 
     def visit_literal(self, objType: type, *, obj: Any) -> None:
         pass
@@ -94,6 +94,9 @@ class ValidationVisitor(Visitor[None]):
         self.visit(objType=objType.__origin__, obj=obj)
         for annotation in objType.__metadata__:
             self._visit_annotation_type(annotation, obj=obj)
+
+    def visit_pattern(self, objType: type[re.Pattern], *, obj: Any) -> None:
+        pass
 
     def visit_type_alias_type(self, objType: TypeAliasType, *, obj: Any) -> None:
         self.visit(objType=objType.__value__, obj=obj)

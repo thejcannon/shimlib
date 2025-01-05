@@ -149,6 +149,15 @@ wheels = [
 ]
 
 [[package]]
+name = "lefthook"
+version = "1.10.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ce/a1/783220864783c32f69fe7a632f59342de22512ea4fc38fb3ae585106feb5/lefthook-1.10.1.tar.gz", hash = "sha256:d618f284784e966ff7a1a71eb17c8a5b49bd36eef21a48a9780274463f513b17", size = 29481551 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/12/cb/bb89b25203988bc3b08eb35188d41b48c59f2e517459f1f2d400242dbe7a/lefthook-1.10.1-py3-none-any.whl", hash = "sha256:d2c6a751e807f253f6be1cb17905f9c9b4a332db250593890dd05231182fec45", size = 29622024 },
+]
+
+[[package]]
 name = "markdown-it-py"
 version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -405,7 +414,7 @@ wheels = [
 
 [[package]]
 name = "shimbboleth"
-version = "0.0.2.dev21+gacc9847.d20241206"
+version = "0.0.2.dev63+gd1a9006.d20250105"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },
@@ -415,6 +424,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "jmespath" },
+    { name = "lefthook" },
     { name = "pydantic" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -434,6 +444,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "jmespath", specifier = ">=1.0.1" },
+    { name = "lefthook", specifier = ">=1.10.1" },
     { name = "pydantic", git = "https://github.com/thejcannon/pydantic.git?rev=8b3060812fc1673a4d0c6a28a60b90567b49d113" },
     { name = "pytest", specifier = ">=8.3.3" },
     { name = "pytest-asyncio", specifier = ">=0.24.0" },

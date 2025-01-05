@@ -1,15 +1,12 @@
 steps:
   - trigger: trigger
-    branches: branch
+    async: "true"
   - trigger: trigger
-    branches:
-      - branch1
-      - branch2
+    async: "false"
 ---
 steps:
   - type: trigger
     trigger: trigger
-    branches: [branch]
+    async: true
   - type: trigger
     trigger: trigger
-    branches: [branch1, branch2]

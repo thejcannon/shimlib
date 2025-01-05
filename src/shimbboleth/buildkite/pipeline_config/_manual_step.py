@@ -23,14 +23,14 @@ class TextInput(_OptionBaseModel, extra=False):
     For Block Step: https://buildkite.com/docs/pipelines/block-step#text-input-attributes
     """
 
+    text: str
+    """The text input name"""
+
     default: str | None = None
     """The value that is pre-filled in the text field"""
 
     format: re.Pattern | None = None
     """The format must be a regular expression implicitly anchored to the beginning and end of the input and is functionally equivalent to the HTML5 pattern attribute."""
-
-    text: str | None = None
-    """The text input name"""
 
 
 class SelectOption(Model, extra=False):
@@ -48,6 +48,7 @@ class SelectOption(Model, extra=False):
 
 
 # @TODO: If `multiple` is falsey, then `default` cant be a list of strings
+# (however if its truthy, it can be either a string or a list of strings)
 class SelectInput(_OptionBaseModel, extra=False):
     """
     For Input Step: https://buildkite.com/docs/pipelines/input-step#select-input-attributes
@@ -60,6 +61,7 @@ class SelectInput(_OptionBaseModel, extra=False):
     options: NonEmptyList[SelectOption]
     """The list of select field options."""
 
+    # @TODO: (upstream) strangely this doesn't validate if its a valid option
     default: str | list[str] | None = None
     """The value of the option(s) that will be pre-selected in the dropdown"""
 

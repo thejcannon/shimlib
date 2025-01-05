@@ -34,7 +34,7 @@ class Visitor(Protocol, Generic[RetT]):
     visit_union_type: Callable[Concatenate["Visitor", UnionType, ...], RetT]
     visit_literal: Callable[Concatenate["Visitor", type, ...], RetT]
     visit_annotated: Callable[Concatenate["Visitor", type, ...], RetT]
-    visit_pattern: Callable[Concatenate["Visitor", re.Pattern, ...], RetT]
+    visit_pattern: Callable[Concatenate["Visitor", type[re.Pattern], ...], RetT]
     visit_type_alias_type: Callable[Concatenate["Visitor", TypeAliasType, ...], RetT]
     visit_model: Callable[Concatenate["Visitor", ModelMeta, ...], RetT]
     visit_uuid: Callable[Concatenate["Visitor", type[uuid.UUID], ...], RetT]
@@ -55,7 +55,7 @@ class Visitor(Protocol, Generic[RetT]):
             if container_t is dict:
                 keyT = objType.__args__[0]
                 if keyT is str or (
-                    isinstance(keyT, _AnnotationType) and keyT.__origin__ is str
+                    isinstance(keyT, AnnotationType) and keyT.__origin__ is str
                 ):
                     return self.visit_dict(objType, **kwargs)
                 raise TypeError(f"Unsupported dict key type: {keyT}")

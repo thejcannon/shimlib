@@ -1,0 +1,14 @@
+steps:
+  - type: ~
+    depends_on:
+      - step: step1
+        allow_failure: "true"
+      - step: step2
+        allow_failure: "false"
+---
+steps:
+  - type: ~
+    depends_on:
+      - step: step1
+        allow_failure: true
+      - step: step2

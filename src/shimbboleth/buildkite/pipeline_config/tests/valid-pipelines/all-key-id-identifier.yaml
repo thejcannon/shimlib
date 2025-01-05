@@ -1,0 +1,37 @@
+steps:
+  - type: ~
+    key: key1
+  - type: ~
+    id: id1
+  - type: ~
+    identifier: identifier1
+  - type: ~
+    key: key2
+    id: id2
+  - type: ~
+    key: key3
+    identifier: identifier2
+  - type: ~
+    id: id3
+    identifier: identifier3
+  - type: ~
+    key: key4
+    id: id4
+    identifier: identifier4
+# @TODO: Also the cases where the value is null (techincally, but also bleh)
+---
+steps:
+  - type: ~
+    key: key1
+  - type: ~
+    key: id1
+  - type: ~
+    key: identifier1
+  - type: ~
+    key: key2
+  - type: ~
+    key: key3
+  - type: ~
+    key: id3
+  - type: ~
+    key: key4

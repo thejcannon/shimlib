@@ -1,5 +1,3 @@
-
-
 # Buildkite Pipeline Config Types
 
 This module provides rich Python types for working with Buildkite pipeline configurations.
@@ -61,6 +59,7 @@ To simplify working with pipeline configs, certain fields are automatically cano
 - Agent query rules are normalized to dictionaries
 
 For example:
+
 ```python
 step = CommandStep(
     artifact_paths="logs/*",  # Will be converted to ["logs/*"]

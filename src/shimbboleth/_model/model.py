@@ -1,5 +1,6 @@
 from typing import Any, Self, TypeVar, Callable
 import copy
+import re
 import dataclasses
 
 from shimbboleth._model.validation import ValidationVisitor
@@ -45,6 +46,7 @@ class Model(_ModelBase, metaclass=ModelMeta):
         return JSONLoadVisitor().visit(cls, obj=value)
 
     def model_dump(self) -> dict[str, Any]:
+        # @TODO: Put this in a visitor
         ret = {}
         for field in dataclasses.fields(self):
             value = getattr(self, field.name)
@@ -54,18 +56,21 @@ class Model(_ModelBase, metaclass=ModelMeta):
             ):
                 continue
 
+            key = field.metadata.get("json_alias", field.name)
             if isinstance(value, dict):
-                ret[field.name] = {
+                ret[key] = {
                     k: v.model_dump() if isinstance(v, Model) else copy.deepcopy(v)
                     for k, v in value.items()
                 }
             elif isinstance(value, list):
-                ret[field.name] = [
+                ret[key] = [
                     v.model_dump() if isinstance(v, Model) else copy.deepcopy(v)
                     for v in value
                 ]
             elif isinstance(value, Model):
-                ret[field.name] = value.model_dump()
+                ret[key] = value.model_dump()
+            elif isinstance(value, re.Pattern):
+                ret[key] = value.pattern
             else:
-                ret[field.name] = copy.deepcopy(value)
+                ret[key] = copy.deepcopy(value)
         return ret

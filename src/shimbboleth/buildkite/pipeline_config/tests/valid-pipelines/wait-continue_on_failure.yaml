@@ -1,0 +1,10 @@
+steps:
+  - type: wait
+    continue_on_failure: "true"
+  - type: wait
+    continue_on_failure: "false"
+---
+steps:
+  - type: wait
+    continue_on_failure: true
+  - type: wait
