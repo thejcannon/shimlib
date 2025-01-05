@@ -1,31 +1,17 @@
-from typing import Annotated
-from typing_extensions import TypeAliasType
+from typing import Any
 
-from shimbboleth._model import Description, Examples
-
-
-AgentsListT = TypeAliasType(
-    "AgentsListT",
-    Annotated[
-        list[str],
-        Description("Query rules to target specific agents in k=v format"),
-        Examples("queue=default", "xcode=true"),
-    ],
-)
-
-AgentsObjectT = TypeAliasType(
-    "AgentsObjectT",
-    Annotated[
-        # @TODO: Any? (agent query rules cant be an object or an array)
-        dict[str, str],
-        Description("Query rules to target specific agents"),
-        Examples({"queue": "deploy"}, {"ruby": "2*"}),
-    ],
-)
+from ._types import rubystr
 
 
-def agents_from_json(value: AgentsObjectT | AgentsListT) -> dict[str, str]:
+# @TODO: "Any" == JSON
+# @TODO: "list[str]" seems to just ignore non-strings? (on command)
+# @TODO: BK stores things in "k=v" format. What if there's duplicate keys?
+#   Oh God, I think they just pass those right along...
+#   (on command
+def agents_from_json(value: dict[str, Any] | list[str]) -> dict[str, str]:
     if isinstance(value, list):
-        # @TODO: probably more validation (e.g. malformed strings)
-        value = dict(elem.split("=") for elem in value)
-    return value
+        # @TODO: ignore non-strings
+        return dict((elem.split("=", 1) if "=" in elem else (elem, "true")) for elem in value)
+    return {
+        k: rubystr(v) for k, v in value.items() if v is not None
+    }

@@ -1,0 +1,12 @@
+steps:
+  - type: command
+    concurrency: 1
+    concurrency_group: group1
+  - type: command
+    concurrency: 1
+    concurrency_group: group2
+    concurrency_method: ordered
+  - type: command
+    concurrency: 1
+    concurrency_group: group3
+    concurrency_method: eager

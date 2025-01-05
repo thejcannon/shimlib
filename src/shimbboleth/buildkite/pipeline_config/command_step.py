@@ -7,7 +7,7 @@ from ._agents import agents_from_json
 from ._types import (
     list_str_from_json,
     bool_from_json,
-    env_from_json,
+    rubystr,
     ExitStatus,
     skip_from_json,
 )
@@ -121,7 +121,6 @@ class CommandStep(StepBase, extra=False):
     cancel_on_build_failing: bool = field(default=False, json_converter=bool_from_json)
     """Whether to cancel the job as soon as the build is marked as failing"""
 
-    # @TODO: Empty?
     command: list[str] = field(default_factory=list, json_converter=list_str_from_json)
     """The commands to run on the agent"""
 
@@ -136,13 +135,15 @@ class CommandStep(StepBase, extra=False):
     concurrency_method: Literal["ordered", "eager"] | None = None
     """Control command order, allowed values are 'ordered' (default) and 'eager'. If you use this attribute, you must also define concurrency_group and concurrency."""
 
-    env: dict[str, str | int | bool] = field(
-        default_factory=dict, json_converter=env_from_json
-    )
+    env: dict[str, str] = field(default_factory=dict)
     """Environment variables for this step"""
 
     matrix: MatrixArray | SingleDimensionMatrix | MultiDimensionMatrix | None = None
-    """Matrix expandsions for this step. See https://buildkite.com/docs/pipelines/configure/workflows/build-matrix"""
+    """
+    Matrix expansions for this step.
+
+    See https://buildkite.com/docs/pipelines/configure/workflows/build-matrix
+    """
 
     notify: list[
         Literal["github_check", "github_commit_status"]
@@ -199,10 +200,23 @@ class CommandStep(StepBase, extra=False):
     #             )
     #     return data
 
+    @Model._json_converter_(env)
+    @staticmethod
+    def _convert_env(
+        # @TODO: Upstream allows value to be anything and ignores non-dict. WTF
+        value: dict[str, Any]
+    ) -> dict[str, str]:
+        return {
+            k: rubystr(v)
+            for k, v in value.items()
+            # NB: Upstream just ignores invalid types
+            if isinstance(v, (str, int, bool))
+        }
+
     @Model._json_converter_(cache)
-    @classmethod
-    def _cache_map_from_json(
-        cls, value: str | list[str] | CommandCache
+    @staticmethod
+    def _convert_cache(
+        value: str | list[str] | CommandCache
     ) -> CommandCache:
         if isinstance(value, str):
             return CommandCache(paths=[value])
@@ -211,9 +225,9 @@ class CommandStep(StepBase, extra=False):
         return value
 
     @Model._json_converter_(plugins)
-    @classmethod
-    def _plugins_from_json(
-        cls, value: list[str | dict[str, Any]] | dict[str, Any]
+    @staticmethod
+    def _convert_plugins(
+        value: list[str | dict[str, Any]] | dict[str, Any]
     ) -> list[dict[str, Any]]:
         # @TODO: ...
         return []

@@ -1,0 +1,33 @@
+steps:
+  - type: command
+    # as a list
+    agents:
+      - noequal
+      - key1=value
+      - key2=value=value
+  - type: command
+    # as an object
+    agents:
+      str: string
+      int: 0
+      bool: true
+      list: [one, two]
+      obj:
+        key: value
+      none: ~
+      has-an-equal: key=value
+---
+steps:
+  - type: command
+    agents:
+      noequal: "true"
+      key1: value
+      key2: value=value
+  - type: command
+    agents:
+      str: string
+      int: "0"
+      bool: "true"
+      list: '["one", "two"]'
+      obj: '{"key"=>"value"}'
+      has-an-equal: key=value

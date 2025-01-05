@@ -27,6 +27,7 @@ class Model(_ModelBase, metaclass=ModelMeta):
 
     @staticmethod
     def _json_converter_(field) -> Callable[[T], T]:
+        # @TODO: Assert funcname
         assert isinstance(field, dataclasses.Field), "Did you forget to = field(...)?"
         assert (
             "json_converter" not in field.metadata

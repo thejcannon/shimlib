@@ -1,0 +1,46 @@
+steps:
+  - type: command
+    cache: path
+  - type: command
+    cache: []
+  - type: command
+    cache:
+      - path
+  - type: command
+    cache:
+      paths:
+        - path
+      size: 20g
+  - type: command
+    cache:
+      paths:
+        - path
+      name: name
+  - type: command
+    cache:
+      paths:
+        - path
+      size: 20g
+      name: name
+---
+steps:
+  - type: command
+    cache:
+      paths: [path]
+  - type: command
+  - type: command
+    cache:
+      paths: [path]
+  - type: command
+    cache:
+      paths: [path]
+      size: 20g
+  - type: command
+    cache:
+      paths: [path]
+      name: name
+  - type: command
+    cache:
+      paths: [path]
+      size: 20g
+      name: name

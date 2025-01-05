@@ -1,0 +1,10 @@
+steps:
+  - type: command
+    cancel_on_build_failing: "true"
+  - type: command
+    cancel_on_build_failing: "false"
+---
+steps:
+  - type: command
+    cancel_on_build_failing: true
+  - type: command

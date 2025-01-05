@@ -18,9 +18,10 @@ data thats ambiguous and missing fields.)
 """
 
 from shimbboleth.buildkite.pipeline_config import BuildkitePipeline
+from shimbboleth.buildkite.pipeline_config.group_step import GroupStep
 from pathlib import Path
 import copy
-from typing import Iterable, Any
+from typing import Iterable, Any, Callable
 from dataclasses import dataclass
 from shimbboleth.buildkite.pipeline_config.tests.conftest import STEP_TYPE_PARAMS
 
@@ -34,11 +35,13 @@ class ValidPipeline:
     expected: dict[str, Any]
 
     @classmethod
-    def _replace_type(cls, docs, replacer):
+    def _replaced_type(cls, docs: list[dict[str, Any]], replacer: Callable[[dict[str, Any]], None]) -> list[dict[str, Any]]:
+        docs = copy.deepcopy(docs)
         for doc in docs:
             for step in doc["steps"]:
                 assert step.pop("type") is None
                 replacer(step)
+        return docs
 
     @classmethod
     def load_all(cls) -> "Iterable[ValidPipeline]":
@@ -47,17 +50,18 @@ class ValidPipeline:
         special-casing:
             - all-*.yaml: Yields a pipeline per step type
             - manual-*.yaml: Yields a pipeline for both Block and Input steps
+            - substep-*.yaml: Yields a pipeline for all step types except Group steps
             - (Non-group): Yields a pipeline with the same definition but as a group step
         """
         paths = (Path(__file__).parent / "valid-pipelines").glob("*.yaml")
         for path in paths:
             name = path.stem
             yaml_docs = list(yaml.safe_load_all(path.read_text()))
+            # @TODO: all/manual/substep, but as Group steps too
             if name.startswith("all-"):
                 for step_type_param in STEP_TYPE_PARAMS:
-                    docs = copy.deepcopy(yaml_docs)
-                    cls._replace_type(
-                        docs, lambda step: step.update(step_type_param.dumped_default)
+                    docs = cls._replaced_type(
+                        yaml_docs, lambda step: step.update(step_type_param.dumped_default)
                     )
                     yield ValidPipeline(
                         f"*{step_type_param.lowercase}-{name.removeprefix('all-')}",
@@ -66,12 +70,23 @@ class ValidPipeline:
                     )
             elif name.startswith("manual-"):
                 for step_type in ("block", "input"):
-                    docs = copy.deepcopy(yaml_docs)
-                    cls._replace_type(
-                        docs, lambda step: step.__setitem__("type", step_type)
+                    docs = cls._replaced_type(
+                        yaml_docs, lambda step: step.__setitem__("type", step_type)
                     )
                     yield ValidPipeline(
                         f"*{step_type}-{name.removeprefix('manual-')}",
+                        docs[0],
+                        docs[-1],
+                    )
+            elif name.startswith("substep-"):
+                for step_type_param in STEP_TYPE_PARAMS:
+                    if step_type_param.cls is GroupStep:
+                        continue
+                    docs = cls._replaced_type(
+                        yaml_docs, lambda step: step.update(step_type_param.dumped_default)
+                    )
+                    yield ValidPipeline(
+                        f"*{step_type_param.lowercase}-{name.removeprefix('substep-')}",
                         docs[0],
                         docs[-1],
                     )
@@ -103,6 +118,7 @@ def test_valid_pipeline(pipeline_info: ValidPipeline):
 
 # @BUG: an empty pipeline is valid using the UI (`null` steps)
 # @LINT: no duplicate pipelines/ duplicate steps
+# @LINT: all files use "yaml" suffix
 # @LINT: All steps in the result have `type: ` of the first part of the filename
 # @TEST: test that every one of the test cases are equivalent (if not identical)
 # @LINT/TEST: Keep the block-* pipelines in sync withe the input ones (where relevant)

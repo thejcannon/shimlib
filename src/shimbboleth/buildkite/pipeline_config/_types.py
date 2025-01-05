@@ -8,6 +8,26 @@ class ExitStatus(Model, extra=True):
     exit_status: Literal["*"] | int | None = None
     """The exit status number that will cause this job to soft-fail"""
 
+def _rubystr_inner(value: Any) -> str:
+    if isinstance(value, str):
+        return f'"{value}"'
+    elif isinstance(value, bool):
+        return str(value).lower()
+    elif isinstance(value, int):
+        return str(value)
+    elif isinstance(value, list):
+        return "[" + ", ".join(_rubystr_inner(v) for v in value) + "]"
+    elif isinstance(value, dict):
+        return "{" + ", ".join(f'"{k}"=>{_rubystr_inner(v)}' for k, v in value.items()) + "}"
+    elif value is None:
+        return "nil"
+    else:
+        raise ValueError(f"Unsupported type: {type(value)}")
+
+def rubystr(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    return _rubystr_inner(value)
 
 # NB: This may seem annoying (having to do `any(status == '*' for soft_fail in model.soft_fail)`)
 #   however consider if we allowed `bool`. `if model.soft_fail` would be ambiguous (because a non-empty list is truthy)
@@ -33,8 +53,8 @@ class ExitStatus(Model, extra=True):
 #   `env` at the command level just silently ignores non-int/str/bool
 # (what gives?!)
 #   We probably should reject (even in command)
-def env_from_json(value: dict[str, Any]) -> dict[str, str | int | bool]:
-    # @TODO: Reject non-str/int/bool values?
+def env_from_json(value: dict[str, Any]) -> dict[str, str]:
+    # @TODO: Reject/ignore non-str/int/bool values?
     return {k: v for k, v in value.items()}
 
 

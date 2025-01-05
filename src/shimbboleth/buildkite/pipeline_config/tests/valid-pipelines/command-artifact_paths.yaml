@@ -1,0 +1,12 @@
+steps:
+  - type: command
+    artifact_paths: scalar
+  - type: command
+    artifact_paths:
+      - path1
+---
+steps:
+  - type: command
+    artifact_paths: [scalar]
+  - type: command
+    artifact_paths: [path1]

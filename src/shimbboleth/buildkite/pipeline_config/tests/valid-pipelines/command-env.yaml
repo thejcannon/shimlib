@@ -1,0 +1,16 @@
+steps:
+  - type: command
+    env:
+      string: string
+      int: 0
+      bool: true
+      list: []
+      obj:
+        key: value
+---
+steps:
+  - type: command
+    env:
+      string: string
+      int: "0"
+      bool: "true"
