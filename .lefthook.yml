@@ -9,8 +9,10 @@ pre-commit:
     ruff-format:
       tags:
         - formatter
+      glob: "*.{py}"
       run: uv run ruff format
     ruff-check:
       tags:
         - fixer
+      glob: "*.{py}"
       run: uv run ruff check --fix
