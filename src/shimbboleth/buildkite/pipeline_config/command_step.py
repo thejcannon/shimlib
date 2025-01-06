@@ -1,6 +1,17 @@
 from typing import Literal, Any, Annotated, ClassVar
+from dataclasses import dataclass
 
-from shimbboleth._model import Model, field, MatchesRegex, FieldAlias, Ge, Le
+from shimbboleth._model import (
+    Model,
+    field,
+    MatchesRegex,
+    FieldAlias,
+    Ge,
+    Le,
+    NonEmpty,
+    Not,
+    NonEmptyList,
+)
 
 from ._base import StepBase
 from ._agents import agents_from_json
@@ -8,8 +19,9 @@ from ._types import (
     list_str_from_json,
     bool_from_json,
     rubystr,
-    ExitStatus,
     skip_from_json,
+    soft_fail_from_json,
+    soft_fail_to_json,
 )
 from ._notify import (
     BasecampCampfireNotify,
@@ -40,14 +52,20 @@ class CommandStepSignature(Model, extra=True):
 
 
 class ManualRetry(Model, extra=False):
-    allowed: bool = field(default=True, json_converter=bool_from_json)
+    """See https://buildkite.com/docs/pipelines/configure/step-types/command-step#retry-attributes-manual-retry-attributes"""
+
+    allowed: bool = field(default=True, json_loader=bool_from_json)
     """Whether or not this job can be retried manually"""
 
-    permit_on_passed: bool = field(default=True, json_converter=bool_from_json)
+    permit_on_passed: bool = field(default=True, json_loader=bool_from_json)
     """Whether or not this job can be retried after it has passed"""
 
     reason: str | None = None
-    """A string that will be displayed in a tooltip on the Retry button in Buildkite. This will only be displayed if the allowed attribute is set to false."""
+    """
+    A string that will be displayed in a tooltip on the Retry button in Buildkite.
+
+    This will only be displayed if the `allowed` attribute is set to false.
+    """
 
 
 SignalReasons = Literal[
@@ -62,7 +80,9 @@ SignalReasons = Literal[
 
 
 class AutomaticRetry(Model, extra=False):
-    # @TODO: Canonicalize?
+    """See https://buildkite.com/docs/pipelines/configure/step-types/command-step#retry-attributes-automatic-retry-attributes"""
+
+    # @TODO: Canonicalize into list[int]?
     exit_status: Literal["*"] | int | list[int] = "*"
     """The exit status number that will cause this job to retry"""
 
@@ -77,15 +97,39 @@ class AutomaticRetry(Model, extra=False):
 
 
 class RetryConditions(Model, extra=False):
-    # @TODO: From JSON
     automatic: list[AutomaticRetry] = field(
         default_factory=lambda: [AutomaticRetry(limit=2)]
     )
-    """Whether to allow a job to retry automatically"""
+    """When to allow a job to retry automatically"""
 
-    # @TODO: From JSON
     manual: ManualRetry = field(default_factory=lambda: ManualRetry(allowed=True))
-    """Whether (and when) to allow a job to be retried manually"""
+    """When to allow a job to be retried manually"""
+
+    @Model._json_loader_(automatic)
+    @staticmethod
+    def _load_automatic(
+        value: Literal[True, False, "true", "false"]
+        | AutomaticRetry
+        | list[AutomaticRetry],
+    ) -> list[AutomaticRetry]:
+        if value in (False, "false"):
+            return []
+        elif value in (True, "true"):
+            return [AutomaticRetry(limit=2)]
+        elif isinstance(value, AutomaticRetry):
+            return [value]
+        return value
+
+    @Model._json_loader_(manual)
+    @staticmethod
+    def _load_manual(
+        value: Literal[True, False, "true", "false"] | ManualRetry,
+    ) -> ManualRetry:
+        if value in (False, "false"):
+            return ManualRetry(allowed=False)
+        elif value in (True, "true"):
+            return ManualRetry(allowed=True)
+        return value
 
 
 class CommandCache(Model, extra=True):
@@ -95,6 +139,18 @@ class CommandCache(Model, extra=True):
     size: Annotated[str, MatchesRegex("^\\d+g$")] | None = None
 
 
+class Plugin(Model, extra=False):
+    spec: str = field(kw_only=False)
+    """The plugin "spec". Usually in `<org>/<repo>#<tag>` format"""
+
+    config: dict[str, Any] | None = field(kw_only=False)
+    """The configuration to use (or None)"""
+
+    # @FEAT: parse the spec and expose properties
+
+    def model_dump(self) -> dict[str, Any]:
+        return {self.spec: self.config}
+
 class CommandStep(StepBase, extra=False):
     """
     A command step runs one or more shell commands on one or more agents.
@@ -102,26 +158,24 @@ class CommandStep(StepBase, extra=False):
     https://buildkite.com/docs/pipelines/command-step
     """
 
-    agents: dict[str, str] = field(
-        default_factory=dict, json_converter=agents_from_json
-    )
+    agents: dict[str, str] = field(default_factory=dict, json_loader=agents_from_json)
     """Query rules to target specific agents. See https://buildkite.com/docs/agent/v3/cli-start#agent-targeting"""
 
     artifact_paths: list[str] = field(
-        default_factory=list, json_converter=list_str_from_json
+        default_factory=list, json_loader=list_str_from_json
     )
     """The glob paths of artifacts to upload once this step has finished running"""
 
-    branches: list[str] = field(default_factory=list, json_converter=list_str_from_json)
+    branches: list[str] = field(default_factory=list, json_loader=list_str_from_json)
     """Which branches will include this step in their builds"""
 
     cache: CommandCache = field(default_factory=lambda: CommandCache(paths=[]))
     """(@TODO) See: https://buildkite.com/docs/pipelines/hosted-agents/linux"""
 
-    cancel_on_build_failing: bool = field(default=False, json_converter=bool_from_json)
+    cancel_on_build_failing: bool = field(default=False, json_loader=bool_from_json)
     """Whether to cancel the job as soon as the build is marked as failing"""
 
-    command: list[str] = field(default_factory=list, json_converter=list_str_from_json)
+    command: list[str] = field(default_factory=list, json_loader=list_str_from_json)
     """The commands to run on the agent"""
 
     # @TODO: Validate concurrency fields together
@@ -157,9 +211,8 @@ class CommandStep(StepBase, extra=False):
     parallelism: int | None = None
     """The number of parallel jobs that will be created based on this step"""
 
-    # @TODO: Make sure order is preserved from YAML/JSON
-    # @TODO: Better type for plugins? Validation? (e.g. `"maxProperties": 1`)
-    plugins: list[dict[str, Any]] = field(default_factory=list)
+    # NB: We use a list of plugins, since
+    plugins: list[Plugin] = field(default_factory=list)
     """An array of plugins for this step."""
 
     priority: int | None = None
@@ -171,11 +224,14 @@ class CommandStep(StepBase, extra=False):
     signature: CommandStepSignature | None = None
 
     # NB: Passing an empty string is equivalent to false.
-    skip: str | bool = field(default=False, json_converter=skip_from_json)
+    skip: bool | str = field(default=False, json_loader=skip_from_json)
     """Whether to skip this step or not. Passing a string provides a reason for skipping this command."""
 
-    # @TODO: JSON Converter
-    soft_fail: list[ExitStatus] = field(default_factory=list)
+    # NB: This differs from the upstream schema in that we "unpack"
+    #  the `exit_status` object into the status.
+    soft_fail: bool | NonEmptyList[Annotated[int, Not[Literal[0]]]] = field(
+        default=False, json_loader=soft_fail_from_json, json_dumper=soft_fail_to_json
+    )
     """Allow specified non-zero exit statuses not to fail the build."""
 
     timeout_in_minutes: Annotated[int, Ge(1)] | None = None
@@ -200,7 +256,16 @@ class CommandStep(StepBase, extra=False):
     #             )
     #     return data
 
-    @Model._json_converter_(env)
+    @Model._json_loader_(cache)
+    @staticmethod
+    def _convert_cache(value: str | list[str] | CommandCache) -> CommandCache:
+        if isinstance(value, str):
+            return CommandCache(paths=[value])
+        if isinstance(value, list):
+            return CommandCache(paths=value)
+        return value
+
+    @Model._json_loader_(env)
     @staticmethod
     def _convert_env(
         # @TODO: Upstream allows value to be anything and ignores non-dict. WTF
@@ -213,19 +278,20 @@ class CommandStep(StepBase, extra=False):
             if isinstance(v, (str, int, bool))
         }
 
-    @Model._json_converter_(cache)
+    @Model._json_loader_(plugins)
     @staticmethod
-    def _convert_cache(value: str | list[str] | CommandCache) -> CommandCache:
-        if isinstance(value, str):
-            return CommandCache(paths=[value])
-        if isinstance(value, list):
-            return CommandCache(paths=value)
-        return value
-
-    @Model._json_converter_(plugins)
-    @staticmethod
-    def _convert_plugins(
-        value: list[str | dict[str, Any]] | dict[str, Any],
-    ) -> list[dict[str, Any]]:
-        # @TODO: ...
-        return []
+    def _load_plugins(
+        # @TODO: the dictionaries should only have one property.
+        #   (e.g. `"maxProperties": 1`)
+        # @TODO: (Not Any, but AnyJSON)
+        value: list[str | dict[str, dict[str, Any] | None]]
+        | dict[str, dict[str, Any] | None],
+    ) -> list[Plugin]:
+        if isinstance(value, dict):
+            return [Plugin(spec=spec, config=config) for spec, config in value.items()]
+        return [
+            Plugin(spec=elem, config=None)
+            if isinstance(elem, str)
+            else Plugin(*next(iter(elem.items())))
+            for elem in value
+        ]

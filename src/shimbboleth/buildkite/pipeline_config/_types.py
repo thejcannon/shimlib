@@ -1,11 +1,10 @@
-from typing import Literal, Any
+from typing import Literal, Any, Annotated
 
-from shimbboleth._model import Model
+from shimbboleth._model import Model, NonEmptyList, Not
 
 
 class ExitStatus(Model, extra=True):
-    # @TODO: Is None actuall allowed?
-    exit_status: Literal["*"] | int | None = None
+    exit_status: Literal["*"] | int
     """The exit status number that will cause this job to soft-fail"""
 
 
@@ -54,17 +53,6 @@ def rubystr(value: Any) -> str:
 #         return value
 
 
-# @TODO: RHS shouldn't be `Any`, but it kinda is upstream
-# But there's a twist!
-#   `env` at the pipeline level enforces RHS `str | int | bool`
-#   `env` at the command level just silently ignores non-int/str/bool
-# (what gives?!)
-#   We probably should reject (even in command)
-def env_from_json(value: dict[str, Any]) -> dict[str, str]:
-    # @TODO: Reject/ignore non-str/int/bool values?
-    return {k: v for k, v in value.items()}
-
-
 def bool_from_json(value: Literal[True, False, "true", "false"]) -> bool:
     return value in (True, "true")
 
@@ -79,3 +67,25 @@ def skip_from_json(value: str | Literal[True, False, "true", "false"]) -> str | 
 
 def list_str_from_json(value: str | list[str]) -> list[str]:
     return value if isinstance(value, list) else [value]
+
+
+def soft_fail_from_json(
+    value: Literal[True, False, "true", "false"] | list[ExitStatus],
+) -> bool | NonEmptyList[Annotated[int, Not[Literal[0]]]]:
+    if value in (True, "true"):
+        return True
+    elif value in (False, "false"):
+        return False
+    elif value == []:
+        return False
+    elif any(wrapped.exit_status == "*" for wrapped in value):
+        return True
+    return [wrapped.exit_status for wrapped in value]
+
+
+def soft_fail_to_json(
+    value: bool | NonEmptyList[Annotated[int, Not[Literal[0]]]],
+) -> bool | list[dict[str, int]]:
+    if isinstance(value, bool):
+        return value
+    return [{"exit_status": exit_status} for exit_status in value]

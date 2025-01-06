@@ -16,8 +16,8 @@ from shimbboleth._model.model_meta import ModelMeta
 
 RetT = TypeVar("RetT", covariant=True)
 AnnotationType = type(Annotated[None, None])
+LiteralType = type(Literal[None])
 _GenericUnionType = type(Annotated[None, None] | None)
-_LiteralType = type(Literal[None])
 
 
 # @TODO: Handle Enums
@@ -61,7 +61,7 @@ class Visitor(Protocol, Generic[RetT]):
                 raise TypeError(f"Unsupported dict key type: {keyT}")
         if isinstance(objType, (UnionType, _GenericUnionType)):
             return self.visit_union_type(objType, **kwargs)
-        if isinstance(objType, _LiteralType):
+        if isinstance(objType, LiteralType):
             return self.visit_literal(objType, **kwargs)
         if isinstance(objType, AnnotationType):
             return self.visit_annotated(objType, **kwargs)

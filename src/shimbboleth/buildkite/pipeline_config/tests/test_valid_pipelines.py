@@ -120,6 +120,7 @@ def test_valid_pipeline(pipeline_info: ValidPipeline):
     assert pipeline.model_dump() == pipeline_info.expected
 
 
+
 # @BUG: an empty pipeline is valid using the UI (`null` steps)
 # @LINT: no duplicate pipelines/ duplicate steps
 # @LINT: all files use "yaml" suffix
@@ -127,3 +128,6 @@ def test_valid_pipeline(pipeline_info: ValidPipeline):
 # @TEST: test that every one of the test cases are equivalent (if not identical)
 # @LINT/TEST: Keep the block-* pipelines in sync withe the input ones (where relevant)
 # @LINT(+fixer): That if there's 2 documents, they dont equal
+# FEAT: Make it so the second document can use null (no change), + or - keys to indicate a change, as a form of brevity
+
+# @TODO: Test all our pipelines pass validating against upstream schema

@@ -8,7 +8,8 @@ T = TypeVar("T")
 def field(
     *,
     default: T,
-    json_converter: Callable | None = None,
+    json_loader: Callable | None = None,
+    json_dumper: Callable | None = None,
     json_default: Any = dataclasses.MISSING,
     json_alias: str | None = None,
     **field_kwargs,
@@ -18,7 +19,8 @@ def field(
 @overload
 def field(
     *,
-    json_converter: Callable | None = None,
+    json_loader: Callable | None = None,
+    json_dumper: Callable | None = None,
     json_default: Any = dataclasses.MISSING,
     json_alias: str | None = None,
     **field_kwargs,
@@ -27,15 +29,18 @@ def field(
 
 def field(
     *,
-    json_converter: Callable | None = None,
+    json_loader: Callable | None = None,
+    json_dumper: Callable | None = None,
     json_default: Any = dataclasses.MISSING,
     json_alias: str | None = None,
     **field_kwargs,
 ) -> Any:
     # @TODO Validate json default matches python default post-conversion?
     metadata = {}
-    if json_converter:
-        metadata["json_converter"] = json_converter
+    if json_loader:
+        metadata["json_loader"] = json_loader
+    if json_dumper:
+        metadata["json_dumper"] = json_dumper
     if json_default is not dataclasses.MISSING:
         metadata["json_default"] = json_default
     if json_alias:

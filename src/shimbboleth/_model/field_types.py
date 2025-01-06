@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import re
-from typing import Annotated, TypeVar, Generic
+from typing import Annotated, TypeVar, Generic, Literal
 
 T = TypeVar("T")
 
@@ -38,8 +38,12 @@ class Le:
     bound: int
 
 
+# NB: Ne(...) is just `Not[Literal[...]]
+
+
 @dataclass(frozen=True, slots=True)
 class Not(Generic[T]):
+    # @TODO: T can't be literal or another valid _type_
     inner: T
 
     def __class_getitem__(cls, key):

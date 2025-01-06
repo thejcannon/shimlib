@@ -13,7 +13,7 @@ class _OptionBaseModel(Model):
     hint: str | None = None
     """The explanatory text that is shown after the label"""
 
-    required: bool = field(default=True, json_converter=bool_from_json)
+    required: bool = field(default=True, json_loader=bool_from_json)
     """Whether the field is required for form submission"""
 
 
@@ -43,7 +43,7 @@ class SelectOption(Model, extra=False):
     hint: str | None = None
     """The text displayed directly under the select field's label"""
 
-    required: bool = field(default=True, json_converter=bool_from_json)
+    required: bool = field(default=True, json_loader=bool_from_json)
     """Whether the field is required for form submission"""
 
 
@@ -65,7 +65,7 @@ class SelectInput(_OptionBaseModel, extra=False):
     default: str | list[str] | None = None
     """The value of the option(s) that will be pre-selected in the dropdown"""
 
-    multiple: bool = field(default=False, json_converter=bool_from_json)
+    multiple: bool = field(default=False, json_loader=bool_from_json)
     """Whether more than one option may be selected"""
 
 
@@ -74,7 +74,7 @@ class ManualStepBase(StepBase, extra=False):
     (The base of both Input and Block steps)
     """
 
-    branches: list[str] = field(default_factory=list, json_converter=list_str_from_json)
+    branches: list[str] = field(default_factory=list, json_loader=list_str_from_json)
     """Which branches will include this step in their builds"""
 
     # @TODO: From json, we could do better than trying each union, since we know

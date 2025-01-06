@@ -96,14 +96,14 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
         return {"$ref": f"#/$defs/{objType.__name__}"}
 
     def _get_field_type_schema(self, field: dataclasses.Field) -> dict[str, Any]:
-        json_converter = field.metadata.get("json_converter", None)
-        if json_converter:
-            input_type = json_converter.__annotations__["value"]
-            output_type = json_converter.__annotations__["return"]
+        json_loader = field.metadata.get("json_loader", None)
+        if json_loader:
+            input_type = json_loader.__annotations__["value"]
+            output_type = json_loader.__annotations__["return"]
             assert (
                 output_type == field.type
             ), (
-                f"for {json_converter} {output_type=} {field.type=}"
+                f"for {json_loader} {output_type=} {field.type=}"
             )  # @TODO: what about `Annotated`? or subset (for unions)
             return self.visit(input_type)
         return self.visit(field.type)

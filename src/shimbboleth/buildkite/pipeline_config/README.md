@@ -2,7 +2,8 @@
 
 This module provides rich Python types for working with Buildkite pipeline configurations.
 
-The primary goal is to enable reading existing pipeline YAML files into strongly-typed Python objects for analysis and transformation, with the ability to write them back out if needed.
+The primary goal is to enable reading existing pipeline YAML files into strongly-typed Python objects for analysis and transformation,
+with the ability to write them back out as well.
 
 ## Key Features
 

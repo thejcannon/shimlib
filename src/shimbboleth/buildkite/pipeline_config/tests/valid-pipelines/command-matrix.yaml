@@ -1,0 +1,354 @@
+steps:
+  # array of values
+  - type: command
+    matrix: [string, 0, true]
+  # Single-dimension
+  - type: command
+    matrix:
+      setup: [value]
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          skip: "true"
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          skip: "false"
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          skip: ""
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          skip: "reason"
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          soft_fail: "true"
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          soft_fail: "false"
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          soft_fail: []
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          soft_fail:
+            - exit_status: "*"
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          soft_fail:
+            - exit_status: 1
+            - exit_status: -1
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          soft_fail:
+            - exit_status: "*"
+            - exit_status: -1
+  # Multi-dimension
+  - type: command
+    matrix:
+      setup:
+        key1: []
+  - type: command
+    matrix:
+      setup:
+        key1: [value]
+  - type: command
+    matrix:
+      setup:
+        key1: [value]
+        key2: [value]
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          skip: "true"
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          skip: "false"
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          skip: ""
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          skip: "reason"
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          soft_fail: "true"
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          soft_fail: "false"
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          soft_fail: []
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          soft_fail:
+            - exit_status: "*"
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          soft_fail:
+            - exit_status: 1
+            - exit_status: -1
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          soft_fail:
+            - exit_status: "*"
+            - exit_status: -1
+---
+steps:
+  # array of values
+  - type: command
+    matrix: [string, 0, true]
+  # Single-dimension
+  - type: command
+    matrix:
+      setup: [value]
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          skip: true
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          skip: "reason"
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          soft_fail: true
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          soft_fail: true
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          soft_fail:
+            - exit_status: 1
+            - exit_status: -1
+  - type: command
+    matrix:
+      setup: [value]
+      adjustments:
+        - with: newvalue
+          soft_fail: true
+  - type: command
+    matrix:
+      setup:
+        key1: []
+  - type: command
+    matrix:
+      setup:
+        key1: [value]
+  - type: command
+    matrix:
+      setup:
+        key1: [value]
+        key2: [value]
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          skip: true
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          skip: "reason"
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          soft_fail: true
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          soft_fail: true
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          soft_fail:
+            - exit_status: 1
+            - exit_status: -1
+  - type: command
+    matrix:
+      setup:
+        key1: []
+      adjustments:
+        - with:
+            key2: []
+          soft_fail: true

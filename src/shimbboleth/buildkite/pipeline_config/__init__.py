@@ -25,11 +25,9 @@ ALL_STEP_TYPES = (
 class BuildkitePipeline(Model, extra=True):
     steps: list[
         BlockStep | InputStep | CommandStep | WaitStep | TriggerStep | GroupStep
-    ] = field(json_converter=parse_steps)
+    ] = field(json_loader=parse_steps)
 
-    agents: dict[str, str] = field(
-        default_factory=dict, json_converter=agents_from_json
-    )
+    agents: dict[str, str] = field(default_factory=dict, json_loader=agents_from_json)
     """Query rules to target specific agents. See https://buildkite.com/docs/agent/v3/cli-start#agent-targeting"""
 
     env: dict[str, str] = field(default_factory=dict)
@@ -39,7 +37,7 @@ class BuildkitePipeline(Model, extra=True):
 
     # @TODO: Missing cache? https://buildkite.com/docs/pipelines/hosted-agents/linux#cache-volumes
 
-    @Model._json_converter_(env)
+    @Model._json_loader_(env)
     @staticmethod
     def _convert_env(
         # NB: Unlike Command steps, invalid value types aren't allowed

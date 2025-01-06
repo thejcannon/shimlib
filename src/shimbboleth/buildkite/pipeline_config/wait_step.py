@@ -14,10 +14,10 @@ class WaitStep(StepBase, extra=False):
     https://buildkite.com/docs/pipelines/wait-step
     """
 
-    branches: list[str] = field(default_factory=list, json_converter=list_str_from_json)
+    branches: list[str] = field(default_factory=list, json_loader=list_str_from_json)
     """Which branches will include this step in their builds"""
 
-    continue_on_failure: bool = field(default=False, json_converter=bool_from_json)
+    continue_on_failure: bool = field(default=False, json_loader=bool_from_json)
     """Continue to the next steps, even if the previous group of steps fail"""
 
     wait: str | None = None

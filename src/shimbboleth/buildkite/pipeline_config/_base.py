@@ -12,14 +12,14 @@ class Dependency(Model, extra=False):
     # @TODO: Make a PR upstream, this isn't required upstream?
     step: str
 
-    allow_failure: bool = field(default=False, json_converter=bool_from_json)
+    allow_failure: bool = field(default=False, json_loader=bool_from_json)
 
 
 class StepBase(Model):
     key: Annotated[str, Not[UUID]] | None = field(default=None)
     """A unique identifier for a step, must not resemble a UUID"""
 
-    allow_dependency_failure: bool = field(default=False, json_converter=bool_from_json)
+    allow_dependency_failure: bool = field(default=False, json_loader=bool_from_json)
     """Whether to proceed with this step and further steps if a step named in the depends_on attribute fails"""
 
     depends_on: list[Dependency] = field(default_factory=list)
@@ -49,7 +49,7 @@ class StepBase(Model):
 
         return val
 
-    @Model._json_converter_(depends_on)
+    @Model._json_loader_(depends_on)
     @staticmethod
     def _convert_depends_on(value: str | list[str | Dependency]) -> list[Dependency]:
         if isinstance(value, str):

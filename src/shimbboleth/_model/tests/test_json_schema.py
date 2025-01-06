@@ -174,7 +174,7 @@ def test_type_alias_type():
             make_model(
                 {
                     "__annotations__": {"field": int},
-                    "field": field(json_converter=str_to_int),
+                    "field": field(json_loader=str_to_int),
                 },
             ),
             {

@@ -1,3 +1,4 @@
+from xml.dom import ValidationErr
 from types import UnionType, GenericAlias
 import dataclasses
 import uuid
@@ -11,7 +12,7 @@ from shimbboleth._model.field_types import (
     Ge,
     Le,
 )
-from shimbboleth._model._visitor import Visitor
+from shimbboleth._model._visitor import Visitor, LiteralType
 from shimbboleth._model.model_meta import ModelMeta
 
 
@@ -89,6 +90,16 @@ class ValidationVisitor(Visitor[None]):
                 uuid.UUID(obj)
             except ValueError:
                 raise ValidationError from None
+        elif isinstance(annotation, LiteralType):
+            for possibility in annotation.__args__:
+                # NB: compare bool/int by identity (since `bool` inherits from `int`)
+                if obj is possibility:
+                    break
+                if isinstance(possibility, str) and isinstance(obj, str):
+                    if obj == possibility:
+                        break
+            else:
+                raise ValidationError
 
     def visit_annotated(self, objType: type, *, obj: Any) -> None:
         self.visit(objType=objType.__origin__, obj=obj)

@@ -35,7 +35,7 @@ class GroupStep(StepBase, extra=False):
     notify: BuildNotifyT = field(default_factory=list)
 
     # NB: Passing an empty string is equivalent to false.
-    skip: bool | str = field(default=False, json_converter=skip_from_json)
+    skip: bool | str = field(default=False, json_loader=skip_from_json)
     "Whether this step should be skipped. Passing a string provides a reason for skipping this command"
 
     steps: NonEmptyList[
@@ -46,7 +46,7 @@ class GroupStep(StepBase, extra=False):
     name: ClassVar = FieldAlias("group", json_mode="append")
     label: ClassVar = FieldAlias("group", json_mode="append")
 
-    @Model._json_converter_(steps)
+    @Model._json_loader_(steps)
     @staticmethod
     def __steps__from_json(
         value: list[

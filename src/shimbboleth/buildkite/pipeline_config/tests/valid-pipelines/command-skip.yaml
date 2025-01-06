@@ -1,0 +1,17 @@
+steps:
+  - type: command
+    skip: "true"
+  - type: command
+    skip: "false"
+  - type: command
+    skip: ""
+  - type: command
+    skip: "reason"
+---
+steps:
+  - type: command
+    skip: true
+  - type: command
+  - type: command
+  - type: command
+    skip: "reason"

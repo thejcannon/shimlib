@@ -1,0 +1,158 @@
+steps:
+  - type: command
+    retry:
+      automatic: true
+  - type: command
+    retry:
+      automatic: "true"
+  - type: command
+    retry:
+      automatic: false
+  - type: command
+    retry:
+      automatic: "false"
+  - type: command
+    retry:
+      automatic:
+        exit_status: 1
+  - type: command
+    retry:
+      automatic:
+        - limit: 5
+  - type: command
+    retry:
+      automatic:
+        - signal: signal
+  - type: command
+    retry:
+      automatic:
+        - signal_reason: "*"
+        - signal_reason: "none"
+        - signal_reason: "agent_refused"
+        - signal_reason: "agent_stop"
+        - signal_reason: "cancel"
+        - signal_reason: "process_run_error"
+        - signal_reason: "signature_rejected"
+  - type: command
+    retry:
+      manual: true
+  - type: command
+    retry:
+      manual: "true"
+  - type: command
+    retry:
+      manual: false
+  - type: command
+    retry:
+      manual: "false"
+  - type: command
+    retry:
+      manual:
+        allowed: true
+  - type: command
+    retry:
+      manual:
+        allowed: "true"
+  - type: command
+    retry:
+      manual:
+        allowed: false
+  - type: command
+    retry:
+      manual:
+        allowed: "false"
+  - type: command
+    retry:
+      manual:
+        permit_on_passed: true
+  - type: command
+    retry:
+      manual:
+        permit_on_passed: "true"
+  - type: command
+    retry:
+      manual:
+        permit_on_passed: false
+  - type: command
+    retry:
+      manual:
+        permit_on_passed: "false"
+  # This one's illegal, one of permit_on_passed or allowed must be set
+  - type: command
+    retry:
+      manual:
+        reason: reason
+---
+steps:
+  - type: command
+    retry: {}
+  - type: command
+    retry: {}
+  - type: command
+    retry:
+      automatic: []
+  - type: command
+    retry:
+      automatic: []
+  - type: command
+    retry:
+      automatic:
+        - exit_status: 1
+  - type: command
+    retry:
+      automatic:
+        - limit: 5
+  - type: command
+    retry:
+      automatic:
+        - signal: signal
+  - type: command
+    retry:
+      automatic:
+        - {}
+        - signal_reason: "none"
+        - signal_reason: "agent_refused"
+        - signal_reason: "agent_stop"
+        - signal_reason: "cancel"
+        - signal_reason: "process_run_error"
+        - signal_reason: "signature_rejected"
+  - type: command
+    retry: {}
+  - type: command
+    retry: {}
+  - type: command
+    retry:
+      manual:
+        allowed: false
+  - type: command
+    retry:
+      manual:
+        allowed: false
+  - type: command
+    retry: {}
+  - type: command
+    retry: {}
+  - type: command
+    retry:
+      manual:
+        allowed: false
+  - type: command
+    retry:
+      manual:
+        allowed: false
+  - type: command
+    retry: {}
+  - type: command
+    retry: {}
+  - type: command
+    retry:
+      manual:
+        permit_on_passed: false
+  - type: command
+    retry:
+      manual:
+        permit_on_passed: false
+  - type: command
+    retry:
+      manual:
+        reason: reason

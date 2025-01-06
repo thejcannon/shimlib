@@ -26,17 +26,34 @@ class Model(_ModelBase, metaclass=ModelMeta):
         ValidationVisitor().visit(type(self), obj=self)
 
     @staticmethod
-    def _json_converter_(field) -> Callable[[T], T]:
+    def _json_loader_(field) -> Callable[[T], T]:
         # @TODO: Assert funcname
         assert isinstance(field, dataclasses.Field), "Did you forget to = field(...)?"
         assert (
-            "json_converter" not in field.metadata
-        ), f"Only one converter per field. Already: {field.metadata['json_converter']}"
+            "json_loader" not in field.metadata
+        ), f"Only one loader per field. Already: {field.metadata['json_loader']}"
 
         def decorator(func: T) -> T:
             # NB: `metadata` is immutable, so copy/reassign
             field.metadata = type(field.metadata)(
-                field.metadata | {"json_converter": func}
+                field.metadata | {"json_loader": func}
+            )
+            return func
+
+        return decorator
+
+    @staticmethod
+    def _json_dumper_(field) -> Callable[[T], T]:
+        # @TODO: Assert funcname
+        assert isinstance(field, dataclasses.Field), "Did you forget to = field(...)?"
+        assert (
+            "json_dumper" not in field.metadata
+        ), f"Only one dumper per field. Already: {field.metadata['json_dumper']}"
+
+        def decorator(func: T) -> T:
+            # NB: `metadata` is immutable, so copy/reassign
+            field.metadata = type(field.metadata)(
+                field.metadata | {"json_dumper": func}
             )
             return func
 
@@ -58,7 +75,9 @@ class Model(_ModelBase, metaclass=ModelMeta):
                 continue
 
             key = field.metadata.get("json_alias", field.name)
-            if isinstance(value, dict):
+            if "json_dumper" in field.metadata:
+                ret[key] = field.metadata["json_dumper"](value)
+            elif isinstance(value, dict):
                 ret[key] = {
                     k: v.model_dump() if isinstance(v, Model) else copy.deepcopy(v)
                     for k, v in value.items()

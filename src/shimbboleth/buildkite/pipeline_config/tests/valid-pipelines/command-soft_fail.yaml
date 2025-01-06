@@ -1,0 +1,38 @@
+steps:
+  - type: command
+    soft_fail: "true"
+  - type: command
+    soft_fail: "false"
+  - type: command
+    soft_fail: []
+  - type: command
+    soft_fail:
+      - exit_status: "*"
+  - type: command
+    soft_fail:
+      - exit_status: 1
+  - type: command
+    soft_fail:
+      - exit_status: 1
+      - exit_status: -1
+  - type: command
+    soft_fail:
+      - exit_status: "*"
+      - exit_status: 1
+---
+steps:
+  - type: command
+    soft_fail: true
+  - type: command
+  - type: command
+  - type: command
+    soft_fail: true
+  - type: command
+    soft_fail:
+      - exit_status: 1
+  - type: command
+    soft_fail:
+      - exit_status: 1
+      - exit_status: -1
+  - type: command
+    soft_fail: true

@@ -1,0 +1,3 @@
+steps:
+  - type: command
+    timeout_in_minutes: 1

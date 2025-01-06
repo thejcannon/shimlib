@@ -1,0 +1,18 @@
+steps:
+  - type: command
+    notify:
+      - github_check
+      - github_commit_status
+      - basecamp_campfire: "https://3.basecamp.com/1234567/integrations/qwertyuiop/buckets/1234567/chats/1234567/lines"
+      - slack: "#general"
+      - slack:
+          channels:
+            - "#general"
+      - slack:
+          channels:
+            - "#general"
+          message: message
+      - github_commit_status:
+          context: context
+      - github_check:
+          name: name

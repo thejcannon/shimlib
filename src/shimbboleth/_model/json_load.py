@@ -80,10 +80,10 @@ class JSONLoadVisitor(Visitor[Any]):
         raise WrongTypeError(objType, obj)
 
     def visit_literal(self, objType: type, *, obj: Any) -> Any:
+        # @TODO: This is duplicated in `validation` (for annotated literals)
         for possibility in objType.__args__:
-            if (
-                obj is possibility
-            ):  # NB: compare bool/int by identity (since `bool` inherits from `int`)
+            # NB: compare bool/int by identity (since `bool` inherits from `int`)
+            if obj is possibility:
                 return obj
             if isinstance(possibility, str) and isinstance(obj, str):
                 if obj == possibility:
@@ -107,18 +107,19 @@ class JSONLoadVisitor(Visitor[Any]):
 
     def visit_model_field(self, field: dataclasses.Field, *, obj: Any) -> Any:
         expected_type = field.type
-        json_converter = field.metadata.get("json_converter", None)
-        if json_converter:
-            expected_type = json_converter.__annotations__["value"]
+        json_loader = field.metadata.get("json_loader", None)
+        if json_loader:
+            expected_type = json_loader.__annotations__["value"]
 
         value = self.visit(expected_type, obj=obj)
 
-        if json_converter:
-            value = json_converter(value)
+        if json_loader:
+            value = json_loader(value)
 
         return value
 
     def visit_model(self, objType: ModelMeta, *, obj: Any) -> Any:
+        # @TODO: Clean this up
         if not isinstance(obj, dict):
             raise WrongTypeError(dict, obj)
 

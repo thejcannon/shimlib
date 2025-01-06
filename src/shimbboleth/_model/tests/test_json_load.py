@@ -185,7 +185,7 @@ def test_invalid(field_type, obj):
             make_model(
                 {
                     "__annotations__": {"field": int},
-                    "field": field(json_converter=str_to_int),
+                    "field": field(json_loader=str_to_int),
                 },
             ),
             {"field": "42"},
@@ -227,7 +227,7 @@ def test_model(model_def, obj, expected):
             make_model(
                 {
                     "__annotations__": {"field": int},
-                    "field": field(json_converter=str_to_int),
+                    "field": field(json_loader=str_to_int),
                 },
             ),
             {"field": 0},
