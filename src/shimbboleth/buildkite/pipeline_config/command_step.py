@@ -1,5 +1,4 @@
 from typing import Literal, Any, Annotated, ClassVar
-from dataclasses import dataclass
 
 from shimbboleth._model import (
     Model,
@@ -8,7 +7,6 @@ from shimbboleth._model import (
     FieldAlias,
     Ge,
     Le,
-    NonEmpty,
     Not,
     NonEmptyList,
 )

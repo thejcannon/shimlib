@@ -1,4 +1,3 @@
-from xml.dom import ValidationErr
 from types import UnionType, GenericAlias
 import dataclasses
 import uuid

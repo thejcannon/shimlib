@@ -120,7 +120,6 @@ def test_valid_pipeline(pipeline_info: ValidPipeline):
     assert pipeline.model_dump() == pipeline_info.expected
 
 
-
 # @BUG: an empty pipeline is valid using the UI (`null` steps)
 # @LINT: no duplicate pipelines/ duplicate steps
 # @LINT: all files use "yaml" suffix

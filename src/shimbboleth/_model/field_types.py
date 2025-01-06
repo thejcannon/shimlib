@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import re
-from typing import Annotated, TypeVar, Generic, Literal
+from typing import Annotated, TypeVar, Generic
 
 T = TypeVar("T")
 
