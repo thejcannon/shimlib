@@ -149,6 +149,7 @@ class Plugin(Model, extra=False):
     def model_dump(self) -> dict[str, Any]:
         return {self.spec: self.config}
 
+
 class CommandStep(StepBase, extra=False):
     """
     A command step runs one or more shell commands on one or more agents.
