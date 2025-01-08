@@ -1,11 +1,8 @@
 from typing import Any, Self, TypeVar, Callable
-import copy
-import re
 import dataclasses
 
 from shimbboleth._model.validation import ValidationVisitor
 from shimbboleth._model.model_meta import ModelMeta
-from shimbboleth._model.json_load import JSONLoadVisitor
 
 T = TypeVar("T")
 
@@ -16,13 +13,11 @@ class _ModelBase:
     If `extra` is `True`, then this contains any extra fields provided when loading.
     """
 
-    def __init__(self):
-        self._extra = {}
-
 
 class Model(_ModelBase, metaclass=ModelMeta):
     def __post_init__(self):
         # @TODO: Validation should also happen on property setting
+        #   (which tells me that we should probably have a `__set__` method and use that)
         ValidationVisitor().visit(type(self), obj=self)
 
     @staticmethod
@@ -61,36 +56,14 @@ class Model(_ModelBase, metaclass=ModelMeta):
 
     @classmethod
     def model_load(cls: type[Self], value: dict[str, Any]) -> Self:
-        return JSONLoadVisitor().visit(cls, obj=value)
+        from shimbboleth._model.json_load import load_model
+
+        return load_model(cls, value)
 
     def model_dump(self) -> dict[str, Any]:
-        # @TODO: Put this in a visitor
-        ret = {}
-        for field in dataclasses.fields(self):
-            value = getattr(self, field.name)
-            if value == field.default or (
-                field.default_factory is not dataclasses.MISSING
-                and value == field.default_factory()
-            ):
-                continue
+        from shimbboleth._model.json_dump import dump_model
 
-            key = field.metadata.get("json_alias", field.name)
-            if "json_dumper" in field.metadata:
-                ret[key] = field.metadata["json_dumper"](value)
-            elif isinstance(value, dict):
-                ret[key] = {
-                    k: v.model_dump() if isinstance(v, Model) else copy.deepcopy(v)
-                    for k, v in value.items()
-                }
-            elif isinstance(value, list):
-                ret[key] = [
-                    v.model_dump() if isinstance(v, Model) else copy.deepcopy(v)
-                    for v in value
-                ]
-            elif isinstance(value, Model):
-                ret[key] = value.model_dump()
-            elif isinstance(value, re.Pattern):
-                ret[key] = value.pattern
-            else:
-                ret[key] = copy.deepcopy(value)
-        return ret
+        return dump_model(self)
+
+    def __setattr__(self, name: str, value: Any):
+        return super().__setattr__(name, value)

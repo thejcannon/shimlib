@@ -1,21 +1,21 @@
-import pytest
+from shimbboleth._model.validate import get_validators, ValidationError
+from shimbboleth._model.validate import NonEmpty, MatchesRegex, Not, Ge, Le
 import uuid
 from typing import Annotated
-from typing_extensions import TypeAliasType
+
+
+import pytest
 from pytest import param
-
-from shimbboleth._model.model import Model
-from shimbboleth._model.field_types import MatchesRegex, NonEmpty, Not, Ge
-from shimbboleth._model.validation import ValidationVisitor, ValidationError
-
-
-def make_model(attrs, **kwargs):
-    return type(Model)("MyModel", (Model,), attrs, **kwargs)
 
 
 @pytest.mark.parametrize(
     ("field_type", "obj"),
     [
+        # int
+        param(Annotated[int, Ge(1)], 1, id="int"),
+        param(Annotated[int, Ge(1)], 2, id="int"),
+        param(Annotated[int, Le(1)], 1, id="int"),
+        param(Annotated[int, Le(1)], 0, id="int"),
         # dict
         param(dict[str, int], {}, id="dict"),
         param(dict[str, int], {"key": 0}, id="dict"),
@@ -47,17 +47,21 @@ def make_model(attrs, **kwargs):
         param(
             Annotated[str, uuid.UUID], "123e4567-e89b-12d3-a456-426614174000", id="uuid"
         ),
+        # @TODO: Unions
     ],
 )
 def test_valid(field_type, obj):
-    ValidationVisitor().visit(objType=field_type, obj=obj)
-    # Also test a union type
-    ValidationVisitor().visit(objType=None | field_type, obj=obj)
+    for validator in get_validators(field_type):
+        validator(obj)
 
 
+# @TODO: Add error message expectation
 @pytest.mark.parametrize(
     ("field_type", "obj"),
     [
+        # int
+        param(Annotated[int, Ge(1)], 0, id="int"),
+        param(Annotated[int, Le(1)], 2, id="int"),
         # dict
         param(Annotated[dict[str, int], NonEmpty], {}, id="dict"),
         param(
@@ -82,47 +86,11 @@ def test_valid(field_type, obj):
         ),
         # UUID
         param(Annotated[str, uuid.UUID], "not-a-uuid", id="uuid"),
+        # @TODO: Unions
     ],
 )
 def test_invalid(field_type, obj):
-    with pytest.raises(ValidationError):
-        ValidationVisitor().visit(objType=field_type, obj=obj)
-    # Also test a union type
-    with pytest.raises(ValidationError):
-        ValidationVisitor().visit(objType=None | field_type, obj=obj)
-
-
-@pytest.mark.parametrize(
-    ("field_type", "obj"),
-    [
-        (TypeAliasType("TAT", Annotated[list[str], NonEmpty]), []),
-    ],
-)
-def test_type_alias_types__invalid(field_type, obj):
-    with pytest.raises(ValidationError):
-        ValidationVisitor().visit(objType=field_type, obj=obj)
-
-
-def test_nested_models():
-    class NestedModel(Model):
-        field: list[Annotated[str, NonEmpty]]
-
-    class MyModel(Model):
-        field: Annotated[list[NestedModel], NonEmpty]
-
-    MyModel(field=[NestedModel(field=["a"])])
-    MyModel(field=[NestedModel(field=[])])
-
-    with pytest.raises(ValidationError):
-        MyModel(field=[])
-    with pytest.raises(ValidationError):
-        NestedModel(field=[""])
-
-
-@pytest.mark.xfail
-def test_complicated_union():
-    # NB: shimbboleth doesn't support unions with a duplicate "outer" type.
-    ValidationVisitor().visit(objType=list[str] | list[int], obj=[])
-
-
-# @TEST: That we don't double-validate in the case of heirarchical models.
+    validators = get_validators(field_type)
+    with pytest.raises(ValidationError) as e:
+        for validator in validators:
+            validator(obj)

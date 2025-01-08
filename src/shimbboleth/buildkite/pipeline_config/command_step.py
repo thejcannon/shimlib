@@ -21,12 +21,7 @@ from ._types import (
     soft_fail_from_json,
     soft_fail_to_json,
 )
-from ._notify import (
-    BasecampCampfireNotify,
-    SlackNotify,
-    GitHubCommitStatusNotify,
-    GitHubCheckNotify,
-)
+from ._notify import StepNotifyT
 from ._matrix import (
     MatrixArray,
     SingleDimensionMatrix,
@@ -80,8 +75,7 @@ SignalReasons = Literal[
 class AutomaticRetry(Model, extra=False):
     """See https://buildkite.com/docs/pipelines/configure/step-types/command-step#retry-attributes-automatic-retry-attributes"""
 
-    # @TODO: Canonicalize into list[int]?
-    exit_status: Literal["*"] | int | list[int] = "*"
+    exit_status: Literal["*"] | list[int] = field(default="*")
     """The exit status number that will cause this job to retry"""
 
     limit: Annotated[int, Ge(1), Le(10)] | None = None
@@ -92,6 +86,17 @@ class AutomaticRetry(Model, extra=False):
 
     signal_reason: SignalReasons = "*"
     """The exit signal reason, that may be retried"""
+
+    @Model._json_loader_(exit_status)
+    @staticmethod
+    def _load_exit_status(
+        value: Literal["*"] | int | list[int],
+    ) -> Literal["*"] | list[int]:
+        if isinstance(value, int):
+            return [value]
+        if value == "*":
+            return value
+        return value
 
 
 class RetryConditions(Model, extra=False):
@@ -198,13 +203,7 @@ class CommandStep(StepBase, extra=False):
     See https://buildkite.com/docs/pipelines/configure/workflows/build-matrix
     """
 
-    notify: list[
-        Literal["github_check", "github_commit_status"]
-        | BasecampCampfireNotify
-        | SlackNotify
-        | GitHubCommitStatusNotify
-        | GitHubCheckNotify
-    ] = field(default_factory=list)
+    notify: StepNotifyT = field(default_factory=list)
     """Array of notification options for this step"""
 
     parallelism: int | None = None

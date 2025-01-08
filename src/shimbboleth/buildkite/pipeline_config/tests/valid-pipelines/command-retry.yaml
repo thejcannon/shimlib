@@ -18,6 +18,14 @@ steps:
   - type: command
     retry:
       automatic:
+        exit_status: "*"
+  - type: command
+    retry:
+      automatic:
+        exit_status: [1, 2]
+  - type: command
+    retry:
+      automatic:
         - limit: 5
   - type: command
     retry:
@@ -97,7 +105,14 @@ steps:
   - type: command
     retry:
       automatic:
-        - exit_status: 1
+        - exit_status: [1]
+  - type: command
+    retry:
+      automatic: [{}]
+  - type: command
+    retry:
+      automatic:
+        - exit_status: [1, 2]
   - type: command
     retry:
       automatic:

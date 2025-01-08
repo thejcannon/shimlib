@@ -1,12 +1,18 @@
+from functools import singledispatch
+from typing import Any, TypeVar, cast, TYPE_CHECKING
 from types import UnionType, GenericAlias
-import dataclasses
-from typing import Any
-import uuid
 import re
-from shimbboleth._model.model import ModelMeta
-from typing_extensions import TypeAliasType
-from shimbboleth._model._visitor import Visitor
+import uuid
+import dataclasses
 import logging
+
+from shimbboleth._model.model_meta import ModelMeta
+from shimbboleth._model.model import Model
+from shimbboleth._model._types import AnnotationType, LiteralType, GenericUnionType
+
+T = TypeVar("T")
+ModelT = TypeVar("ModelT", bound=Model)
+
 
 LOG = logging.getLogger()
 
@@ -19,155 +25,208 @@ class NotAValidUUIDError(TypeError):
     pass
 
 
+class NotAValidPatternError(TypeError):
+    pass
+
+
 class WrongTypeError(TypeError):
-    def __init__(self, expected, obj):
-        super().__init__(f"Expected {expected}, got {type(obj)}")
+    def __init__(self, expected, data):
+        super().__init__(f"Expected {expected}, got {type(data)}")
 
 
-class JSONLoadVisitor(Visitor[Any]):
-    def visit_bool(self, objType: type[bool], *, obj: Any) -> bool:
-        if type(obj) is not bool:
-            raise WrongTypeError(objType, obj)
-        return obj
+def _ensure_is(data, expected: type[T]) -> T:
+    if type(data) is not expected:
+        raise WrongTypeError(expected, data)
+    return data
 
-    def visit_int(self, objType: type[int], *, obj: Any) -> int:
-        if type(obj) is not int:
-            raise WrongTypeError(objType, obj)
-        return obj
 
-    def visit_str(self, objType: type[str], *, obj: Any) -> str:
-        if type(obj) is not str:
-            raise WrongTypeError(objType, obj)
-        return obj
+@singledispatch
+def load(field_type, *, data):  # type: ignore
+    if field_type is bool:
+        return load_bool(data)
+    if field_type is int:
+        return load_int(data)
+    if field_type is str:
+        return load_str(data)
+    # NB: type[None] from unions (e.g. `str | None`)
+    if field_type is None or field_type is type(None):
+        return load_none(data)
+    if field_type is re.Pattern:
+        return load_pattern(data)
+    if field_type is uuid.UUID:
+        return load_uuid(data)
+    if field_type is Any:
+        return data
+    # NB: Dispatched manually, so we can avoid ciruclar definition with `Model.model_load`
+    if isinstance(field_type, ModelMeta):
+        return field_type.model_load(data)
 
-    def visit_uuid(self, objType: type[uuid.UUID], *, obj: Any) -> uuid.UUID:
-        if not isinstance(obj, str):
-            raise WrongTypeError(objType, obj)
+    raise WrongTypeError(field_type, data)
+
+
+@load.register
+def load_generic_alias(field_type: GenericAlias, *, data: Any):
+    container_t = field_type.__origin__
+    if container_t is list:
+        return load_list(data, field_type=cast(type[list], field_type))
+    if container_t is dict:
+        return load_dict(data, field_type=cast(type[dict], field_type))
+
+
+@load.register
+def load_union_type(field_type: UnionType, *, data: Any):
+    # @TODO: Do we want to store a breadcrumb on the type here?
+    for t in field_type.__args__:
         try:
-            return uuid.UUID(obj)
-        except ValueError:
-            raise NotAValidUUIDError(obj)
+            return load(t, data=data)
+        except TypeError:
+            pass
+    raise WrongTypeError(field_type, data)
 
-    def visit_none(self, objType: None, *, obj: Any) -> None:
-        if obj is not None:
-            raise WrongTypeError(objType, obj)
-        return None
 
-    def visit_list(self, objType: GenericAlias, *, obj: Any) -> list:
-        if type(obj) is not list:
-            raise WrongTypeError(list, obj)
-        (argT,) = objType.__args__
-        return [self.visit(argT, obj=item) for item in obj]
+@load.register
+def _load_generic_union_type(field_type: GenericUnionType, *, data: Any):
+    return load_union_type(field_type, data=data)
 
-    def visit_dict(self, objType: GenericAlias, *, obj: Any) -> dict[str, Any]:
-        if type(obj) is not dict:
-            raise WrongTypeError(dict, obj)
-        keyT, valueT = objType.__args__
-        return {
-            self.visit(keyT, obj=key): self.visit(valueT, obj=value)
-            if valueT is not Any
-            else value
-            for key, value in obj.items()
-        }
 
-    def visit_union_type(self, objType: UnionType, *, obj: Any) -> Any:
-        for t in objType.__args__:
-            try:
-                return self.visit(t, obj=obj)
-            except TypeError as e:
-                LOG.debug(f"{e=} for {t=}")
+@load.register
+def load_literal(field_type: LiteralType, *, data: Any):
+    # @TODO: This is duplicated in `validation` (for annotated literals)
+    for possibility in field_type.__args__:
+        # NB: compare bool/int by identity (since `bool` inherits from `int`)
+        if data is possibility:
+            return data
+        if isinstance(possibility, str) and isinstance(data, str):
+            if data == possibility:
+                return data
+    raise WrongTypeError(field_type, data)
+
+
+@load.register
+def load_annotation(field_type: AnnotationType, *, data: Any):
+    baseType = field_type.__origin__
+    return load(baseType, data=data)
+
+
+def load_bool(data: Any) -> bool:
+    return _ensure_is(data, bool)
+
+
+def load_str(data: Any) -> str:
+    return _ensure_is(data, str)
+
+
+def load_int(data: Any) -> int:
+    return _ensure_is(data, int)
+
+
+def load_none(data: Any) -> None:
+    return _ensure_is(data, type(None))
+
+
+def load_list(data: Any, *, field_type: type[list[T]]) -> list[T]:
+    data = _ensure_is(data, list)
+    (argT,) = field_type.__args__
+    return [load(argT, data=item) for item in data]
+
+
+def load_dict(data: Any, *, field_type: type[dict]) -> dict:
+    data = _ensure_is(data, dict)
+    keyT, valueT = field_type.__args__
+    return {
+        load(keyT, data=key): load(valueT, data=value) for key, value in data.items()
+    }
+
+
+def load_pattern(data: Any) -> re.Pattern:
+    data = _ensure_is(data, str)
+    try:
+        return re.compile(data)
+    except re.error:
+        raise NotAValidPatternError(data)
+
+
+def load_uuid(data: Any) -> uuid.UUID:
+    data = _ensure_is(data, str)
+    try:
+        return uuid.UUID(data)
+    except ValueError:
+        raise NotAValidUUIDError(data)
+
+
+class _LoadModelHelper:
+    @staticmethod
+    def handle_field_aliases(model_type: type[Model], data: dict[str, Any]) -> dict:
+        data = data
+        for field_alias_name, field_alias in model_type.__field_aliases__.items():
+            if field_alias_name in data:
+                if data is data:
+                    data = data.copy()
+
+                value = data.pop(field_alias_name)
+                if (
+                    field_alias.json_mode == "prepend"
+                    or data.get(field_alias.alias_of) is None
+                ):
+                    data[field_alias.alias_of] = value
+
+        return data
+
+    @staticmethod
+    def rename_json_aliases(model_type: type[Model], data: dict[str, Any]):
+        for field in dataclasses.fields(model_type):
+            if not field.init:
                 continue
-        raise WrongTypeError(objType, obj)
+            json_alias = field.metadata.get("json_alias")
+            if json_alias and json_alias in data:
+                data[field.name] = data.pop(json_alias)
 
-    def visit_literal(self, objType: type, *, obj: Any) -> Any:
-        # @TODO: This is duplicated in `validation` (for annotated literals)
-        for possibility in objType.__args__:
-            # NB: compare bool/int by identity (since `bool` inherits from `int`)
-            if obj is possibility:
-                return obj
-            if isinstance(possibility, str) and isinstance(obj, str):
-                if obj == possibility:
-                    return obj
-        raise WrongTypeError(objType, obj)
+    @staticmethod
+    def get_extras(model_type: type[Model], data: dict[str, Any]) -> dict[str, Any]:
+        extras = {}
+        for field in frozenset(data.keys()):
+            if field not in model_type.__json_fieldnames__:
+                extras[field] = data.pop(field)
 
-    def visit_annotated(self, objType: type, *, obj: Any) -> Any:
-        baseType = objType.__origin__
-        return self.visit(baseType, obj=obj)
+        if extras and not model_type.__allow_extra_properties__:
+            # @TODO: Include more info in error
+            raise ExtrasNotAllowedError(extras)
 
-    def visit_pattern(self, objType: type[re.Pattern], *, obj: Any) -> re.Pattern:
-        if not isinstance(obj, str):
-            raise WrongTypeError(objType, obj)
-        try:
-            return re.compile(obj)
-        except re.error:
-            raise WrongTypeError(objType, obj)
+        return extras
 
-    def visit_type_alias_type(self, field: TypeAliasType, *, obj: Any) -> Any:
-        return self.visit(field.__value__, obj=obj)
-
-    def visit_model_field(self, field: dataclasses.Field, *, obj: Any) -> Any:
-        expected_type = field.type
+    @staticmethod
+    def load_field(field: dataclasses.Field, data: dict[str, Any]):
         json_loader = field.metadata.get("json_loader", None)
-        if json_loader:
-            expected_type = json_loader.__annotations__["value"]
+        expected_type = (
+            json_loader.__annotations__["value"] if json_loader else field.type
+        )
 
-        value = self.visit(expected_type, obj=obj)
+        value = load(expected_type, data=data[field.name])
 
         if json_loader:
             value = json_loader(value)
 
         return value
 
-    def visit_model(self, objType: ModelMeta, *, obj: Any) -> Any:
-        # @TODO: Clean this up
-        if not isinstance(obj, dict):
-            raise WrongTypeError(dict, obj)
 
-        local_obj = obj
-        for field_alias_name, field_alias in objType.__field_aliases__.items():
-            if field_alias_name in obj:
-                if local_obj is obj:
-                    local_obj = obj.copy()
+def load_model(model_type: type[ModelT], data: Any) -> ModelT:
+    data = load(dict[str, Any], data=data)
+    data = _LoadModelHelper.handle_field_aliases(model_type, data)
 
-                value = local_obj.pop(field_alias_name)
-                if (
-                    field_alias.json_mode == "prepend"
-                    or local_obj.get(field_alias.alias_of) is None
-                ):
-                    local_obj[field_alias.alias_of] = value
+    extras = _LoadModelHelper.get_extras(model_type, data)
+    _LoadModelHelper.rename_json_aliases(model_type, data)
 
-        init_fields = {field for field in dataclasses.fields(objType) if field.init}
-        field_names = {
-            field.metadata.get("json_alias", field.name) for field in init_fields
-        }
-        init_kwargs = {
-            key: value for key, value in local_obj.items() if key in field_names
-        }
+    init_kwargs = {
+        field.name: _LoadModelHelper.load_field(field, data)
+        for field in dataclasses.fields(model_type)
+        if field.name in data
+    }
 
-        for field in init_fields:
-            json_alias = field.metadata.get("json_alias")
-            if json_alias and json_alias in init_kwargs:
-                init_kwargs[field.name] = init_kwargs.pop(json_alias)
+    instance = model_type(**init_kwargs)
+    instance._extra = extras
+    return instance
 
-        extras = {
-            key: value for key, value in local_obj.items() if key not in field_names
-        }
-        if extras and not objType.__allow_extra_properties__:
-            # @TODO: Include more info
-            raise ExtrasNotAllowedError(extras)
 
-        for field in init_fields:
-            if field.name in init_kwargs:
-                init_kwargs[field.name] = self.visit_model_field(
-                    field, obj=init_kwargs[field.name]
-                )
-            else:
-                json_default = field.metadata.get("json_default", dataclasses.MISSING)
-                if json_default is not dataclasses.MISSING:
-                    init_kwargs[field.name] = json_default
+if TYPE_CHECKING:
 
-        instance = objType(**init_kwargs)
-        if objType.__allow_extra_properties__:
-            instance._extra = extras
-
-        return instance
+    def load(field_type: type[T], *, data: Any) -> T: ...

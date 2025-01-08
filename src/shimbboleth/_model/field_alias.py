@@ -1,5 +1,5 @@
 """
-Support for "aliases".
+Support for field "aliases".
 
 Features:
     - Allows fields to be loaded via (multiple) aliases

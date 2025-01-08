@@ -1,0 +1,6 @@
+- type: wait
+- type: command
+---
+steps:
+  - type: wait
+  - type: command

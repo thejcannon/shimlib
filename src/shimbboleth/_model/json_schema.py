@@ -6,8 +6,6 @@ from typing import Any
 from shimbboleth._model.model import ModelMeta
 from typing_extensions import TypeAliasType
 from shimbboleth._model.field_types import (
-    Description,
-    Examples,
     MatchesRegex,
     NonEmpty,
     Ge,
@@ -16,6 +14,9 @@ from shimbboleth._model.field_types import (
 )
 from shimbboleth._model.field_alias import FieldAlias
 from shimbboleth._model._visitor import Visitor
+
+# @TODO: Add a Generic `JSONSchema[]` class to be used for the schema of things
+#    (That will solve the "discriminated union" I think?)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -64,12 +65,7 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
         }
 
     def _visit_annotation_type(self, annotation: Any) -> dict[str, Any]:
-        if isinstance(annotation, Description):
-            return {"description": annotation.description}
-        elif isinstance(annotation, Examples):
-            # @TODO: Typecheck the examples
-            return {"examples": annotation.examples}
-        elif isinstance(annotation, MatchesRegex):
+        if isinstance(annotation, MatchesRegex):
             return {"pattern": annotation.regex.pattern}
         elif annotation is NonEmpty:
             return {"minLength": 1}
@@ -110,9 +106,7 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
 
     def visit_model_field(self, field: dataclasses.Field) -> dict[str, Any]:
         field_schema = self._get_field_type_schema(field)
-        if "json_default" in field.metadata:
-            field_schema["default"] = field.metadata["json_default"]
-        elif field.default is not dataclasses.MISSING:
+        if field.default is not dataclasses.MISSING:
             field_schema["default"] = field.default
         elif field.default_factory is not dataclasses.MISSING:
             field_schema["default"] = field.default_factory()

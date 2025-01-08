@@ -4,13 +4,6 @@ import uuid
 import re
 from typing import Any
 from typing_extensions import TypeAliasType
-from shimbboleth._model.field_types import (
-    MatchesRegex,
-    NonEmpty,
-    Not,
-    Ge,
-    Le,
-)
 from shimbboleth._model._visitor import Visitor, LiteralType
 from shimbboleth._model.model_meta import ModelMeta
 

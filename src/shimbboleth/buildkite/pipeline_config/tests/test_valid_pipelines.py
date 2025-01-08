@@ -14,7 +14,7 @@ This test loads files from `./valid-pipelines` to check:
 This way we can ensure we're parsing the config correctly, and that we're "canonicalizing" correctly as well.
 
 (I would love to also put Buildkite's representation in here, but the API responds with
-data thats ambiguous and missing fields.)
+data thats ambiguous and missing fields)
 """
 
 from shimbboleth.buildkite.pipeline_config import BuildkitePipeline
@@ -45,6 +45,11 @@ class ValidPipeline:
                 replacer(step)
         return docs
 
+    def _as_groupstep(self, name: str) -> "ValidPipeline":
+        pipeline = {"steps": [{"group": "group", **self.pipeline}]}
+        expected = {"steps": [{"group": "group", **self.expected}]}
+        return ValidPipeline(f"*group-{name}", pipeline, expected)
+
     @classmethod
     def load_all(cls) -> "Iterable[ValidPipeline]":
         """
@@ -59,7 +64,7 @@ class ValidPipeline:
         for path in paths:
             name = path.stem
             yaml_docs = list(yaml.safe_load_all(path.read_text()))
-            # @TODO: all/manual/substep, but as Group steps too
+            # @TODO: all/manual/substep, but as Group steps too, and as unnested steps
             if name.startswith("all-"):
                 for step_type_param in STEP_TYPE_PARAMS:
                     docs = cls._replaced_type(
@@ -95,11 +100,11 @@ class ValidPipeline:
                         docs[-1],
                     )
             else:
-                yield ValidPipeline(name, yaml_docs[0], yaml_docs[-1])
+                valid_pipeline = ValidPipeline(name, yaml_docs[0], yaml_docs[-1])
+                yield valid_pipeline
+
                 if not name.startswith(("pipeline-", "group-")):
-                    pipeline = {"steps": [{"group": "group", **yaml_docs[0]}]}
-                    expected = {"steps": [{"group": "group", **yaml_docs[-1]}]}
-                    yield ValidPipeline(f"*group-{name}", pipeline, expected)
+                    yield valid_pipeline._as_groupstep(name)
 
 
 def pytest_generate_tests(metafunc):
@@ -109,7 +114,6 @@ def pytest_generate_tests(metafunc):
         )
 
 
-# @TODO: "manual" and "all" pipelines
 def test_valid_pipeline(pipeline_info: ValidPipeline):
     """
     This test loads the YAML, and ensures that loading the first document
@@ -125,7 +129,7 @@ def test_valid_pipeline(pipeline_info: ValidPipeline):
 # @LINT: all files use "yaml" suffix
 # @LINT: All steps in the result have `type: ` of the first part of the filename
 # @TEST: test that every one of the test cases are equivalent (if not identical)
-# @LINT/TEST: Keep the block-* pipelines in sync withe the input ones (where relevant)
+# @LINT/TEST: Keep the block-* pipelines in sync with the input ones (where relevant)
 # @LINT(+fixer): That if there's 2 documents, they dont equal
 # FEAT: Make it so the second document can use null (no change), + or - keys to indicate a change, as a form of brevity
 

@@ -1,3 +1,5 @@
+from typing import Any
+
 from shimbboleth._model import Model, field
 
 from ._agents import agents_from_json
@@ -21,7 +23,6 @@ ALL_STEP_TYPES = (
 )
 
 
-# @TODO: When loading yaml, you can omit steps and just inline the steps themselves
 class BuildkitePipeline(Model, extra=True):
     steps: list[
         BlockStep | InputStep | CommandStep | WaitStep | TriggerStep | GroupStep
@@ -44,3 +45,9 @@ class BuildkitePipeline(Model, extra=True):
         value: dict[str, str | int | bool],
     ) -> dict[str, str]:
         return {k: rubystr(v) for k, v in value.items()}
+
+    @classmethod
+    def model_load(cls, value: dict[str, Any] | list[Any]):
+        if isinstance(value, list):
+            return super().model_load({"steps": value})
+        return super().model_load(value)

@@ -3,9 +3,7 @@ import re
 import uuid
 from shimbboleth._model.model import Model
 from shimbboleth._model.field_types import (
-    Description,
     MatchesRegex,
-    Examples,
     NonEmpty,
     Ge,
     Le,
@@ -61,15 +59,6 @@ def str_to_int(value: str) -> int:
             id="dict",
         ),
         pytest.param(
-            dict[Annotated[str, Description("")], str],
-            {
-                "type": "object",
-                "additionalProperties": {"type": "string"},
-                "propertyNames": {"description": ""},
-            },
-            id="dict_with_annotation",
-        ),
-        pytest.param(
             dict[Annotated[str, MatchesRegex("^.*$")], str],
             {
                 "type": "object",
@@ -121,22 +110,8 @@ def test_schema(field_type, expected):
 @pytest.mark.parametrize(
     ("field_type", "expected"),
     [
-        (Annotated[int, Description("")], {"type": "integer", "description": ""}),
-        (Annotated[int, Examples(0, 1)], {"type": "integer", "examples": [0, 1]}),
         (Annotated[str, NonEmpty], {"type": "string", "minLength": 1}),
         (Annotated[str, MatchesRegex("^.*$")], {"type": "string", "pattern": "^.*$"}),
-        (
-            Annotated[
-                str, Description(""), Examples("", ""), NonEmpty, MatchesRegex("^.*$")
-            ],
-            {
-                "type": "string",
-                "description": "",
-                "examples": ["", ""],
-                "minLength": 1,
-                "pattern": "^.*$",
-            },
-        ),
         (Annotated[int, Ge(5)], {"type": "integer", "minimum": 5}),
         (Annotated[int, Le(10)], {"type": "integer", "maximum": 10}),
         (
@@ -220,35 +195,6 @@ def test_model__extra(model_def, expected):
                 {"__annotations__": {"field": int}, "field": field(default=0)},
             ),
             0,
-        ),
-        (
-            make_model(
-                {
-                    "__annotations__": {"field": int},
-                    "field": field(default=1, json_default=4),
-                },
-            ),
-            4,
-        ),
-        # NB: Test default being a Falsey value
-        (
-            make_model(
-                {
-                    "__annotations__": {"field": int},
-                    "field": field(default=1, json_default=0),
-                },
-            ),
-            0,
-        ),
-        # NB: Test `None` explicitly (to guard against `= None` dwfaults)
-        (
-            make_model(
-                {
-                    "__annotations__": {"field": int},
-                    "field": field(default=1, json_default=None),
-                },
-            ),
-            None,
         ),
         (
             make_model(

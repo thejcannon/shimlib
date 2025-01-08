@@ -9,7 +9,7 @@ from .input_step import InputStep
 from .wait_step import WaitStep
 from .trigger_step import TriggerStep
 from .command_step import CommandStep
-from ._notify import BuildNotifyT
+from ._notify import StepNotifyT
 from ._base import StepBase
 from ._nested_steps import (
     NestedWaitStep,
@@ -32,7 +32,7 @@ class GroupStep(StepBase, extra=False):
     group: str | None
     """The name to give to this group of steps"""
 
-    notify: BuildNotifyT = field(default_factory=list)
+    notify: StepNotifyT = field(default_factory=list)
 
     # NB: Passing an empty string is equivalent to false.
     skip: bool | str = field(default=False, json_loader=skip_from_json)

@@ -1,5 +1,4 @@
-from typing import Literal, Annotated
-from typing_extensions import TypeAliasType
+from typing import Literal, Annotated, TypeAlias
 
 
 from shimbboleth._model import Model, field, NonEmpty
@@ -52,16 +51,21 @@ class PagerdutyNotify(_NotifyBase):
     pagerduty_change_event: str
 
 
-BuildNotifyT = TypeAliasType(
-    "BuildNotifyT",
-    list[
-        Literal["github_check", "github_commit_status"]
-        | EmailNotify
-        | BasecampCampfireNotify
-        | SlackNotify
-        | WebhookNotify
-        | PagerdutyNotify
-        | GitHubCommitStatusNotify
-        | GitHubCheckNotify
-    ],
-)
+BuildNotifyT: TypeAlias = list[
+    Literal["github_check", "github_commit_status"]
+    | EmailNotify
+    | BasecampCampfireNotify
+    | SlackNotify
+    | WebhookNotify
+    | PagerdutyNotify
+    | GitHubCommitStatusNotify
+    | GitHubCheckNotify
+]
+
+StepNotifyT: TypeAlias = list[
+    Literal["github_check", "github_commit_status"]
+    | BasecampCampfireNotify
+    | SlackNotify
+    | GitHubCommitStatusNotify
+    | GitHubCheckNotify
+]
