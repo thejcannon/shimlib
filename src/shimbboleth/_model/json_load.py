@@ -31,6 +31,8 @@ class NotAValidPatternError(TypeError):
 
 class WrongTypeError(TypeError):
     def __init__(self, expected, data):
+        # @TODO: Give field name? Type name? jmespath?
+        #   (See also the validation framework)
         super().__init__(f"Expected {expected}, got {type(data)}")
 
 

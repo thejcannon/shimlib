@@ -12,6 +12,7 @@ from typing import (
     Iterable,
     ClassVar,
     Annotated,
+    Mapping,
 )
 from types import MemberDescriptorType, GenericAlias, UnionType
 import dataclasses
@@ -32,8 +33,6 @@ class ValidationError(ValueError):
     def __init__(self, value, expectation: str):
         super().__init__(value, expectation)
 
-    # @TODO: Add type in here?
-    #   E.g. Expected `dict` to not be empty, or expected dict key to not be empty
     def __str__(self):
         return f"ValidationError: Expected '{self.args[0]}' to {self.args[1]}"
 
@@ -54,7 +53,7 @@ class _NonEmptyT:
 
     def __call__(self, value: str | dict | list):
         if len(value) == 0:
-            raise ValidationError(value, "to be non-empty")
+            raise ValidationError(value, "be non-empty")
 
     def __repr__(self) -> str:
         return "NonEmpty"
@@ -87,7 +86,11 @@ class ListElementsValidator:
         # @TODO: Add note on exception
         for element in value:
             for validator in self.element_validators:
-                validator(element)
+                try:
+                    validator(element)
+                except ValidationError as e:
+                    e.add_note("Where: value is a list element")
+                    raise
 
 
 @dataclasses.dataclass(slots=True, frozen=True)
@@ -96,13 +99,20 @@ class DictValidator:
     values_validators: list[Validator]
 
     def __call__(self, value: dict[T, Any]):
-        # @TODO: Add note on exception
         for validator in self.keys_validators:
             for key in value.keys():
-                validator(key)
+                try:
+                    validator(key)
+                except ValidationError as e:
+                    e.add_note("Where: value is a dict key")
+                    raise
         for validator in self.values_validators:
             for value in value.values():
-                validator(value)
+                try:
+                    validator(value)
+                except ValidationError as e:
+                    e.add_note("Where: value is a dict value")
+                    raise
 
 
 @dataclasses.dataclass(slots=True, frozen=True)
@@ -114,6 +124,22 @@ class UUIDValidator:
             uuid.UUID(value)
         except ValueError:
             raise ValidationError(value, self.description) from None
+
+
+@dataclasses.dataclass(slots=True, frozen=True)
+class UnionValidator:
+    # NB: This is an incomplete map, only types with validators will be included.
+    validators_by_type: Mapping[type, Validators]
+
+    # @TODO: Description
+    description = "@TODO"
+
+    def __call__(self, value: str):
+        # NB: Remember, we assume data type-correctness
+        # @TODO: This doesn't handle subtyping, but IDK if we want to support that
+        validators = self.validators_by_type.get(type(value), [])
+        for validator in validators:
+            validator(value)
 
 
 NonEmptyList = Annotated[list[T], NonEmpty]
@@ -155,7 +181,7 @@ class Ge:
 
     @property
     def description(self) -> str:
-        return f"be greater than or equal to {self.bound}"
+        return f"be >= {self.bound}"
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -168,9 +194,11 @@ class Le:
 
     @property
     def description(self) -> str:
-        return f"be less than or equal to {self.bound}"
+        return f"be <= {self.bound}"
 
 
+# ====
+# EVERYTHING BELOW HERE IS INFRA AND BELONGS IN ANOTHER MODULE
 # ====
 
 
@@ -197,19 +225,24 @@ def get_generic_alias_validators(field_type: GenericAlias) -> Validators:
 
 @get_validators.register
 def get_union_type_validators(field_type: UnionType) -> Validators:
-    # @TODO: Assert that there's no dupes of types (e.g. list[str] | list[int] must be illegal)
-    validators = []
+    validators_by_type = {}
     for argT in field_type.__args__:
-        arg_validators = get_validators(argT)
-        if arg_validators:
-            validators.extend(
-                [
-                    None  # @TODO: a validator that first checks "isinstance"
-                    for validator in arg_validators
-                ]
-            )
+        rawtype = argT
+        while hasattr(rawtype, "__origin__"):
+            rawtype = rawtype.__origin__
 
-    return validators
+        if rawtype in validators_by_type:
+            raise TypeError(
+                f"Overlapping outer types in Union is unsupported: found multiple '{rawtype}' types."
+            )
+        validators_by_type[rawtype] = get_validators(argT)
+
+    validators_by_type = {
+        key: value for key, value in validators_by_type.items() if value
+    }
+    if validators_by_type:
+        return [UnionValidator(validators_by_type)]
+    return []
 
 
 @get_validators.register
@@ -230,9 +263,16 @@ def _get_annotation_arg_validators(argT) -> Validators:
 
 @get_validators.register
 def get_annotation_validators(field_type: AnnotationType) -> Validators:
-    validators = get_validators(field_type.__origin__)
+    originT = field_type.__origin__
+    validators = get_validators(originT)
     for annotation in field_type.__metadata__:
-        validators.extend(_get_annotation_arg_validators(annotation))
+        annotation_validators = _get_annotation_arg_validators(annotation)
+        if annotation_validators and isinstance(originT, (UnionType, GenericUnionType)):
+            raise TypeError(
+                f"Valiating union types is unsupported. (For type '{originT}')"
+            )
+
+        validators.extend(annotation_validators)
     return validators
 
 
@@ -246,5 +286,5 @@ class ValidationDescriptor:
         return self.field_descriptor.__get__(instance, owner)
 
     def __set__(self, instance, value):
-        # @TODO: Validate, along with nice error message
+        # @TODO: Validate, along with nice error message (e.g. add note with field name, maybe even field type)
         self.field_descriptor.__set__(instance, value)
