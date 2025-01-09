@@ -63,7 +63,9 @@ class ModelMeta(type):
                 setattr(
                     cls,
                     field_attr.name,
-                    ValidationDescriptor(getattr(cls, field_attr.name), field_validators),
+                    ValidationDescriptor(
+                        getattr(cls, field_attr.name), field_validators
+                    ),
                 )
 
     @property
