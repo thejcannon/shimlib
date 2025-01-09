@@ -4,29 +4,25 @@ Validation of model fields.
 NOTE: This only handles Annotated validations (E.g. `Annotated[int, Ge(10)]`)
 """
 
-from typing import (
-    TypeVar,
-    TypeAlias,
-    Callable,
-    ClassVar,
-    Annotated,
-    Protocol
-)
+from typing import TypeVar, ClassVar, Annotated, Protocol
 import dataclasses
 import re
 
 T = TypeVar("T")
 
+
 class Validator(Protocol):
-    def __call__(self, value) -> None:
-        ...
+    def __call__(self, value) -> None: ...
+
 
 class ValidationError(ValueError):
     def __init__(self, value, expectation: str):
         super().__init__(value, expectation)
+        self.context = []
 
     def __str__(self):
-        return f"ValidationError: Expected '{self.args[0]}' to {self.args[1]}"
+        context = "".join(f"\n{note}" for note in self.context)
+        return f"ValidationError: Expected '{self.args[0]}' to {self.args[1]}{context}"
 
     def __repr__(self):
         return f"ValidationError(value={self.args[0]!r}, expectation={self.args[1]!r})"
@@ -38,6 +34,9 @@ class ValidationError(ValueError):
     @property
     def expectation(self) -> str:
         return self.args[1]
+
+    def add_context(self, context: str):
+        self.context.append(context)
 
 
 class _NonEmptyT(Validator):
@@ -68,7 +67,6 @@ class MatchesRegex(Validator):
     @property
     def description(self) -> str:
         return f"match regex '{self.regex.pattern}'"
-
 
 
 NonEmptyList = Annotated[list[T], NonEmpty]

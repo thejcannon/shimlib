@@ -1,7 +1,5 @@
 from typing import (
     TypeVar,
-    TypeAlias,
-    Callable,
     Any,
     Iterable,
     ClassVar,
@@ -38,7 +36,7 @@ class ListElementsValidator:
                 try:
                     validator(element)
                 except ValidationError as e:
-                    e.add_note("Where: value is a list element")
+                    e.add_context("Where: value is a list element")
                     raise
 
 
@@ -53,14 +51,14 @@ class DictValidator:
                 try:
                     validator(key)
                 except ValidationError as e:
-                    e.add_note("Where: value is a dict key")
+                    e.add_context("Where: value is a dict key")
                     raise
         for validator in self.values_validators:
             for value in value.values():
                 try:
                     validator(value)
                 except ValidationError as e:
-                    e.add_note("Where: value is a dict value")
+                    e.add_context("Where: value is a dict value")
                     raise
 
 
@@ -133,7 +131,9 @@ def get_union_type_validators(field_type: UnionType) -> Iterable[Validator]:
 
 
 @get_validators.register
-def _get_generic_union_type_validators(field_type: GenericUnionType) -> Iterable[Validator]:
+def _get_generic_union_type_validators(
+    field_type: GenericUnionType,
+) -> Iterable[Validator]:
     yield from get_union_type_validators(field_type)
 
 
@@ -163,14 +163,21 @@ def get_annotation_validators(field_type: AnnotationType) -> Iterable[Validator]
 
 
 class ValidationDescriptor:
-    # @TODO: I think this should hold a list of validator funcs
-    def __init__(self, field_descriptor: MemberDescriptorType, field_type):
+    def __init__(
+        self, field_descriptor: MemberDescriptorType, validators: tuple[Validator, ...]
+    ):
         self.field_descriptor = field_descriptor
-        self.field_type = field_type
+        assert validators
+        self.validators = validators
 
     def __get__(self, instance, owner):
         return self.field_descriptor.__get__(instance, owner)
 
     def __set__(self, instance, value):
-        # @TODO: Validate, along with nice error message (e.g. add note with field name, maybe even field type)
+        for validator in self.validators:
+            try:
+                validator(value)
+            except ValidationError as e:
+                e.add_context(f"Field: {self.field_descriptor.__name__}")
+                raise
         self.field_descriptor.__set__(instance, value)

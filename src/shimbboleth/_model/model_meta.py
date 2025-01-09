@@ -4,9 +4,8 @@ import dataclasses
 
 from shimbboleth._model.field import field
 from shimbboleth._model.field_alias import FieldAlias
+from shimbboleth._model._validators import ValidationDescriptor, get_validators
 
-# NB: This is just a heirarchical Model helper, with kw_only=True and slots=True.
-#   (@TODO: Ideally we ensure none of the other nonsense is there? But also meh?)
 
 T = TypeVar("T")
 
@@ -56,6 +55,16 @@ class ModelMeta(type):
             field.metadata.get("json_alias", field.name)
             for field in dataclasses.fields(cls)
         )
+
+        # Replace the fields with validators with descriptors which invoke the validators before setting
+        for field_attr in dataclasses.fields(cls):
+            field_validators = tuple(get_validators(field_attr.type))
+            if field_validators:
+                setattr(
+                    cls,
+                    field_attr.name,
+                    ValidationDescriptor(getattr(cls, field_attr.name), field_validators),
+                )
 
     @property
     def model_json_schema(cls) -> dict[str, Any]:
