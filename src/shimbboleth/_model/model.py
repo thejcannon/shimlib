@@ -1,7 +1,6 @@
 from typing import Any, Self, TypeVar, Callable
 import dataclasses
 
-from shimbboleth._model.validation import ValidationVisitor
 from shimbboleth._model.model_meta import ModelMeta
 
 T = TypeVar("T")
@@ -15,11 +14,6 @@ class _ModelBase:
 
 
 class Model(_ModelBase, metaclass=ModelMeta):
-    def __post_init__(self):
-        # @TODO: Validation should also happen on property setting
-        #   (which tells me that we should probably have a `__set__` method and use that)
-        ValidationVisitor().visit(type(self), obj=self)
-
     @staticmethod
     def _json_loader_(field) -> Callable[[T], T]:
         # @TODO: Assert funcname

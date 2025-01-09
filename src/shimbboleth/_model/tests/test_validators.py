@@ -1,5 +1,12 @@
-from shimbboleth._model.validate import get_validators, ValidationError
-from shimbboleth._model.validate import NonEmpty, MatchesRegex, Not, Ge, Le
+from shimbboleth._model._validators import get_validators
+from shimbboleth._model.validation import (
+    ValidationError,
+    NonEmpty,
+    MatchesRegex,
+    Not,
+    Ge,
+    Le,
+)
 import uuid
 from typing import Annotated, Union
 
@@ -175,4 +182,4 @@ def test_invalid(field_type, obj, expected_error):
 )
 def test_types_we_dont_support(field_type, obj):
     with pytest.raises(TypeError, match="unsupported"):
-        get_validators(field_type)
+        tuple(get_validators(field_type))
