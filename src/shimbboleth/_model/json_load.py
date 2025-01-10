@@ -1,12 +1,11 @@
 from functools import singledispatch
-from typing import Any, TypeVar, cast, TYPE_CHECKING
+from typing import Any, TypeVar, TYPE_CHECKING
 from types import UnionType, GenericAlias
 import re
 import uuid
 import dataclasses
 import logging
 
-from shimbboleth._model.model_meta import ModelMeta
 from shimbboleth._model.model import Model
 from shimbboleth._model._types import AnnotationType, LiteralType, GenericUnionType
 
@@ -60,7 +59,7 @@ def load(field_type, *, data):  # type: ignore
     if field_type is Any:
         return data
     # NB: Dispatched manually, so we can avoid ciruclar definition with `Model.model_load`
-    if isinstance(field_type, ModelMeta):
+    if issubclass(field_type, Model):
         return field_type.model_load(data)
 
     raise WrongTypeError(field_type, data)
@@ -70,9 +69,9 @@ def load(field_type, *, data):  # type: ignore
 def load_generic_alias(field_type: GenericAlias, *, data: Any):
     container_t = field_type.__origin__
     if container_t is list:
-        return load_list(data, field_type=cast(type[list], field_type))
+        return load_list(data, field_type=field_type)
     if container_t is dict:
-        return load_dict(data, field_type=cast(type[dict], field_type))
+        return load_dict(data, field_type=field_type)
 
 
 @load.register
@@ -126,13 +125,13 @@ def load_none(data: Any) -> None:
     return _ensure_is(data, type(None))
 
 
-def load_list(data: Any, *, field_type: type[list[T]]) -> list[T]:
+def load_list(data: Any, *, field_type: GenericAlias) -> list[T]:
     data = _ensure_is(data, list)
     (argT,) = field_type.__args__
     return [load(argT, data=item) for item in data]
 
 
-def load_dict(data: Any, *, field_type: type[dict]) -> dict:
+def load_dict(data: Any, *, field_type: GenericAlias) -> dict:
     data = _ensure_is(data, dict)
     keyT, valueT = field_type.__args__
     return {

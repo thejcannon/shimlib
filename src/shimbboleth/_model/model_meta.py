@@ -1,6 +1,7 @@
 from typing import dataclass_transform, Any, ClassVar, TypeVar
 from types import MappingProxyType
 import dataclasses
+from typing_extensions import TYPE_CHECKING
 
 from shimbboleth._model.field import field
 from shimbboleth._model.field_alias import FieldAlias
@@ -8,6 +9,7 @@ from shimbboleth._model._validators import ValidationDescriptor, get_validators
 
 
 T = TypeVar("T")
+
 
 
 @dataclass_transform(kw_only_default=True, field_specifiers=(dataclasses.field, field))
@@ -26,7 +28,7 @@ class ModelMeta(type):
 
         # NB: Copy the classcell so `super()` works and doesn't cause `TypeError` issues.
         if classcell := namespace.get("__classcell__"):
-            cls.__classcell__ = classcell
+            cls.__classcell__ = classcell  # type: ignore
 
         # NB: Because you get a new type when adding `__slots__`,
         #   `dataclass` actualy returns a new type when using `slots=True`.
@@ -53,11 +55,11 @@ class ModelMeta(type):
 
         cls.__json_fieldnames__ = frozenset(
             field.metadata.get("json_alias", field.name)
-            for field in dataclasses.fields(cls)
+            for field in dataclasses.fields(cls)  # type: ignore
         )
 
         # Replace the fields with validators with descriptors which invoke the validators before setting
-        for field_attr in dataclasses.fields(cls):
+        for field_attr in dataclasses.fields(cls):  # type: ignore
             field_validators = tuple(get_validators(field_attr.type))
             if field_validators:
                 setattr(

@@ -5,7 +5,6 @@ import re
 import uuid
 import dataclasses
 
-from shimbboleth._model.model_meta import ModelMeta
 from shimbboleth._model.model import Model
 from shimbboleth._model._types import AnnotationType, LiteralType, GenericUnionType
 from shimbboleth._model.validation import (
@@ -41,7 +40,7 @@ def schema(field_type, *, model_defs: dict[str, dict[str, Any]]) -> dict[str, An
     if field_type is Any:
         return {}
     # NB: Dispatched manually, so we can avoid ciruclar definition with `Model.model_load`
-    if isinstance(field_type, ModelMeta):
+    if issubclass(field_type, Model):
         schema_model(field_type, model_defs=model_defs)
         return {"$ref": f"#/$defs/{field_type.__name__}"}
 

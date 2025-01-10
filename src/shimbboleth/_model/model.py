@@ -31,7 +31,7 @@ class Model(_ModelBase, metaclass=ModelMeta):
             )
             return func
 
-        decorator.json_schema_type = json_schema_type
+        decorator.json_schema_type = json_schema_type  # type: ignore
         return decorator
 
     @staticmethod
