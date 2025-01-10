@@ -242,3 +242,6 @@ def test_nested_models():
             }
         },
     }
+
+
+# @TODO: json_schema_type

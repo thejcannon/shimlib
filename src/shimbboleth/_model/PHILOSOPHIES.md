@@ -1,5 +1,6 @@
 ## Philosohpies
 
+- This is an internal library meant for support of the wider `shimbboleth` project. It doesn't need to be perfect, just good enough.
 - Data is assumed to be type-correct in Python APIs (e.g. only type-validate when taking in JSON)
 - Data restrictions (like "must not be empty") are a property of a field's **type** (e.g. the field should have type `Annotated[..., NonEmpty]`)
   and not a property of the field itself.

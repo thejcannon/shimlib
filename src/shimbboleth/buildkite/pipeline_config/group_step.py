@@ -1,4 +1,4 @@
-from typing import ClassVar, Literal
+from typing import ClassVar, Literal, Any
 
 
 from shimbboleth._model import Model, field, FieldAlias, NonEmptyList
@@ -46,28 +46,12 @@ class GroupStep(StepBase, extra=False):
     name: ClassVar = FieldAlias("group", json_mode="append")
     label: ClassVar = FieldAlias("group", json_mode="append")
 
+    # @TODO: Add `json_schema_type` to the mega-list of types
     @Model._json_loader_(steps)
     @staticmethod
-    def __steps__from_json(
-        value: list[
-            BlockStep
-            | InputStep
-            | CommandStep
-            | WaitStep
-            | TriggerStep
-            | NestedBlockStep
-            | NestedInputStep
-            | NestedCommandStep
-            | NestedWaitStep
-            | NestedTriggerStep
-            | Literal["block", "manual"]
-            | Literal["input"]
-            | Literal["command", "commands", "script"]
-            | Literal["wait", "waiter"]
-        ],
-    ) -> NonEmptyList[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep]:
-        from ._parse_steps import parse_steps
+    def __steps__from_json(value: list[dict[str, Any] | str]) -> NonEmptyList[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep]:
+        # NB: Nested to avoid circular import
+        from ._parse_steps import parse_steps2
 
-        # NB: Because `GroupStep` is not a valid type of value`, we know this will never return
-        #    a `GroupStep` instance.
-        return parse_steps(value)  # type: ignore
+        # @TODO: Don't allow group steps in here
+        return parse_steps2(value)  # type: ignore
