@@ -33,15 +33,9 @@ def str_to_int(value: str) -> int:
         param(int, {"type": "integer"}, id="simple"),
         param(str, {"type": "string"}, id="simple"),
         param(None, {"type": "null"}, id="simple"),
-        param(
-            list[bool], {"type": "array", "items": {"type": "boolean"}}, id="list"
-        ),
-        param(
-            list[str], {"type": "array", "items": {"type": "string"}}, id="list"
-        ),
-        param(
-            list[int], {"type": "array", "items": {"type": "integer"}}, id="list"
-        ),
+        param(list[bool], {"type": "array", "items": {"type": "boolean"}}, id="list"),
+        param(list[str], {"type": "array", "items": {"type": "string"}}, id="list"),
+        param(list[int], {"type": "array", "items": {"type": "integer"}}, id="list"),
         param(
             dict[str, bool],
             {"type": "object", "additionalProperties": {"type": "boolean"}},
@@ -102,9 +96,7 @@ def str_to_int(value: str) -> int:
             {"type": "string", "pattern": "^.*$"},
             id="annotated",
         ),
-        param(
-            Annotated[int, Ge(5)], {"type": "integer", "minimum": 5}, id="annotated"
-        ),
+        param(Annotated[int, Ge(5)], {"type": "integer", "minimum": 5}, id="annotated"),
         param(
             Annotated[int, Le(10)], {"type": "integer", "maximum": 10}, id="annotated"
         ),
@@ -113,9 +105,7 @@ def str_to_int(value: str) -> int:
             {"type": "integer", "minimum": 0, "maximum": 100},
             id="annotated",
         ),
-        param(
-            NonEmptyString, {"type": "string", "minLength": 1}, id="annotated"
-        ),
+        param(NonEmptyString, {"type": "string", "minLength": 1}, id="annotated"),
         param(
             Annotated[int, Not[Ge(10)]],
             {"type": "integer", "not": {"minimum": 10}},

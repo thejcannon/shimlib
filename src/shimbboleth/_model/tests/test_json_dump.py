@@ -1,7 +1,7 @@
 import pytest
 import uuid
 import re
-from typing import Literal, Annotated, ClassVar
+from typing import ClassVar
 from pytest import param
 
 from shimbboleth._model.model import Model
