@@ -5,7 +5,7 @@ import dataclasses
 from typing import Any
 from shimbboleth._model.model import ModelMeta
 from typing_extensions import TypeAliasType
-from shimbboleth._model.field_types import (
+from shimbboleth._model.validation import (
     MatchesRegex,
     NonEmpty,
     Ge,
@@ -14,9 +14,6 @@ from shimbboleth._model.field_types import (
 )
 from shimbboleth._model.field_alias import FieldAlias
 from shimbboleth._model._visitor import Visitor
-
-# @TODO: Add a Generic `JSONSchema[]` class to be used for the schema of things
-#    (That will solve the "discriminated union" I think?)
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -94,13 +91,13 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
     def _get_field_type_schema(self, field: dataclasses.Field) -> dict[str, Any]:
         json_loader = field.metadata.get("json_loader", None)
         if json_loader:
-            input_type = json_loader.__annotations__["value"]
+            input_type = getattr(json_loader, "json_schema_type", json_loader.__annotations__["value"])
             output_type = json_loader.__annotations__["return"]
             assert (
                 output_type == field.type
             ), (
                 f"for {json_loader} {output_type=} {field.type=}"
-            )  # @TODO: what about `Annotated`? or subset (for unions)
+            )
             return self.visit(input_type)
         return self.visit(field.type)
 
