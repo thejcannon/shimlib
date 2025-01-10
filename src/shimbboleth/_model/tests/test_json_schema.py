@@ -4,7 +4,6 @@ import uuid
 from shimbboleth._model.model import Model
 from shimbboleth._model.validation import (
     MatchesRegex,
-    NonEmpty,
     Ge,
     Le,
     NonEmptyList,

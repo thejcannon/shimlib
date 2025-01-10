@@ -1,10 +1,9 @@
 from functools import singledispatch
-from typing import Any, TypeVar, cast, TYPE_CHECKING
+from typing import Any, TypeVar
 from types import UnionType, GenericAlias
 import re
 import uuid
 import dataclasses
-import logging
 
 from shimbboleth._model.model_meta import ModelMeta
 from shimbboleth._model.model import Model
@@ -15,7 +14,6 @@ from shimbboleth._model.validation import (
     NonEmpty,
     Ge,
     Le,
-    Not,
 )
 
 T = TypeVar("T")
