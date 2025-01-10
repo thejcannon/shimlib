@@ -1,4 +1,4 @@
-from typing import ClassVar, Literal, Any
+from typing import ClassVar, Any
 
 
 from shimbboleth._model import Model, field, FieldAlias, NonEmptyList
@@ -11,13 +11,6 @@ from .trigger_step import TriggerStep
 from .command_step import CommandStep
 from ._notify import StepNotifyT
 from ._base import StepBase
-from ._nested_steps import (
-    NestedWaitStep,
-    NestedInputStep,
-    NestedBlockStep,
-    NestedCommandStep,
-    NestedTriggerStep,
-)
 
 
 class GroupStep(StepBase, extra=False):
@@ -49,7 +42,9 @@ class GroupStep(StepBase, extra=False):
     # @TODO: Add `json_schema_type` to the mega-list of types
     @Model._json_loader_(steps)
     @staticmethod
-    def __steps__from_json(value: list[dict[str, Any] | str]) -> NonEmptyList[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep]:
+    def __steps__from_json(
+        value: list[dict[str, Any] | str],
+    ) -> NonEmptyList[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep]:
         # NB: Nested to avoid circular import
         from ._parse_steps import parse_steps2
 
