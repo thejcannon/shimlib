@@ -70,11 +70,10 @@ class ModelMeta(type):
 
     @property
     def model_json_schema(cls) -> dict[str, Any]:
-        from shimbboleth._model.json_schema import JSONSchemaVisitor
+        from shimbboleth._model.json_schema import schema
 
-        json_schema_visitor = JSONSchemaVisitor()
-        json_schema_visitor.visit(cls)
-        model_defs = json_schema_visitor.model_defs.copy()
+        model_defs = {}
+        schema(cls, model_defs=model_defs)
         return {**model_defs.pop(cls.__name__), "$defs": model_defs}
 
     def model_load(cls: T, data: Any) -> T:

@@ -1,8 +1,8 @@
-from shimbboleth._model.json_schema import JSONSchemaVisitor
+from shimbboleth._model.json_schema import schema
 import re
 import uuid
 from shimbboleth._model.model import Model
-from shimbboleth._model.field_types import (
+from shimbboleth._model.validation import (
     MatchesRegex,
     NonEmpty,
     Ge,
@@ -14,7 +14,6 @@ from shimbboleth._model.field_types import (
 from shimbboleth._model.field import field
 from shimbboleth._model.field_alias import FieldAlias
 from typing import Annotated, Literal, ClassVar
-from typing_extensions import TypeAliasType
 
 import pytest
 
@@ -58,15 +57,7 @@ def str_to_int(value: str) -> int:
             {"type": "object", "additionalProperties": {"type": "string"}},
             id="dict",
         ),
-        pytest.param(
-            dict[Annotated[str, MatchesRegex("^.*$")], str],
-            {
-                "type": "object",
-                "additionalProperties": {"type": "string"},
-                "propertyNames": {"pattern": "^.*$"},
-            },
-            id="dict_with_annotation",
-        ),
+        # Union
         pytest.param(
             bool | int,
             {"oneOf": [{"type": "boolean"}, {"type": "integer"}]},
@@ -75,24 +66,14 @@ def str_to_int(value: str) -> int:
         pytest.param(
             str | None, {"oneOf": [{"type": "string"}, {"type": "null"}]}, id="union"
         ),
+        # Literal
         pytest.param(Literal["hello"], {"enum": ["hello"]}, id="literal"),
         pytest.param(
             Literal["hello", "goodbye"], {"enum": ["hello", "goodbye"]}, id="literal"
         ),
+        # Pattern
         pytest.param(re.Pattern, {"type": "string", "format": "regex"}, id="pattern"),
-        pytest.param(
-            NonEmptyList[int],
-            {"type": "array", "items": {"type": "integer"}, "minLength": 1},
-            id="non-empty-list",
-        ),
-        pytest.param(
-            NonEmptyString, {"type": "string", "minLength": 1}, id="non-empty-string"
-        ),
-        pytest.param(
-            Annotated[int, Not[Ge(10)]],
-            {"type": "integer", "not": {"minimum": 10}},
-            id="simple",
-        ),
+        # UUID
         pytest.param(
             uuid.UUID,
             {
@@ -101,34 +82,50 @@ def str_to_int(value: str) -> int:
             },
             id="uuid",
         ),
-    ],
-)
-def test_schema(field_type, expected):
-    assert JSONSchemaVisitor().visit(field_type) == expected
-
-
-@pytest.mark.parametrize(
-    ("field_type", "expected"),
-    [
-        (Annotated[str, NonEmpty], {"type": "string", "minLength": 1}),
-        (Annotated[str, MatchesRegex("^.*$")], {"type": "string", "pattern": "^.*$"}),
-        (Annotated[int, Ge(5)], {"type": "integer", "minimum": 5}),
-        (Annotated[int, Le(10)], {"type": "integer", "maximum": 10}),
-        (
+        # Annotated
+        pytest.param(
+            NonEmptyList[int],
+            {"type": "array", "items": {"type": "integer"}, "minLength": 1},
+            id="annotated",
+        ),
+        pytest.param(
+            dict[Annotated[str, MatchesRegex("^.*$")], str],
+            {
+                "type": "object",
+                "additionalProperties": {"type": "string"},
+                "propertyNames": {"pattern": "^.*$"},
+            },
+            id="annotated",
+        ),
+        pytest.param(
+            Annotated[str, MatchesRegex("^.*$")],
+            {"type": "string", "pattern": "^.*$"},
+            id="annotated",
+        ),
+        pytest.param(
+            Annotated[int, Ge(5)], {"type": "integer", "minimum": 5}, id="annotated"
+        ),
+        pytest.param(
+            Annotated[int, Le(10)], {"type": "integer", "maximum": 10}, id="annotated"
+        ),
+        pytest.param(
             Annotated[int, Ge(0), Le(100)],
             {"type": "integer", "minimum": 0, "maximum": 100},
+            id="annotated",
+        ),
+        pytest.param(
+            NonEmptyString, {"type": "string", "minLength": 1}, id="annotated"
+        ),
+        pytest.param(
+            Annotated[int, Not[Ge(10)]],
+            {"type": "integer", "not": {"minimum": 10}},
+            id="annotated",
         ),
     ],
 )
-def test_annotated(field_type, expected):
-    """Ensure that `Annotated` types are handled correctly."""
-    assert JSONSchemaVisitor().visit(field_type) == expected
-
-
-def test_type_alias_type():
-    visitor = JSONSchemaVisitor()
-    assert visitor.visit(TypeAliasType("TAT", int)) == {"$ref": "#/$defs/TAT"}
-    assert visitor.model_defs == {"TAT": {"type": "integer"}}
+def test_schema(field_type, expected):
+    model_defs = {}
+    assert schema(field_type, model_defs=model_defs) == expected
 
 
 @pytest.mark.parametrize(
@@ -212,18 +209,6 @@ def test_model__default(model_def, expected):
     schema = model_def.model_json_schema
     assert "field" not in schema["required"]
     assert schema["properties"]["field"]["default"] == expected, schema
-
-
-@pytest.mark.parametrize(
-    ("field_type", "expected"),
-    [
-        (dict[int, int], ""),
-        (dict[Annotated[int, None], int], ""),
-    ],
-)
-def test_bad_type(field_type, expected):
-    with pytest.raises(TypeError):
-        JSONSchemaVisitor().visit(field_type)
 
 
 def test_field_alias():

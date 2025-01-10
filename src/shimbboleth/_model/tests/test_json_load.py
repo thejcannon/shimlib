@@ -4,7 +4,7 @@ import uuid
 from pytest import param
 
 from shimbboleth._model.model import Model
-from shimbboleth._model.field_types import MatchesRegex, NonEmpty
+from shimbboleth._model.validation import MatchesRegex, NonEmpty
 from shimbboleth._model.field import field
 from shimbboleth._model.json_load import load
 from shimbboleth._model.field_alias import FieldAlias
