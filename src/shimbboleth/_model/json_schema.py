@@ -91,13 +91,13 @@ class JSONSchemaVisitor(Visitor[dict[str, Any]]):
     def _get_field_type_schema(self, field: dataclasses.Field) -> dict[str, Any]:
         json_loader = field.metadata.get("json_loader", None)
         if json_loader:
-            input_type = getattr(json_loader, "json_schema_type", json_loader.__annotations__["value"])
+            input_type = getattr(
+                json_loader, "json_schema_type", json_loader.__annotations__["value"]
+            )
             output_type = json_loader.__annotations__["return"]
             assert (
                 output_type == field.type
-            ), (
-                f"for {json_loader} {output_type=} {field.type=}"
-            )
+            ), f"for {json_loader} {output_type=} {field.type=}"
             return self.visit(input_type)
         return self.visit(field.type)
 

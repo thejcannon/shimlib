@@ -15,7 +15,9 @@ class _ModelBase:
 
 class Model(_ModelBase, metaclass=ModelMeta):
     @staticmethod
-    def _json_loader_(field, *, json_schema_type: type | None = None) -> Callable[[T], T]:
+    def _json_loader_(
+        field, *, json_schema_type: type | None = None
+    ) -> Callable[[T], T]:
         # @TODO: Assert funcname
         assert isinstance(field, dataclasses.Field), "Did you forget to = field(...)?"
         assert (
