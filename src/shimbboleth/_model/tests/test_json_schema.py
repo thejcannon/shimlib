@@ -15,6 +15,7 @@ from shimbboleth._model.field_alias import FieldAlias
 from typing import Annotated, Literal, ClassVar
 
 import pytest
+from pytest import param
 
 
 def make_model(attrs, **kwargs):
@@ -28,52 +29,52 @@ def str_to_int(value: str) -> int:
 @pytest.mark.parametrize(
     ("field_type", "expected"),
     [
-        pytest.param(bool, {"type": "boolean"}, id="simple"),
-        pytest.param(int, {"type": "integer"}, id="simple"),
-        pytest.param(str, {"type": "string"}, id="simple"),
-        pytest.param(None, {"type": "null"}, id="simple"),
-        pytest.param(
+        param(bool, {"type": "boolean"}, id="simple"),
+        param(int, {"type": "integer"}, id="simple"),
+        param(str, {"type": "string"}, id="simple"),
+        param(None, {"type": "null"}, id="simple"),
+        param(
             list[bool], {"type": "array", "items": {"type": "boolean"}}, id="list"
         ),
-        pytest.param(
+        param(
             list[str], {"type": "array", "items": {"type": "string"}}, id="list"
         ),
-        pytest.param(
+        param(
             list[int], {"type": "array", "items": {"type": "integer"}}, id="list"
         ),
-        pytest.param(
+        param(
             dict[str, bool],
             {"type": "object", "additionalProperties": {"type": "boolean"}},
             id="dict",
         ),
-        pytest.param(
+        param(
             dict[str, int],
             {"type": "object", "additionalProperties": {"type": "integer"}},
             id="dict",
         ),
-        pytest.param(
+        param(
             dict[str, str],
             {"type": "object", "additionalProperties": {"type": "string"}},
             id="dict",
         ),
         # Union
-        pytest.param(
+        param(
             bool | int,
             {"oneOf": [{"type": "boolean"}, {"type": "integer"}]},
             id="union",
         ),
-        pytest.param(
+        param(
             str | None, {"oneOf": [{"type": "string"}, {"type": "null"}]}, id="union"
         ),
         # Literal
-        pytest.param(Literal["hello"], {"enum": ["hello"]}, id="literal"),
-        pytest.param(
+        param(Literal["hello"], {"enum": ["hello"]}, id="literal"),
+        param(
             Literal["hello", "goodbye"], {"enum": ["hello", "goodbye"]}, id="literal"
         ),
         # Pattern
-        pytest.param(re.Pattern, {"type": "string", "format": "regex"}, id="pattern"),
+        param(re.Pattern, {"type": "string", "format": "regex"}, id="pattern"),
         # UUID
-        pytest.param(
+        param(
             uuid.UUID,
             {
                 "type": "string",
@@ -82,12 +83,12 @@ def str_to_int(value: str) -> int:
             id="uuid",
         ),
         # Annotated
-        pytest.param(
+        param(
             NonEmptyList[int],
             {"type": "array", "items": {"type": "integer"}, "minLength": 1},
             id="annotated",
         ),
-        pytest.param(
+        param(
             dict[Annotated[str, MatchesRegex("^.*$")], str],
             {
                 "type": "object",
@@ -96,26 +97,26 @@ def str_to_int(value: str) -> int:
             },
             id="annotated",
         ),
-        pytest.param(
+        param(
             Annotated[str, MatchesRegex("^.*$")],
             {"type": "string", "pattern": "^.*$"},
             id="annotated",
         ),
-        pytest.param(
+        param(
             Annotated[int, Ge(5)], {"type": "integer", "minimum": 5}, id="annotated"
         ),
-        pytest.param(
+        param(
             Annotated[int, Le(10)], {"type": "integer", "maximum": 10}, id="annotated"
         ),
-        pytest.param(
+        param(
             Annotated[int, Ge(0), Le(100)],
             {"type": "integer", "minimum": 0, "maximum": 100},
             id="annotated",
         ),
-        pytest.param(
+        param(
             NonEmptyString, {"type": "string", "minLength": 1}, id="annotated"
         ),
-        pytest.param(
+        param(
             Annotated[int, Not[Ge(10)]],
             {"type": "integer", "not": {"minimum": 10}},
             id="annotated",
