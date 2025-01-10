@@ -1,6 +1,5 @@
 import pytest
 from shimbboleth._model.validation import ValidationError
-from shimbboleth.buildkite.pipeline_config import BlockStep
 
 
 def test_key_not_uuid(all_step_types):

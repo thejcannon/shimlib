@@ -1,7 +1,6 @@
 from typing import dataclass_transform, Any, ClassVar, TypeVar
 from types import MappingProxyType
 import dataclasses
-from typing_extensions import TYPE_CHECKING
 
 from shimbboleth._model.field import field
 from shimbboleth._model.field_alias import FieldAlias
@@ -9,7 +8,6 @@ from shimbboleth._model._validators import ValidationDescriptor, get_validators
 
 
 T = TypeVar("T")
-
 
 
 @dataclass_transform(kw_only_default=True, field_specifiers=(dataclasses.field, field))
