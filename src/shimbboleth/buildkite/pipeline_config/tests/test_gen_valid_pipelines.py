@@ -27,7 +27,16 @@ BOOLVALS = ("true", "false", True, False)
         {"input": None},
         {"wait": None},
         # Strings
-        *("block", "manual", "input", "wait", "waiter"),
+        *(
+            "block",
+            "manual",
+            "input",
+            "command",
+            "commands",
+            "script",
+            "wait",
+            "waiter",
+        ),
         # Tests against all step types
         *(
             param(
@@ -39,25 +48,6 @@ BOOLVALS = ("true", "false", True, False)
             )
             for step_type_param in STEP_TYPE_PARAMS.values()
             for step_param in (
-                # allow_dependency_failure
-                *(
-                    param(
-                        {"allow_dependency_failure": value},
-                        id="all-allow_dependency_failure",
-                    )
-                    for value in BOOLVALS
-                ),
-                # depends_on
-                param({"depends_on": "scalar"}, id="depends_on"),
-                param({"depends_on": ["string"]}, id="depends_on"),
-                param({"depends_on": [{"step": "step_id"}]}, id="depends_on"),
-                *(
-                    param(
-                        {"depends_on": [{"step": "step_id", "allow_failure": value}]},
-                        id="depends_on-allow_failure",
-                    )
-                    for value in BOOLVALS
-                ),
                 param(
                     {
                         "depends_on": [
@@ -503,3 +493,50 @@ def test_valid_pipeline_steps(pipeline_step: dict, request: pytest.FixtureReques
     # (GENERATION_PATH / f"{param_id}.yaml").write_text(yaml.safe_dump({"steps": [pipeline_step]}))
     pipeline = BuildkitePipeline.model_load([pipeline_step])
     pipeline.model_dump()
+
+
+"""
+Something like this:
+
+class ValidPipelineAnyStepType:
+    def test_allow_dependency_failure(self, step_type_param):
+        self.assert_valid_pipeline(step_type_param)
+"""
+
+
+class _ValidPipelineBase:
+    def assert_valid_pipeline(self, step):
+        pipeline = BuildkitePipeline.model_load([step])
+        return pipeline.model_dump()
+
+
+@pytest.mark.parametrize(
+    "steptype_param",
+    [
+        pytest.param(steptype_param, id=steptype_param.stepname)
+        for steptype_param in STEP_TYPE_PARAMS.values()
+    ],
+)
+class TestValidPipeline_AnyStepType(_ValidPipelineBase):
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_allow_dependency_failure(self, steptype_param, value):
+        self.assert_valid_pipeline(
+            {
+                "allow_dependency_failure": value,
+                **steptype_param.dumped_default,
+            }
+        )
+
+    @pytest.mark.parametrize(
+        "value",
+        (
+            "scalar",
+            ["string"],
+            [{"step": "step_id"}],
+            *([{"step": "step_id", "allow_failure": value}] for value in BOOLVALS),
+        ),
+    )
+    def test_depends_on(self, steptype_param, value):
+        self.assert_valid_pipeline(
+            {"depends_on": value, **steptype_param.dumped_default}
+        )

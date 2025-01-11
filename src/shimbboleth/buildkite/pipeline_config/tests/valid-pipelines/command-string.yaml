@@ -1,9 +1,0 @@
-steps:
-  - command
-  - commands
-  - script
----
-steps:
-  - type: command
-  - type: command
-  - type: command
