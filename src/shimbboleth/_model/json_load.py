@@ -32,7 +32,7 @@ class WrongTypeError(TypeError):
     def __init__(self, expected, data):
         # @TODO: Give field name? Type name? jmespath?
         #   (See also the validation framework)
-        super().__init__(f"Expected {expected}, got {type(data)}")
+        super().__init__(f"Expected {expected}, got '{data}' of type {type(data)}")
 
 
 def _ensure_is(data, expected: type[T]) -> T:
@@ -76,7 +76,6 @@ def load_generic_alias(field_type: GenericAlias, *, data: Any):
 
 @load.register
 def load_union_type(field_type: UnionType, *, data: Any):
-    # @TODO: Do we want to store a breadcrumb on the type here?
     for t in field_type.__args__:
         try:
             return load(t, data=data)
@@ -185,9 +184,9 @@ class _LoadModelHelper:
     @staticmethod
     def get_extras(model_type: type[Model], data: dict[str, Any]) -> dict[str, Any]:
         extras = {}
-        for field in frozenset(data.keys()):
-            if field not in model_type.__json_fieldnames__:
-                extras[field] = data.pop(field)
+        for data_key in frozenset(data.keys()):
+            if data_key not in model_type.__json_fieldnames__:
+                extras[data_key] = data.pop(data_key)
 
         if extras and not model_type.__allow_extra_properties__:
             # @TODO: Include more info in error

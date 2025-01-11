@@ -1,9 +1,0 @@
-steps:
-  - wait:
-      wait: ~
-  - waiter:
-      wait: ~
----
-steps:
-  - type: wait
-  - type: wait

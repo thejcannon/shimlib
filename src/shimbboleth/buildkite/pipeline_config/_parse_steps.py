@@ -13,54 +13,7 @@ from ._nested_steps import (
     NestedCommandStep,
     NestedTriggerStep,
 )
-from typing import Literal
 
-
-def parse_steps(
-    value: list[
-        BlockStep
-        | InputStep
-        | CommandStep
-        | WaitStep
-        | TriggerStep
-        | GroupStep
-        | NestedBlockStep
-        | NestedInputStep
-        | NestedCommandStep
-        | NestedWaitStep
-        | NestedTriggerStep
-        | Literal["block", "manual"]
-        | Literal["input"]
-        | Literal["command", "commands", "script"]
-        | Literal["wait", "waiter"]
-    ],
-) -> list[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep | GroupStep]:
-    ret = []
-    for step in value:
-        if isinstance(
-            step,
-            (BlockStep, InputStep, CommandStep, WaitStep, TriggerStep, GroupStep),
-        ):
-            ret.append(step)
-        elif isinstance(step, NestedBlockStep):
-            ret.append(step.block)
-        elif isinstance(step, NestedInputStep):
-            ret.append(step.input)
-        elif isinstance(step, NestedCommandStep):
-            ret.append(step.command)
-        elif isinstance(step, NestedWaitStep):
-            ret.append(step.wait)
-        elif isinstance(step, NestedTriggerStep):
-            ret.append(step.trigger)
-        elif step in ("block", "manual"):
-            ret.append(BlockStep(type=step))
-        elif step == "input":
-            ret.append(InputStep(type=step))
-        elif step in ("command", "commands", "script"):
-            ret.append(CommandStep(type=step))
-        elif step == "wait" or step == "waiter":
-            ret.append(WaitStep(type=step))
-    return ret
 
 
 def _parse_step(
@@ -101,7 +54,7 @@ def _parse_step(
     raise TypeError(f"Invalid step: {step}")
 
 
-def parse_steps2(
+def parse_steps(
     steps: list[dict[str, Any] | str],
 ) -> list[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep | GroupStep]:
     # @TODO: Improve error message with step index?

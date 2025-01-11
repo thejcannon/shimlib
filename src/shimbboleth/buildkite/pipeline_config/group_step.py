@@ -42,11 +42,11 @@ class GroupStep(StepBase, extra=False):
     # @TODO: Add `json_schema_type` to the mega-list of types
     @Model._json_loader_(steps)
     @staticmethod
-    def __steps__from_json(
+    def _load_steps(
         value: list[dict[str, Any] | str],
     ) -> NonEmptyList[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep]:
         # NB: Nested to avoid circular import
-        from ._parse_steps import parse_steps2
+        from ._parse_steps import parse_steps
 
         # @TODO: Don't allow group steps in here
-        return parse_steps2(value)  # type: ignore
+        return parse_steps(value)  # type: ignore

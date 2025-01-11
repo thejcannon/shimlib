@@ -21,7 +21,7 @@ class StepTypeParam(Generic[T]):
     ctor_defaults: dict[str, Any]
 
     @property
-    def lowercase(self) -> str:
+    def stepname(self) -> str:
         return self.cls.__name__.lower().removesuffix("step")
 
     def ctor(self, **kwargs) -> T:
@@ -31,21 +31,25 @@ class StepTypeParam(Generic[T]):
     def dumped_default(self) -> dict[str, Any]:
         return self.ctor().model_dump()
 
+    @property
+    def type(self) -> str:
+        return self.ctor_defaults["type"]
 
-STEP_TYPE_PARAMS = [
-    StepTypeParam(BlockStep, {}),
-    StepTypeParam(CommandStep, {}),
-    StepTypeParam(InputStep, {}),
-    StepTypeParam(WaitStep, {}),
-    StepTypeParam(TriggerStep, {"trigger": "trigger"}),
-    StepTypeParam(GroupStep, {"group": "group", "steps": [WaitStep()]}),
-]
+
+STEP_TYPE_PARAMS = {
+    "block": StepTypeParam(BlockStep, {"type": "block"}),
+    "command": StepTypeParam(CommandStep, {"type": "command"}),
+    "input": StepTypeParam(InputStep, {"type": "input"}),
+    "wait": StepTypeParam(WaitStep, {"type": "wait"}),
+    "trigger": StepTypeParam(TriggerStep, {"type": "trigger", "trigger": "trigger"}),
+    "group": StepTypeParam(GroupStep, {"group": "group", "steps": [WaitStep()]}),
+}
 
 
 @pytest.fixture(
     params=[
         pytest.param(step_type_param, id=step_type_param.cls.__name__)
-        for step_type_param in STEP_TYPE_PARAMS
+        for step_type_param in STEP_TYPE_PARAMS.values()
     ]
 )
 def all_step_types(request) -> StepTypeParam:

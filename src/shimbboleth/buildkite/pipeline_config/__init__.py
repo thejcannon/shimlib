@@ -11,7 +11,7 @@ from .command_step import CommandStep
 from ._types import rubystr
 from .group_step import GroupStep
 from ._notify import BuildNotifyT
-from ._parse_steps import parse_steps2
+from ._parse_steps import parse_steps
 
 ALL_STEP_TYPES = (
     BlockStep,
@@ -49,7 +49,7 @@ class BuildkitePipeline(Model, extra=True):
     @Model._json_loader_(steps)
     @staticmethod
     def _load_steps(value: list[dict[str, Any] | str]) -> StepsT:
-        return parse_steps2(value)
+        return parse_steps(value)
 
     @Model._json_loader_(env)
     @staticmethod

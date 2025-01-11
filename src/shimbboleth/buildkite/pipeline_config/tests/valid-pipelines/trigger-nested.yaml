@@ -1,7 +1,0 @@
-steps:
-  - trigger:
-      trigger: trigger
----
-steps:
-  - type: trigger
-    trigger: trigger
