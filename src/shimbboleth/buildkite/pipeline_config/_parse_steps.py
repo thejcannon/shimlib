@@ -15,7 +15,6 @@ from ._nested_steps import (
 )
 
 
-
 def _parse_step(
     step: dict[str, Any] | str,
 ) -> BlockStep | InputStep | CommandStep | WaitStep | TriggerStep | GroupStep:
