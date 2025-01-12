@@ -22,7 +22,7 @@ class ValidationError(ValueError):
 
     def __str__(self):
         context = "".join(f"\n{note}" for note in self.context)
-        return f"ValidationError: Expected '{self.args[0]}' to {self.args[1]}{context}"
+        return f"Expected '{self.args[0]}' to {self.args[1]}{context}"
 
     def __repr__(self):
         return f"ValidationError(value={self.args[0]!r}, expectation={self.args[1]!r})"

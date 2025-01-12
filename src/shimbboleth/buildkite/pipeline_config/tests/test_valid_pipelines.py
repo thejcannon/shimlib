@@ -132,6 +132,8 @@ class Test_Pipeline(_TestBase):
             }
         )
 
+    # @TODO: Extra keys OK
+
 
 @pytest.mark.parametrize(
     "steptype_param",
@@ -252,7 +254,7 @@ class Test_AnySubstepType(_TestBase):
         )
 
 
-class Test__BlockStep(_TestBase):
+class Test_BlockStep(_TestBase):
     def load_step(self, step, steptype_param=None) -> BlockStep:
         step = super().load_step(step)
         assert isinstance(step, BlockStep)
@@ -270,7 +272,7 @@ class Test__BlockStep(_TestBase):
         self.load_step({"block": {"blocked_state": blocked_state}})
 
 
-class Test__CommandStep(_TestBase):
+class Test_CommandStep(_TestBase):
     def load_step(self, step, steptype_param=None) -> CommandStep:
         if isinstance(step, dict):
             step = super().load_step(step, STEP_TYPE_PARAMS["command"])
@@ -573,7 +575,7 @@ class Test__CommandStep(_TestBase):
         self.load_step({"timeout_in_minutes": 1})
 
 
-class Test__InputStep(_TestBase):
+class Test_InputStep(_TestBase):
     def load_step(self, step, steptype_param=None) -> InputStep:
         step = super().load_step(step)
         assert isinstance(step, InputStep)
@@ -587,7 +589,7 @@ class Test__InputStep(_TestBase):
 
 
 @pytest.mark.parametrize("step_type", ["block", "input"])
-class Test__ManualStep(_TestBase):
+class Test_ManualStep(_TestBase):
     def _load_step_with_text_field(self, step_type, extra={}):
         return self.load_step(
             {step_type: step_type, "fields": [{"text": "text", "key": "key", **extra}]}
@@ -665,7 +667,7 @@ class Test__ManualStep(_TestBase):
         self.load_step({"type": step_type, "prompt": "prompt"})
 
 
-class Test__TriggerStep(_TestBase):
+class Test_TriggerStep(_TestBase):
     def load_step(self, step, steptype_param=None) -> TriggerStep:
         step = super().load_step(step, STEP_TYPE_PARAMS["trigger"])
         assert isinstance(step, TriggerStep)
@@ -723,7 +725,7 @@ class Test__TriggerStep(_TestBase):
         self.load_step({"soft_fail": value})
 
 
-class Test__WaitStep(_TestBase):
+class Test_WaitStep(_TestBase):
     def load_step(self, step, steptype_param=None) -> WaitStep:
         step = super().load_step(step)
         assert isinstance(step, WaitStep)
@@ -741,7 +743,7 @@ class Test__WaitStep(_TestBase):
         self.load_step({"wait": {"continue_on_failure": value}})
 
 
-class Test__GroupStep(_TestBase):
+class Test_GroupStep(_TestBase):
     def load_step(self, step, steptype_param=None) -> GroupStep:
         step = super().load_step(step, STEP_TYPE_PARAMS["group"])
         assert isinstance(step, GroupStep)
@@ -755,7 +757,7 @@ class Test__GroupStep(_TestBase):
             == "group"
         )
 
-    def test__notify(self):
+    def test_notify(self):
         self.load_step(
             {
                 "notify": [
@@ -772,5 +774,5 @@ class Test__GroupStep(_TestBase):
         )
 
     @pytest.mark.parametrize(["input", "expected"], SKIP_VALS)
-    def test__skip(self, input, expected):
+    def Test_skip(self, input, expected):
         assert self.load_step({"skip": input}).skip == expected
