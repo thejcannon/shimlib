@@ -1,136 +1,759 @@
 """
-# Pipeline Config Tests
-
-This test loads files from `./valid-pipelines` to check:
-
-1. Pipeline Validation: These pipelines should be valid and be loadable.
-    Additionally, we can (eventually) upload them to Buildkite (via a planned smoke-test)
-    to verify they are valid upstream.
-
-2. Round-Trip Testing: We verify that pipeline configurations maintain their integrity when:
-   - Parsed from YAML into our internal representation
-   - Converted back to YAML
-
-This way we can ensure we're parsing the config correctly, and that we're "canonicalizing" correctly as well.
-
-(I would love to also put Buildkite's representation in here, but the API responds with
-data thats ambiguous and missing fields)
+@TODO: ...
 """
 
-from shimbboleth.buildkite.pipeline_config import BuildkitePipeline
+from shimbboleth.buildkite.pipeline_config import BuildkitePipeline, Dependency
+
+from shimbboleth.buildkite.pipeline_config.block_step import BlockStep
+from shimbboleth.buildkite.pipeline_config.command_step import (
+    CommandStep,
+    CommandCache,
+    Plugin,
+)
+from shimbboleth.buildkite.pipeline_config.input_step import InputStep
+from shimbboleth.buildkite.pipeline_config.trigger_step import TriggerStep
+from shimbboleth.buildkite.pipeline_config.wait_step import WaitStep
 from shimbboleth.buildkite.pipeline_config.group_step import GroupStep
-from pathlib import Path
-import copy
-from typing import Iterable, Any, Callable
-from dataclasses import dataclass
 from shimbboleth.buildkite.pipeline_config.tests.conftest import STEP_TYPE_PARAMS
 
-import yaml
+import pytest
 
 
-@dataclass(slots=True, frozen=True)
-class ValidPipeline:
-    name: str
-    pipeline: dict[str, Any]
-    expected: dict[str, Any]
+BASECAMP_CAMPFIRE_URL = "https://3.basecamp.com/1234567/integrations/qwertyuiop/buckets/1234567/chats/1234567/lines"
 
-    @classmethod
-    def _replaced_type(
-        cls, docs: list[dict[str, Any]], replacer: Callable[[dict[str, Any]], None]
-    ) -> list[dict[str, Any]]:
-        docs = copy.deepcopy(docs)
-        for doc in docs:
-            for step in doc["steps"]:
-                assert step.pop("type") is None
-                replacer(step)
-        return docs
+BOOLVALS = ("true", "false", True, False)
+SKIP_VALS =(
+    (True, True),
+    ("true", True),
+    (False, False),
+    ("false", False),
+    ("", False),
+    ("reason", "reason"),
+)
 
-    def _as_groupstep(self, name: str) -> "ValidPipeline":
-        pipeline = {"steps": [{"group": "group", **self.pipeline}]}
-        expected = {"steps": [{"group": "group", **self.expected}]}
-        return ValidPipeline(f"*group-{name}", pipeline, expected)
+class _TestBase:
+    def load_pipeline(self, pipeline_config):
+        return BuildkitePipeline.model_load(pipeline_config)
 
-    @classmethod
-    def load_all(cls) -> "Iterable[ValidPipeline]":
-        """
-        Load all the valid pipelines from the `valid-pipelines` directory,
-        special-casing:
-            - all-*.yaml: Yields a pipeline per step type
-            - manual-*.yaml: Yields a pipeline for both Block and Input steps
-            - substep-*.yaml: Yields a pipeline for all step types except Group steps
-            - (Non-group): Yields a pipeline with the same definition but as a group step
-        """
-        paths = (Path(__file__).parent / "valid-pipelines").glob("*.yaml")
-        for path in paths:
-            name = path.stem
-            yaml_docs = list(yaml.safe_load_all(path.read_text()))
-            # @TODO: all/manual/substep, but as Group steps too, and as unnested steps
-            if name.startswith("all-"):
-                for step_type_param in STEP_TYPE_PARAMS:
-                    docs = cls._replaced_type(
-                        yaml_docs,
-                        lambda step: step.update(step_type_param.dumped_default),
-                    )
-                    yield ValidPipeline(
-                        f"*{step_type_param.lowercase}-{name.removeprefix('all-')}",
-                        docs[0],
-                        docs[-1],
-                    )
-            elif name.startswith("manual-"):
-                for step_type in ("block", "input"):
-                    docs = cls._replaced_type(
-                        yaml_docs, lambda step: step.__setitem__("type", step_type)
-                    )
-                    yield ValidPipeline(
-                        f"*{step_type}-{name.removeprefix('manual-')}",
-                        docs[0],
-                        docs[-1],
-                    )
-            elif name.startswith("substep-"):
-                for step_type_param in STEP_TYPE_PARAMS:
-                    if step_type_param.cls is GroupStep:
-                        continue
-                    docs = cls._replaced_type(
-                        yaml_docs,
-                        lambda step: step.update(step_type_param.dumped_default),
-                    )
-                    yield ValidPipeline(
-                        f"*{step_type_param.lowercase}-{name.removeprefix('substep-')}",
-                        docs[0],
-                        docs[-1],
-                    )
-            else:
-                valid_pipeline = ValidPipeline(name, yaml_docs[0], yaml_docs[-1])
-                yield valid_pipeline
+    # @TODO: Eventually, compare this against the generated schema
+    #   and also against the upstream schema
+    #   and also against the API
+    def load_step(self, step, steptype_param=None):
+        if steptype_param is not None:
+            step = {**step, **steptype_param.dumped_default}
 
-                if not name.startswith(("pipeline-", "group-")):
-                    yield valid_pipeline._as_groupstep(name)
+        pipeline = self.load_pipeline([step])
+        assert pipeline == self.load_pipeline({"steps": [step]})
+        # @TODO: Group step too
+        return pipeline.steps[0]
 
 
-def pytest_generate_tests(metafunc):
-    if "pipeline_info" in metafunc.fixturenames:
-        metafunc.parametrize(
-            "pipeline_info", list(ValidPipeline.load_all()), ids=lambda info: info.name
+class Test_Pipeline(_TestBase):
+    def test_empty_steps(self):
+        self.load_pipeline([])
+
+    def test_list_of_steps(self):
+        self.load_pipeline(["wait", "wait"])
+
+    def test_agents_list(self):
+        assert self.load_pipeline(
+            {"steps": [], "agents": ["noequal", "key1=value", "key2=value=value"]}
+        ).agents == {"noequal": "true", "key1": "value", "key2": "value=value"}
+        self.load_pipeline(
+            {
+                "steps": [],
+                "agents": {
+                    "str": "string",
+                    "int": 0,
+                    "bool": True,
+                    "list": ["one", "two"],
+                    "obj": {"key": "value"},
+                    "none": None,
+                    "has-an-equal": "key=value",
+                },
+            }
+        )
+
+    def test_agents_dict(self):
+        assert self.load_pipeline(
+            {"steps": [], "agents": {"noequal": "true", "key1": "value", "key2": "value=value"}}
+        ).agents == {"noequal": "true", "key1": "value", "key2": "value=value"}
+        self.load_pipeline(
+            {
+                "steps": [],
+                "agents": {
+                    "str": "string",
+                    "int": "0",
+                    "bool": "true",
+                    "list": '["one", "two"]',
+                    "obj": '{"key"=>"value"}',
+                    "has-an-equal": "key=value",
+                },
+            }
+        )
+
+    def test_env(self):
+        self.load_pipeline(
+            {
+                "steps": [],
+                "env": {
+                    "string": "string",
+                    "int": 0,
+                    "bool": True,
+                }
+            }
+        )
+        self.load_pipeline({"steps": [], "env": {"string": "string", "int": "0", "bool": "true"}})
+
+    def test_notify(self):
+        self.load_pipeline(
+            {
+                "steps": [],
+                "notify": [
+                    "github_check",
+                    "github_commit_status",
+                    {"email": "email@example.com"},
+                    {"webhook": "https://example.com"},
+                    {"pagerduty_change_event": "pagerduty_change_event"},
+                    {"basecamp_campfire": BASECAMP_CAMPFIRE_URL},
+                    {"slack": "#general"},
+                    {"slack": {"channels": ["#general"]}},
+                    {"slack": {"channels": ["#general"], "message": "message"}},
+                    {"github_commit_status": {"context": "context"}},
+                    {"github_check": {"name": "name"}},
+                ],
+            }
         )
 
 
-def test_valid_pipeline(pipeline_info: ValidPipeline):
-    """
-    This test loads the YAML, and ensures that loading the first document
-    and then dumping it matches the second document
-    (with them possibly being the same document).
-    """
-    pipeline = BuildkitePipeline.model_load(pipeline_info.pipeline)
-    assert pipeline.model_dump() == pipeline_info.expected
+@pytest.mark.parametrize(
+    "steptype_param",
+    [
+        pytest.param(steptype_param, id=steptype_param.stepname)
+        for steptype_param in STEP_TYPE_PARAMS.values()
+    ],
+)
+class Test_AnyStepType(_TestBase):
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_allow_dependency_failure(self, value, steptype_param):
+        self.load_step(
+            {"allow_dependency_failure": value},
+            steptype_param,
+        )
+
+    def test_depends_on(self, steptype_param):
+        assert self.load_step({"depends_on": "scalar"}, steptype_param).depends_on == [
+            Dependency(step="scalar")
+        ]
+        assert self.load_step(
+            {"depends_on": ["string"]}, steptype_param
+        ).depends_on == [Dependency(step="string")]
+        assert self.load_step(
+            {"depends_on": [{"step": "id"}]}, steptype_param
+        ).depends_on == [Dependency(step="id")]
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_depends_on__allow_failure__bool(self, value, steptype_param):
+        self.load_step(
+            {"depends_on": [{"step": "step_id", "allow_failure": value}]},
+            steptype_param,
+        )
+
+    def test_key_id_identifier(self, steptype_param):
+        assert self.load_step({"key": "key"}, steptype_param).key == "key"
+        assert self.load_step({"id": "id"}, steptype_param).key == "id"
+        assert (
+            self.load_step({"identifier": "identifier"}, steptype_param).key
+            == "identifier"
+        )
+        assert self.load_step({"key": "key", "id": "id"}, steptype_param).key == "key"
+        assert (
+            self.load_step(
+                {"key": "key", "identifier": "identifier"}, steptype_param
+            ).key
+            == "key"
+        )
+        assert (
+            self.load_step({"id": "id", "identifier": "identifier"}, steptype_param).key
+            == "id"
+        )
+        assert (
+            self.load_step(
+                {"key": "key", "id": "id", "identifier": "identifier"}, steptype_param
+            ).key
+            == "key"
+        )
+
+    def test_if(self, steptype_param):
+        self.load_step({"if": "string"}, steptype_param)
 
 
-# @BUG: an empty pipeline is valid using the UI (`null` steps)
-# @LINT: no duplicate pipelines/ duplicate steps
-# @LINT: all files use "yaml" suffix
-# @LINT: All steps in the result have `type: ` of the first part of the filename
-# @TEST: test that every one of the test cases are equivalent (if not identical)
-# @LINT/TEST: Keep the block-* pipelines in sync with the input ones (where relevant)
-# @LINT(+fixer): That if there's 2 documents, they dont equal
-# FEAT: Make it so the second document can use null (no change), + or - keys to indicate a change, as a form of brevity
+@pytest.mark.parametrize(
+    "steptype_param",
+    [
+        pytest.param(steptype_param, id=steptype_param.stepname)
+        for steptype_param in STEP_TYPE_PARAMS.values()
+        if steptype_param.stepname != "group"
+    ],
+)
+class Test_AnySubstepType(_TestBase):
+    @pytest.mark.parametrize("value", ("master", ["master"]))
+    def test_branches(self, value, steptype_param):
+        self.load_step({"branches": value}, steptype_param)
 
-# @TODO: Test all our pipelines pass validating against upstream schema
+    def test_type_label_name(self, steptype_param):
+        self.load_step({"type": steptype_param.type}, steptype_param)
+        self.load_step({"type": steptype_param.type, "label": "label"}, steptype_param)
+        self.load_step(
+            {"type": steptype_param.type, "label": "label", "name": "name"},
+            steptype_param,
+        )
+
+    def test_stepname_label_name(self, steptype_param):
+        assert self.load_step({"label": "label"}, steptype_param).label == "label"
+        assert self.load_step({"name": "name"}, steptype_param).label == "name"
+        assert (
+            self.load_step({"label": "label", "name": "name"}, steptype_param).label
+            == "name"
+        )
+        if steptype_param.stepname in ("command", "trigger"):
+            return
+
+        stepname_base = {steptype_param.stepname: steptype_param.stepname}
+        assert (
+            self.load_step(stepname_base, steptype_param).label
+            == steptype_param.stepname
+        )
+        assert (
+            self.load_step({**stepname_base, "label": "label"}, steptype_param).label
+            == "label"
+        )
+        assert (
+            self.load_step({**stepname_base, "name": "name"}, steptype_param).label
+            == "name"
+        )
+        assert (
+            self.load_step(
+                {**stepname_base, "label": "label", "name": "name"}, steptype_param
+            ).label
+            == "name"
+        )
+
+    def test_nested(self, steptype_param):
+        self.load_step(
+            {steptype_param.stepname: steptype_param.ctor_defaults},
+        )
+
+
+class Test__BlockStep(_TestBase):
+    def load_step(self, step, steptype_param=None) -> BlockStep:
+        step = super().load_step(step)
+        assert isinstance(step, BlockStep)
+        return step
+
+    def test_null(self):
+        self.load_step({"block": None})
+
+    def test_string(self):
+        self.load_step("block")
+        assert isinstance(self.load_step("manual"), BlockStep)
+
+    @pytest.mark.parametrize("blocked_state", ["passed", "failed", "running"])
+    def test_blocked_state(self, blocked_state):
+        self.load_step({"block": {"blocked_state": blocked_state}})
+
+
+class Test__CommandStep(_TestBase):
+    def load_step(self, step, steptype_param=None) -> CommandStep:
+        if isinstance(step, dict):
+            step = super().load_step(step, STEP_TYPE_PARAMS["command"])
+        else:
+            step = super().load_step(step)
+        assert isinstance(step, CommandStep)
+        return step
+
+    def test_string(self):
+        self.load_step("command")
+        self.load_step("commands")
+        self.load_step("script")
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_allow_dependency_failure(self, value):
+        self.load_step({"allow_dependency_failure": value})
+
+    def test_agents_list(self):
+        assert self.load_step(
+            {"agents": ["noequal", "key1=value", "key2=value=value"]}
+        ).agents == {"noequal": "true", "key1": "value", "key2": "value=value"}
+        self.load_step(
+            {
+                "agents": {
+                    "str": "string",
+                    "int": 0,
+                    "bool": True,
+                    "list": ["one", "two"],
+                    "obj": {"key": "value"},
+                    "none": None,
+                    "has-an-equal": "key=value",
+                },
+            }
+        )
+
+    def test_agents_dict(self):
+        assert self.load_step(
+            {"agents": {"noequal": "true", "key1": "value", "key2": "value=value"}}
+        ).agents == {"noequal": "true", "key1": "value", "key2": "value=value"}
+        self.load_step(
+            {
+                "agents": {
+                    "str": "string",
+                    "int": "0",
+                    "bool": "true",
+                    "list": '["one", "two"]',
+                    "obj": '{"key"=>"value"}',
+                    "has-an-equal": "key=value",
+                },
+            }
+        )
+
+    def test_artifact_paths(self):
+        assert self.load_step({"artifact_paths": "path"}).artifact_paths == ["path"]
+        assert self.load_step({"artifact_paths": ["path"]}).artifact_paths == ["path"]
+
+    def test_cache(self):
+        assert self.load_step({"cache": "path"}).cache == CommandCache(paths=["path"])
+        assert self.load_step({"cache": []}).cache == CommandCache(paths=[])
+        assert self.load_step({"cache": ["path"]}).cache == CommandCache(paths=["path"])
+        self.load_step(
+            {
+                "cache": {
+                    "paths": ["path"],
+                    "size": "20g",
+                }
+            }
+        )
+        self.load_step(
+            {
+                "cache": {
+                    "paths": ["path"],
+                    "name": "name",
+                }
+            }
+        )
+        self.load_step(
+            {
+                "cache": {
+                    "paths": ["path"],
+                    "size": "20g",
+                    "name": "name",
+                }
+            }
+        )
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_cancel_on_build_failing(self, value):
+        self.load_step({"cancel_on_build_failing": value})
+
+    def test_command(self):
+        assert self.load_step({"command": []}).command == []
+        assert self.load_step({"command": ""}).command == [""]
+        assert self.load_step({"command": "command"}).command == ["command"]
+        assert self.load_step({"command": ["command1", "command2"]}).command == [
+            "command1",
+            "command2",
+        ]
+        assert self.load_step({"command": [""]}).command == [""]
+        assert self.load_step({"command": ["command"]}).command == ["command"]
+
+    def test_concurrency(self):
+        self.load_step({"concurrency": 1, "concurrency_group": "group1"})
+        self.load_step(
+            {
+                "concurrency": 1,
+                "concurrency_group": "group2",
+                "concurrency_method": "ordered",
+            }
+        )
+        self.load_step(
+            {
+                "concurrency": 1,
+                "concurrency_group": "group3",
+                "concurrency_method": "eager",
+            }
+        )
+
+    def test_env(self):
+        self.load_step(
+            {
+                "env": {
+                    "string": "string",
+                    "int": 0,
+                    "bool": True,
+                    "list": [],
+                    "obj": {"key": "value"},
+                }
+            }
+        )
+        self.load_step({"env": {"string": "string", "int": "0", "bool": "true"}})
+
+    def test_matrix__simple_array(self):
+        self.load_step({"matrix": ["string", 0, True]})
+
+    def test_matrix__single_dimension(self):
+        self.load_step({"matrix": {"setup": ["value"]}})
+        self.load_step(
+            {"matrix": {"setup": ["value"], "adjustments": [{"with": "newvalue"}]}}
+        )
+        self.load_step(
+            {
+                "matrix": {
+                    "setup": ["value"],
+                    "adjustments": [{"with": "newvalue", "soft_fail": True}],
+                }
+            }
+        )
+
+    @pytest.mark.parametrize(["input", "expected"], SKIP_VALS)
+    def test_matrix__single_dimension__skip_bool(self, input, expected):
+        assert self.load_step(
+            {
+                "matrix": {
+                    "setup": ["value"],
+                    "adjustments": [{"with": "newvalue", "skip": input}],
+                }
+            }
+        ).matrix.adjustments[0].skip == expected  # type: ignore
+
+    def test_matrix__multi_dimension(self):
+        self.load_step({"matrix": {"setup": {"key1": ["value"], "key2": ["value"]}}})
+        self.load_step(
+            {
+                "matrix": {
+                    "setup": ["value"],
+                    "adjustments": [
+                        {
+                            "with": "newvalue",
+                            "soft_fail": [{"exit_status": "*"}, {"exit_status": -1}],
+                        }
+                    ],
+                }
+            }
+        )
+
+    @pytest.mark.parametrize(["input", "expected"], SKIP_VALS)
+    def test_matrix__multi_dimension__skip_bool(self, input, expected):
+        assert self.load_step(
+            {
+                "matrix": {
+                    "setup": {"key1": []},
+                    "adjustments": [{"with": {"key2": []}, "skip": input}],
+                }
+            }
+        ).matrix.adjustments[0].skip == expected  # type: ignore
+
+    def test_notify(self):
+        self.load_step(
+            {
+                "notify": [
+                    "github_check",
+                    "github_commit_status",
+                    {
+                        "basecamp_campfire": "https://3.basecamp.com/1234567/integrations/qwertyuiop/buckets/1234567/chats/1234567/lines"
+                    },
+                    {"slack": "#general"},
+                    {"slack": {"channels": ["#general"]}},
+                    {"slack": {"channels": ["#general"], "message": "message"}},
+                    {"github_commit_status": {"context": "context"}},
+                    {"github_check": {"name": "name"}},
+                ]
+            }
+        )
+
+    def test_parallelism(self):
+        self.load_step({"parallelism": 1})
+
+    def test_plugins(self):
+        assert self.load_step(
+            {"plugins": ["plugin", {"plugin": None}, {"plugin": {"key": "value"}}]}
+        ).plugins == [
+            Plugin(spec="plugin"),
+            Plugin(spec="plugin"),
+            Plugin(spec="plugin", config={"key": "value"}),
+        ]
+        assert self.load_step(
+            {"plugins": {"plugin-null": None, "pluginobj": {"key": "value"}}}
+        ).plugins == [
+            Plugin(spec="plugin-null"),
+            Plugin(spec="pluginobj", config={"key": "value"}),
+        ]
+
+    def test_priority(self):
+        self.load_step({"priority": 1})
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_retry__automatic_bool(self, value):
+        self.load_step({"retry": {"automatic": value}})
+
+    def test_retry__automatic(self):
+        self.load_step({"retry": {"automatic": {"exit_status": 1}}})
+        self.load_step({"retry": {"automatic": {"exit_status": "*"}}})
+        self.load_step({"retry": {"automatic": {"exit_status": [1, 2]}}})
+        self.load_step({"retry": {"automatic": [{"limit": 5}]}})
+        self.load_step({"retry": {"automatic": [{"signal": "signal"}]}})
+        self.load_step(
+            {
+                "retry": {
+                    "automatic": [
+                        {"signal_reason": "*"},
+                        {"signal_reason": "none"},
+                        {"signal_reason": "agent_refused"},
+                        {"signal_reason": "agent_stop"},
+                        {"signal_reason": "cancel"},
+                        {"signal_reason": "process_run_error"},
+                        {"signal_reason": "signature_rejected"},
+                    ]
+                }
+            }
+        )
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_retry__manual_bool(self, value):
+        self.load_step({"retry": {"manual": value}})
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_retry__manual_allowed(self, value):
+        self.load_step({"retry": {"manual": {"allowed": value}}})
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_retry__manual_permit_on_passed(self, value):
+        self.load_step({"retry": {"manual": {"permit_on_passed": value}}})
+
+    def test_retry__manual(self):
+        self.load_step({"retry": {"manual": {"reason": "reason", "allowed": True}}})
+
+    def test_signature(self):
+        self.load_step({"signature": {}})
+        self.load_step({"signature": {"algorithm": "sha256"}})
+        self.load_step({"signature": {"signed_fields": ["field1"]}})
+        self.load_step({"signature": {"value": "value"}})
+
+    @pytest.mark.parametrize(["input", "expected"], SKIP_VALS)
+    def test_skip(self, input, expected):
+        assert self.load_step({"skip": input}).skip == expected
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_soft_fail__bool(self, value):
+        self.load_step({"soft_fail": value})
+
+    def test_soft_fail(self):
+        self.load_step({"soft_fail": []})
+        self.load_step({"soft_fail": [{"exit_status": "*"}]})
+        self.load_step({"soft_fail": [{"exit_status": 1}]})
+        self.load_step({"soft_fail": [{"exit_status": 1}, {"exit_status": -1}]})
+        self.load_step({"soft_fail": [{"exit_status": "*"}, {"exit_status": 1}]})
+
+    def test_timeout_in_minutes(self):
+        self.load_step({"timeout_in_minutes": 1})
+
+
+class Test__InputStep(_TestBase):
+    def load_step(self, step, steptype_param=None) -> InputStep:
+        step = super().load_step(step)
+        assert isinstance(step, InputStep)
+        return step
+
+    def test_null(self):
+        self.load_step({"input": None})
+
+    def test_string(self):
+        self.load_step("input")
+
+
+@pytest.mark.parametrize("step_type", ["block", "input"])
+class Test__ManualStep(_TestBase):
+    def _load_step_with_text_field(self, step_type, extra={}):
+        return self.load_step(
+            {step_type: step_type, "fields": [{"text": "text", "key": "key", **extra}]}
+        )
+
+    def _load_step_with_select_field(self, step_type, extra={}):
+        return self.load_step(
+            {
+                step_type: step_type,
+                "fields": [
+                    {
+                        "select": "select",
+                        "key": "key",
+                        **extra,
+                        "options": [{"label": "label", "value": "value"}],
+                    }
+                ],
+            }
+        )
+
+    def test_fields_text(self, step_type):
+        self._load_step_with_text_field(step_type)
+        self._load_step_with_text_field(step_type, {"hint": "hint"})
+        self._load_step_with_text_field(step_type, {"default": "default"})
+        self._load_step_with_text_field(step_type, {"format": "^$"})
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_fields_text_required(self, step_type, value):
+        self._load_step_with_text_field(step_type, {"required": value})
+
+    def test_fields_select(self, step_type):
+        self._load_step_with_select_field(step_type)
+        self._load_step_with_select_field(step_type, {"hint": "hint"})
+        self._load_step_with_select_field(step_type, {"default": "default"})
+        self._load_step_with_select_field(
+            step_type, {"multiple": True, "default": "default"}
+        )
+        self._load_step_with_select_field(
+            step_type, {"multiple": True, "default": ["default"]}
+        )
+        self._load_step_with_select_field(
+            step_type,
+            {"options": [{"label": "label", "value": "value", "hint": "hint"}]},
+        )
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_fields_select_multiple(self, step_type, value):
+        self._load_step_with_select_field(step_type, {"multiple": value})
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_fields_select_option_required(self, step_type, value):
+        self._load_step_with_select_field(
+            step_type,
+            {"options": [{"label": "label", "value": "value", "required": value}]},
+        )
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_fields_select_required(self, step_type, value):
+        self.load_step(
+            {
+                step_type: {
+                    "fields": [
+                        {
+                            "select": "select",
+                            "key": "key",
+                            "options": [{"label": "label", "value": "value"}],
+                            "required": value,
+                        }
+                    ],
+                }
+            }
+        )
+
+    def test_prompt(self, step_type):
+        self.load_step({"type": step_type, "prompt": "prompt"})
+
+
+class Test__TriggerStep(_TestBase):
+    def load_step(self, step, steptype_param=None) -> TriggerStep:
+        step = super().load_step(step, STEP_TYPE_PARAMS["trigger"])
+        assert isinstance(step, TriggerStep)
+        return step
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_async(self, value):
+        self.load_step({"async": value})
+
+    def test_build_branch(self):
+        self.load_step({"build": {"branch": "branch"}})
+
+    def test_build_commit(self):
+        self.load_step({"build": {"commit": "commit"}})
+
+    def test_build_env(self):
+        self.load_step(
+            {
+                "build": {
+                    "env": {
+                        "str": "string",
+                        "int": 0,
+                        "bool": True,
+                    }
+                },
+            }
+        )
+
+    def test_build_message(self):
+        self.load_step(
+            {
+                "build": {"message": "message"},
+            }
+        )
+
+    def test_build_meta_data(self):
+        self.load_step(
+            {
+                "build": {
+                    "meta_data": {
+                        "str": "string",
+                        "int": 0,
+                        "bool": True,
+                    }
+                },
+            }
+        )
+
+    @pytest.mark.parametrize(["input", "expected"], SKIP_VALS)
+    def test_skip(self, input, expected):
+        assert self.load_step({"skip": input}).skip == expected
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_soft_fail(self, value):
+        self.load_step({"soft_fail": value})
+
+
+class Test__WaitStep(_TestBase):
+    def load_step(self, step, steptype_param=None) -> WaitStep:
+        step = super().load_step(step)
+        assert isinstance(step, WaitStep)
+        return step
+
+    def test_null(self):
+        self.load_step({"wait": None})
+
+    def test_string(self):
+        self.load_step("wait")
+        self.load_step("waiter")
+
+    @pytest.mark.parametrize("value", BOOLVALS)
+    def test_continue_on_failure(self, value):
+        self.load_step({"wait": {"continue_on_failure": value}})
+
+
+class Test__GroupStep(_TestBase):
+    def load_step(self, step, steptype_param=None) -> GroupStep:
+        step = super().load_step(step, STEP_TYPE_PARAMS["group"])
+        assert isinstance(step, GroupStep)
+        return step
+
+    def test_label_name(self):
+        assert self.load_step({"group": "group", "label": "label"}).label == "group"
+        assert self.load_step({"group": "group", "name": "name"}).label == "group"
+        assert (
+            self.load_step({"group": "group", "label": "label", "name": "name"}).label
+            == "group"
+        )
+
+    def test__notify(self):
+        self.load_step(
+            {
+                "notify": [
+                    "github_check",
+                    "github_commit_status",
+                    {"basecamp_campfire": BASECAMP_CAMPFIRE_URL},
+                    {"slack": "#general"},
+                    {"slack": {"channels": ["#general"]}},
+                    {"slack": {"channels": ["#general"], "message": "message"}},
+                    {"github_commit_status": {"context": "context"}},
+                    {"github_check": {"name": "name"}},
+                ],
+            }
+        )
+
+    @pytest.mark.parametrize(["input", "expected"], SKIP_VALS)
+    def test__skip(self, input, expected):
+        assert self.load_step({"skip": input}).skip == expected

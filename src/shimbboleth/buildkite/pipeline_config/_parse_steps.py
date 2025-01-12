@@ -27,6 +27,7 @@ def _parse_step(
             return CommandStep(type=step)
         elif step == "wait" or step == "waiter":
             return WaitStep(type=step)
+        # @TODO: Error
 
     assert isinstance(step, dict)
     for stepkey, nestedmodel, stepmodel in (
