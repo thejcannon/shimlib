@@ -430,10 +430,10 @@ class Test__CommandStep(_TestBase):
                     }
                 }
             )
-            .matrix.adjustments[0]
+            .matrix.adjustments[0]  # type: ignore
             .skip
             == expected
-        )  # type: ignore
+        )
 
     def test_matrix__multi_dimension(self):
         self.load_step({"matrix": {"setup": {"key1": ["value"], "key2": ["value"]}}})
@@ -462,10 +462,10 @@ class Test__CommandStep(_TestBase):
                     }
                 }
             )
-            .matrix.adjustments[0]
+            .matrix.adjustments[0]  # type: ignore
             .skip
             == expected
-        )  # type: ignore
+        )
 
     def test_notify(self):
         self.load_step(
