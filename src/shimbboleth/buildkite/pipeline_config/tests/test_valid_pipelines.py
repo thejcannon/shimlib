@@ -45,7 +45,8 @@ class _TestBase:
 
         pipeline = self.load_pipeline([step])
         assert pipeline == self.load_pipeline({"steps": [step]})
-        # @TODO: Group step too
+        if isinstance(step, dict) and "group" not in step:
+            assert pipeline == self.load_pipeline({"group": "group", "steps": [step]})
         return pipeline.steps[0]
 
 
