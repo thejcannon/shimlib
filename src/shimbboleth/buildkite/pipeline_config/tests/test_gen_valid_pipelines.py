@@ -5,7 +5,7 @@
 from shimbboleth.buildkite.pipeline_config import BuildkitePipeline, Dependency
 
 from shimbboleth.buildkite.pipeline_config.block_step import BlockStep
-from shimbboleth.buildkite.pipeline_config.command_step import CommandStep
+from shimbboleth.buildkite.pipeline_config.command_step import CommandStep, CommandCache, Plugin
 from shimbboleth.buildkite.pipeline_config.input_step import InputStep
 from shimbboleth.buildkite.pipeline_config.trigger_step import TriggerStep
 from shimbboleth.buildkite.pipeline_config.wait_step import WaitStep
@@ -21,6 +21,9 @@ BOOLVALS = ("true", "false", True, False)
 
 
 class _ValidPipelineBase:
+    def load_pipeline(self, pipeline_config):
+        return BuildkitePipeline.model_load(pipeline_config)
+
     # @TODO: Eventually, compare this against the generated schema
     #   and also against the upstream schema
     #   and also against the API
@@ -28,10 +31,38 @@ class _ValidPipelineBase:
         if steptype_param is not None:
             step = {**step, **steptype_param.dumped_default}
 
-        pipeline = BuildkitePipeline.model_load([step])
-        assert pipeline == BuildkitePipeline.model_load({"steps": [step]})
+        pipeline = self.load_pipeline([step])
+        assert pipeline == self.load_pipeline({"steps": [step]})
         # @TODO: Group step too
         return pipeline.steps[0]
+
+
+class TestValidPipeline_TopLevel(_ValidPipelineBase):
+    def test_empty_steps(self):
+        self.load_pipeline([])
+
+    def test_list_of_steps(self):
+        self.load_pipeline(["wait", "wait"])
+
+    def test_notify_at_pipeline_level(self):
+        self.load_pipeline(
+            {
+                "steps": [],
+                "notify": [
+                    "github_check",
+                    "github_commit_status",
+                    {"email": "email@example.com"},
+                    {"webhook": "https://example.com"},
+                    {"pagerduty_change_event": "pagerduty_change_event"},
+                    {"basecamp_campfire": BASECAMP_CAMPFIRE_URL},
+                    {"slack": "#general"},
+                    {"slack": {"channels": ["#general"]}},
+                    {"slack": {"channels": ["#general"], "message": "message"}},
+                    {"github_commit_status": {"context": "context"}},
+                    {"github_check": {"name": "name"}},
+                ],
+            }
+        )
 
 
 @pytest.mark.parametrize(
@@ -189,7 +220,7 @@ class TestValidPipeline_CommandStep(_ValidPipelineBase):
     def test_command_allow_dependency_failure(self, value):
         self.load_step({"allow_dependency_failure": value})
 
-    def test_command_agents(self):
+    def test_command_agents_list(self):
         assert self.load_step(
             {"agents": ["noequal", "key1=value", "key2=value=value"]}
         ).agents == {"noequal": "true", "key1": "value", "key2": "value=value"}
@@ -206,9 +237,11 @@ class TestValidPipeline_CommandStep(_ValidPipelineBase):
                 },
             }
         )
-        self.load_step(
+
+    def test_command_agents_dict(self):
+        assert self.load_step(
             {"agents": {"noequal": "true", "key1": "value", "key2": "value=value"}}
-        )
+        ).agents == {"noequal": "true", "key1": "value", "key2": "value=value"}
         self.load_step(
             {
                 "agents": {
@@ -223,14 +256,13 @@ class TestValidPipeline_CommandStep(_ValidPipelineBase):
         )
 
     def test_command_artifact_paths(self):
-        self.load_step({"artifact_paths": "scalar"})
-        self.load_step({"artifact_paths": ["path1"]})
-        self.load_step({"artifact_paths": ["scalar"]})
+        assert self.load_step({"artifact_paths": "path"}).artifact_paths == ["path"]
+        assert self.load_step({"artifact_paths": ["path"]}).artifact_paths == ["path"]
 
     def test_command_cache(self):
-        self.load_step({"cache": "path"})
-        self.load_step({"cache": []})
-        self.load_step({"cache": ["path"]})
+        assert self.load_step({"cache": "path"}).cache == CommandCache(paths=["path"])
+        assert self.load_step({"cache": []}).cache == CommandCache(paths=[])
+        assert self.load_step({"cache": ["path"]}).cache == CommandCache(paths=["path"])
         self.load_step(
             {
                 "cache": {
@@ -263,11 +295,11 @@ class TestValidPipeline_CommandStep(_ValidPipelineBase):
 
     def test_command_command(self):
         assert self.load_step({"command": []}).command == []
-        self.load_step({"command": ""})
-        self.load_step({"command": "command"})
-        self.load_step({"command": ["command1", "command2"]})
-        self.load_step({"command": [""]})
-        self.load_step({"command": ["command"]})
+        assert self.load_step({"command": ""}).command == [""]
+        assert self.load_step({"command": "command"}).command == ["command"]
+        assert self.load_step({"command": ["command1", "command2"]}).command == ["command1", "command2"]
+        assert self.load_step({"command": [""]}).command == [""]
+        assert self.load_step({"command": ["command"]}).command == ["command"]
 
     def test_command_concurrency(self):
         self.load_step({"concurrency": 1, "concurrency_group": "group1"})
@@ -377,12 +409,12 @@ class TestValidPipeline_CommandStep(_ValidPipelineBase):
         self.load_step({"parallelism": 1})
 
     def test_command_plugins(self):
-        self.load_step(
+        assert self.load_step(
             {"plugins": ["plugin", {"plugin": None}, {"plugin": {"key": "value"}}]}
-        )
-        self.load_step(
+        ).plugins == [Plugin(spec="plugin"), Plugin(spec="plugin"), Plugin(spec="plugin", config={"key": "value"})]
+        assert self.load_step(
             {"plugins": {"plugin-null": None, "pluginobj": {"key": "value"}}}
-        )
+        ).plugins == [Plugin(spec="plugin-null"), Plugin(spec="pluginobj", config={"key": "value"})]
 
     def test_command_priority(self):
         self.load_step({"priority": 1})

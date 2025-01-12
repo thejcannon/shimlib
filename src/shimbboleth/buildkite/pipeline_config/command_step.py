@@ -143,10 +143,10 @@ class CommandCache(Model, extra=True):
 
 
 class Plugin(Model, extra=False):
-    spec: str = field(kw_only=False)
+    spec: str = field()
     """The plugin "spec". Usually in `<org>/<repo>#<tag>` format"""
 
-    config: dict[str, Any] | None = field(kw_only=False)
+    config: dict[str, Any] | None = field(default=None)
     """The configuration to use (or None)"""
 
     # @FEAT: parse the spec and expose properties
@@ -290,6 +290,6 @@ class CommandStep(StepBase, extra=False):
         return [
             Plugin(spec=elem, config=None)
             if isinstance(elem, str)
-            else Plugin(*next(iter(elem.items())))
+            else Plugin(spec=list(elem.keys())[0], config=list(elem.values())[0])
             for elem in value
         ]
