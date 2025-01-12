@@ -40,6 +40,7 @@ class ModelMeta(type):
     def __init__(cls, name, bases, namespace, *, extra: bool | None = None):
         cls.__allow_extra_properties__ = bool(extra)
 
+        # @TODO: mode="prepend"
         cls.__field_aliases__ = MappingProxyType(
             {
                 **cls.__field_aliases__,

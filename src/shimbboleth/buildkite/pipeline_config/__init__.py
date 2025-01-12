@@ -12,6 +12,7 @@ from ._types import rubystr
 from .group_step import GroupStep
 from ._notify import BuildNotifyT
 from ._parse_steps import parse_steps
+from ._base import Dependency as Dependency
 
 ALL_STEP_TYPES = (
     BlockStep,

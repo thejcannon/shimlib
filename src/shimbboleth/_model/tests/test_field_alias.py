@@ -25,6 +25,7 @@ def test_field_alias__json_mode_prepend():
 
     model = MyModel.model_load({"field": "field", "alias": "alias"})
     assert model.field == "alias"
+    assert model.alias == "alias"
 
 
 def test_field_alias__json_mode_append():
