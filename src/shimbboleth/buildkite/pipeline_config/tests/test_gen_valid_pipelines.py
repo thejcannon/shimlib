@@ -5,7 +5,11 @@
 from shimbboleth.buildkite.pipeline_config import BuildkitePipeline, Dependency
 
 from shimbboleth.buildkite.pipeline_config.block_step import BlockStep
-from shimbboleth.buildkite.pipeline_config.command_step import CommandStep, CommandCache, Plugin
+from shimbboleth.buildkite.pipeline_config.command_step import (
+    CommandStep,
+    CommandCache,
+    Plugin,
+)
 from shimbboleth.buildkite.pipeline_config.input_step import InputStep
 from shimbboleth.buildkite.pipeline_config.trigger_step import TriggerStep
 from shimbboleth.buildkite.pipeline_config.wait_step import WaitStep
@@ -297,7 +301,10 @@ class TestValidPipeline_CommandStep(_ValidPipelineBase):
         assert self.load_step({"command": []}).command == []
         assert self.load_step({"command": ""}).command == [""]
         assert self.load_step({"command": "command"}).command == ["command"]
-        assert self.load_step({"command": ["command1", "command2"]}).command == ["command1", "command2"]
+        assert self.load_step({"command": ["command1", "command2"]}).command == [
+            "command1",
+            "command2",
+        ]
         assert self.load_step({"command": [""]}).command == [""]
         assert self.load_step({"command": ["command"]}).command == ["command"]
 
@@ -411,10 +418,17 @@ class TestValidPipeline_CommandStep(_ValidPipelineBase):
     def test_command_plugins(self):
         assert self.load_step(
             {"plugins": ["plugin", {"plugin": None}, {"plugin": {"key": "value"}}]}
-        ).plugins == [Plugin(spec="plugin"), Plugin(spec="plugin"), Plugin(spec="plugin", config={"key": "value"})]
+        ).plugins == [
+            Plugin(spec="plugin"),
+            Plugin(spec="plugin"),
+            Plugin(spec="plugin", config={"key": "value"}),
+        ]
         assert self.load_step(
             {"plugins": {"plugin-null": None, "pluginobj": {"key": "value"}}}
-        ).plugins == [Plugin(spec="plugin-null"), Plugin(spec="pluginobj", config={"key": "value"})]
+        ).plugins == [
+            Plugin(spec="plugin-null"),
+            Plugin(spec="pluginobj", config={"key": "value"}),
+        ]
 
     def test_command_priority(self):
         self.load_step({"priority": 1})
