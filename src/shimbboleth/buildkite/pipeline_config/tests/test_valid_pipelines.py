@@ -22,7 +22,7 @@ import pytest
 BASECAMP_CAMPFIRE_URL = "https://3.basecamp.com/1234567/integrations/qwertyuiop/buckets/1234567/chats/1234567/lines"
 
 BOOLVALS = ("true", "false", True, False)
-SKIP_VALS =(
+SKIP_VALS = (
     (True, True),
     ("true", True),
     (False, False),
@@ -30,6 +30,7 @@ SKIP_VALS =(
     ("", False),
     ("reason", "reason"),
 )
+
 
 class _TestBase:
     def load_pipeline(self, pipeline_config):
@@ -76,7 +77,10 @@ class Test_Pipeline(_TestBase):
 
     def test_agents_dict(self):
         assert self.load_pipeline(
-            {"steps": [], "agents": {"noequal": "true", "key1": "value", "key2": "value=value"}}
+            {
+                "steps": [],
+                "agents": {"noequal": "true", "key1": "value", "key2": "value=value"},
+            }
         ).agents == {"noequal": "true", "key1": "value", "key2": "value=value"}
         self.load_pipeline(
             {
@@ -100,10 +104,12 @@ class Test_Pipeline(_TestBase):
                     "string": "string",
                     "int": 0,
                     "bool": True,
-                }
+                },
             }
         )
-        self.load_pipeline({"steps": [], "env": {"string": "string", "int": "0", "bool": "true"}})
+        self.load_pipeline(
+            {"steps": [], "env": {"string": "string", "int": "0", "bool": "true"}}
+        )
 
     def test_notify(self):
         self.load_pipeline(
@@ -415,14 +421,19 @@ class Test__CommandStep(_TestBase):
 
     @pytest.mark.parametrize(["input", "expected"], SKIP_VALS)
     def test_matrix__single_dimension__skip_bool(self, input, expected):
-        assert self.load_step(
-            {
-                "matrix": {
-                    "setup": ["value"],
-                    "adjustments": [{"with": "newvalue", "skip": input}],
+        assert (
+            self.load_step(
+                {
+                    "matrix": {
+                        "setup": ["value"],
+                        "adjustments": [{"with": "newvalue", "skip": input}],
+                    }
                 }
-            }
-        ).matrix.adjustments[0].skip == expected  # type: ignore
+            )
+            .matrix.adjustments[0]
+            .skip
+            == expected
+        )  # type: ignore
 
     def test_matrix__multi_dimension(self):
         self.load_step({"matrix": {"setup": {"key1": ["value"], "key2": ["value"]}}})
@@ -442,14 +453,19 @@ class Test__CommandStep(_TestBase):
 
     @pytest.mark.parametrize(["input", "expected"], SKIP_VALS)
     def test_matrix__multi_dimension__skip_bool(self, input, expected):
-        assert self.load_step(
-            {
-                "matrix": {
-                    "setup": {"key1": []},
-                    "adjustments": [{"with": {"key2": []}, "skip": input}],
+        assert (
+            self.load_step(
+                {
+                    "matrix": {
+                        "setup": {"key1": []},
+                        "adjustments": [{"with": {"key2": []}, "skip": input}],
+                    }
                 }
-            }
-        ).matrix.adjustments[0].skip == expected  # type: ignore
+            )
+            .matrix.adjustments[0]
+            .skip
+            == expected
+        )  # type: ignore
 
     def test_notify(self):
         self.load_step(
