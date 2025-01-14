@@ -1,4 +1,5 @@
 from typing import Literal, Any, Annotated, ClassVar
+import dataclasses
 
 from shimbboleth._model import (
     Model,
@@ -10,6 +11,7 @@ from shimbboleth._model import (
     Not,
     NonEmptyList,
 )
+from shimbboleth._model.json_load import JSONLoadError
 
 from ._base import StepBase
 from ._agents import agents_from_json
@@ -21,7 +23,13 @@ from ._types import (
     soft_fail_from_json,
     soft_fail_to_json,
 )
-from ._notify import StepNotifyT
+from ._notify import (
+    EmailNotify,
+    StepNotifyT,
+    WebhookNotify,
+    parse_notify,
+    PagerdutyNotify,
+)
 from ._matrix import (
     MatrixArray,
     SingleDimensionMatrix,
@@ -87,17 +95,6 @@ class AutomaticRetry(Model, extra=False):
     signal_reason: SignalReasons = "*"
     """The exit signal reason, that may be retried"""
 
-    @Model._json_loader_(exit_status)
-    @staticmethod
-    def _load_exit_status(
-        value: Literal["*"] | int | list[int],
-    ) -> Literal["*"] | list[int]:
-        if isinstance(value, int):
-            return [value]
-        if value == "*":
-            return value
-        return value
-
 
 class RetryConditions(Model, extra=False):
     automatic: list[AutomaticRetry] = field(
@@ -107,32 +104,6 @@ class RetryConditions(Model, extra=False):
 
     manual: ManualRetry = field(default_factory=lambda: ManualRetry(allowed=True))
     """When to allow a job to be retried manually"""
-
-    @Model._json_loader_(automatic)
-    @staticmethod
-    def _load_automatic(
-        value: Literal[True, False, "true", "false"]
-        | AutomaticRetry
-        | list[AutomaticRetry],
-    ) -> list[AutomaticRetry]:
-        if value in (False, "false"):
-            return []
-        elif value in (True, "true"):
-            return [AutomaticRetry(limit=2)]
-        elif isinstance(value, AutomaticRetry):
-            return [value]
-        return value
-
-    @Model._json_loader_(manual)
-    @staticmethod
-    def _load_manual(
-        value: Literal[True, False, "true", "false"] | ManualRetry,
-    ) -> ManualRetry:
-        if value in (False, "false"):
-            return ManualRetry(allowed=False)
-        elif value in (True, "true"):
-            return ManualRetry(allowed=True)
-        return value
 
 
 class CommandCache(Model, extra=True):
@@ -254,42 +225,92 @@ class CommandStep(StepBase, extra=False):
     #             )
     #     return data
 
-    @Model._json_loader_(cache)
-    @staticmethod
-    def _convert_cache(value: str | list[str] | CommandCache) -> CommandCache:
-        if isinstance(value, str):
-            return CommandCache(paths=[value])
-        if isinstance(value, list):
-            return CommandCache(paths=value)
+
+@AutomaticRetry._json_loader_("exit_status")
+def _load_exit_status(
+    value: Literal["*"] | int | list[int],
+) -> Literal["*"] | list[int]:
+    if isinstance(value, int):
+        return [value]
+    if value == "*":
         return value
+    return value
 
-    @Model._json_loader_(env)
-    @staticmethod
-    def _convert_env(
-        # @TODO: Upstream allows value to be anything and ignores non-dict. WTF
-        value: dict[str, Any],
-    ) -> dict[str, str]:
-        return {
-            k: rubystr(v)
-            for k, v in value.items()
-            # NB: Upstream just ignores invalid types
-            if isinstance(v, (str, int, bool))
-        }
 
-    @Model._json_loader_(plugins)
-    @staticmethod
-    def _load_plugins(
-        # @TODO: the dictionaries should only have one property.
-        #   (e.g. `"maxProperties": 1`)
-        # @TODO: (Not Any, but AnyJSON)
-        value: list[str | dict[str, dict[str, Any] | None]]
-        | dict[str, dict[str, Any] | None],
-    ) -> list[Plugin]:
-        if isinstance(value, dict):
-            return [Plugin(spec=spec, config=config) for spec, config in value.items()]
-        return [
-            Plugin(spec=elem, config=None)
-            if isinstance(elem, str)
-            else Plugin(spec=list(elem.keys())[0], config=list(elem.values())[0])
-            for elem in value
-        ]
+@RetryConditions._json_loader_("automatic")
+def _load_automatic(
+    value: Literal[True, False, "true", "false"]
+    | AutomaticRetry
+    | list[AutomaticRetry],
+) -> list[AutomaticRetry]:
+    if value in (False, "false"):
+        return []
+    elif value in (True, "true"):
+        return [AutomaticRetry(limit=2)]
+    elif isinstance(value, AutomaticRetry):
+        return [value]
+    return value
+
+
+@RetryConditions._json_loader_("manual")
+def _load_manual(
+    value: Literal[True, False, "true", "false"] | ManualRetry,
+) -> ManualRetry:
+    if value in (False, "false"):
+        return ManualRetry(allowed=False)
+    elif value in (True, "true"):
+        return ManualRetry(allowed=True)
+    return value
+
+
+@CommandStep._json_loader_("cache")
+def _convert_cache(value: str | list[str] | CommandCache) -> CommandCache:
+    if isinstance(value, str):
+        return CommandCache(paths=[value])
+    if isinstance(value, list):
+        return CommandCache(paths=value)
+    return value
+
+
+@CommandStep._json_loader_("env")
+def _convert_env(
+    # @TODO: Upstream allows value to be anything and ignores non-dict. WTF
+    value: dict[str, Any],
+) -> dict[str, str]:
+    return {
+        k: rubystr(v)
+        for k, v in value.items()
+        # NB: Upstream just ignores invalid types
+        if isinstance(v, (str, int, bool))
+    }
+
+
+@CommandStep._json_loader_("notify", json_schema_type=StepNotifyT)
+def _load_notify(
+    value: list[Any],
+) -> StepNotifyT:
+    parsed = parse_notify(value)
+    for elem in parsed:
+        if isinstance(elem, (EmailNotify, WebhookNotify, PagerdutyNotify)):
+            # NB: It IS a valid _build_ notification though
+            keyname = dataclasses.fields(elem)[1].name
+            raise JSONLoadError(f"`{keyname}` is not a valid step notification")
+    return parsed
+
+
+@CommandStep._json_loader_("plugins")
+def _load_plugins(
+    # @TODO: the dictionaries should only have one property.
+    #   (e.g. `"maxProperties": 1`)
+    # @TODO: (Not Any, but AnyJSON)
+    value: list[str | dict[str, dict[str, Any] | None]]
+    | dict[str, dict[str, Any] | None],
+) -> list[Plugin]:
+    if isinstance(value, dict):
+        return [Plugin(spec=spec, config=config) for spec, config in value.items()]
+    return [
+        Plugin(spec=elem, config=None)
+        if isinstance(elem, str)
+        else Plugin(spec=list(elem.keys())[0], config=list(elem.values())[0])
+        for elem in value
+    ]

@@ -6,6 +6,7 @@ NOTE: This only handles Annotated validations (E.g. `Annotated[int, Ge(10)]`)
 
 from typing import TypeVar, ClassVar, Annotated, Protocol
 import dataclasses
+from contextlib import contextmanager
 import re
 
 T = TypeVar("T")
@@ -15,28 +16,36 @@ class Validator(Protocol):
     def __call__(self, value) -> None: ...
 
 
-class ValidationError(ValueError):
-    def __init__(self, value, expectation: str):
-        super().__init__(value, expectation)
-        self.context = []
+# TODO: Does this belogn in another module?
+class InvalidValueError(Exception):
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.path = []
 
     def __str__(self):
-        context = "".join(f"\n{note}" for note in self.context)
-        return f"Expected '{self.args[0]}' to {self.args[1]}{context}"
+        return super().__str__() + "\n" + f"Path: {'.'.join(self.path)}"
 
-    def __repr__(self):
-        return f"ValidationError(value={self.args[0]!r}, expectation={self.args[1]!r})"
+    def add_prefix(self, prefix: str):
+        self.path.insert(0, prefix)
 
-    @property
-    def value(self):
-        return self.args[0]
+    @contextmanager
+    @staticmethod
+    def context(prefix: str):
+        try:
+            yield
+        except InvalidValueError as e:
+            e.add_prefix(prefix)
+            raise
 
-    @property
-    def expectation(self) -> str:
-        return self.args[1]
 
-    def add_context(self, context: str):
-        self.context.append(context)
+class ValidationError(InvalidValueError, ValueError):
+    def __init__(self, value, expectation: str):
+        super().__init__()
+        self.value = value
+        self.expectation = expectation
+
+    def __str__(self):
+        return f"Expected `{self.value!r}` to {self.expectation}" + super().__str__()
 
 
 class _NonEmptyT(Validator):
@@ -66,7 +75,7 @@ class MatchesRegex(Validator):
 
     @property
     def description(self) -> str:
-        return f"match regex '{self.regex.pattern}'"
+        return f"match regex `{self.regex.pattern}`"
 
 
 NonEmptyList = Annotated[list[T], NonEmpty]

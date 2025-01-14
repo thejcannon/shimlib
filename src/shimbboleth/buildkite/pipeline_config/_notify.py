@@ -1,7 +1,8 @@
-from typing import Literal, Annotated, TypeAlias
+from typing import Literal, Annotated, TypeAlias, Any
 
 
 from shimbboleth._model import Model, field, NonEmpty
+from shimbboleth._model.json_load import JSONLoadError
 
 
 class GitHubCommitStatusInfo(Model, extra=False):
@@ -69,3 +70,36 @@ StepNotifyT: TypeAlias = list[
     | GitHubCommitStatusNotify
     | GitHubCheckNotify
 ]
+
+
+# @TODO: Not return Any, but I'm lazy
+def _parse_notification(value: Any) -> Any:
+    if value in ("github_check", "github_commit_status"):
+        return value
+    elif isinstance(value, dict):
+        keys = set(value.keys())
+        keys.discard("if")
+        if len(keys) == 1:
+            key = keys.pop()
+            notify_type = {
+                "email": EmailNotify,
+                "basecamp_campfire": BasecampCampfireNotify,
+                "slack": SlackNotify,
+                "webhook": WebhookNotify,
+                "pagerduty_change_event": PagerdutyNotify,
+                "github_commit_status": GitHubCommitStatusNotify,
+                "github_check": GitHubCheckNotify,
+            }.get(key, None)
+            if notify_type is None:
+                raise JSONLoadError(f"Unrecognizable notification: `{key}`")
+            return notify_type.model_load(value)
+
+    raise JSONLoadError(f"Unrecognizable notification: `{value}`")
+
+
+def parse_notify(
+    value: list[Any],
+) -> BuildNotifyT:
+    # NB: Every notification option has one required key
+    #   and they don't overlap.
+    return [_parse_notification(elem) for elem in value]

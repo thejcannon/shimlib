@@ -1,6 +1,7 @@
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, Literal
 
 from shimbboleth._model import Model, field
+from shimbboleth._model.validation import InvalidValueError
 
 from ._agents import agents_from_json
 from .block_step import BlockStep
@@ -11,6 +12,13 @@ from .command_step import CommandStep
 from ._types import rubystr
 from .group_step import GroupStep
 from ._notify import BuildNotifyT
+from ._nested_steps import (
+    NestedWaitStep,
+    NestedInputStep,
+    NestedBlockStep,
+    NestedCommandStep,
+    NestedTriggerStep,
+)
 from ._parse_steps import parse_steps
 from ._base import Dependency as Dependency
 
@@ -46,23 +54,58 @@ class BuildkitePipeline(Model, extra=True):
 
     # @TODO: Missing cache? https://buildkite.com/docs/pipelines/hosted-agents/linux#cache-volumes
 
-    # @TODO: Add `json_schema_type` to the mega-list of types
-    @Model._json_loader_(steps)
-    @staticmethod
-    def _load_steps(value: list[dict[str, Any] | str]) -> StepsT:
-        return parse_steps(value)
-
-    @Model._json_loader_(env)
-    @staticmethod
-    def _load_env(
-        # NB: Unlike Command steps, invalid value types aren't allowed
-        value: dict[str, str | int | bool],
-    ) -> dict[str, str]:
-        return {k: rubystr(v) for k, v in value.items()}
-
     @classmethod
     def model_load(cls, value: dict[str, Any] | list[Any]):
         # NB: Handle "list of steps" as a pipeline
         if isinstance(value, list):
-            return super().model_load({"steps": value})
+            try:
+                return super().model_load({"steps": value})
+            except InvalidValueError as e:
+                e.path.pop(0)  # Remove the "steps"
+                raise e
         return super().model_load(value)
+
+
+@BuildkitePipeline._json_loader_(
+    "steps",
+    json_schema_type=list[
+        BlockStep
+        | InputStep
+        | CommandStep
+        | WaitStep
+        | TriggerStep
+        | GroupStep
+        | NestedWaitStep
+        | NestedInputStep
+        | NestedBlockStep
+        | NestedCommandStep
+        | NestedTriggerStep
+        | Literal[
+            "block",
+            "manual",
+            "input",
+            "command",
+            "commands",
+            "script",
+            "wait",
+            "waiter",
+        ]
+    ],
+)
+def _load_steps(value: Any) -> StepsT:
+    return parse_steps(value)
+
+
+@BuildkitePipeline._json_loader_("env")
+def _load_env(
+    # NB: Unlike Command steps, invalid value types aren't allowed
+    value: dict[str, str | int | bool],
+) -> dict[str, str]:
+    return {k: rubystr(v) for k, v in value.items()}
+
+
+@BuildkitePipeline._json_loader_("notify", json_schema_type=BuildNotifyT)
+def _load_notify(value: list[Any]) -> BuildNotifyT:
+    from ._notify import parse_notify
+
+    return parse_notify(value)

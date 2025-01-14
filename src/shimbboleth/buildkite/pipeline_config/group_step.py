@@ -1,15 +1,29 @@
-from typing import ClassVar, Any
+from typing import ClassVar, Any, Literal
+import dataclasses
 
-
-from shimbboleth._model import Model, field, FieldAlias, NonEmptyList
+from shimbboleth._model import field, FieldAlias, NonEmptyList
+from shimbboleth._model.json_load import JSONLoadError
 from shimbboleth.buildkite.pipeline_config._types import skip_from_json
 
+from ._nested_steps import (
+    NestedWaitStep,
+    NestedInputStep,
+    NestedBlockStep,
+    NestedCommandStep,
+    NestedTriggerStep,
+)
 from .block_step import BlockStep
 from .input_step import InputStep
 from .wait_step import WaitStep
 from .trigger_step import TriggerStep
 from .command_step import CommandStep
-from ._notify import StepNotifyT
+from ._notify import (
+    StepNotifyT,
+    parse_notify,
+    EmailNotify,
+    WebhookNotify,
+    PagerdutyNotify,
+)
 from ._base import StepBase
 
 
@@ -39,14 +53,51 @@ class GroupStep(StepBase, extra=False):
     name: ClassVar = FieldAlias("group", json_mode="append")
     label: ClassVar = FieldAlias("group", json_mode="append")
 
-    # @TODO: Add `json_schema_type` to the mega-list of types
-    @Model._json_loader_(steps)
-    @staticmethod
-    def _load_steps(
-        value: list[dict[str, Any] | str],
-    ) -> NonEmptyList[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep]:
-        # NB: Nested to avoid circular import
-        from ._parse_steps import parse_steps
 
-        # @TODO: Don't allow group steps in here
-        return parse_steps(value)  # type: ignore
+@GroupStep._json_loader_(
+    "steps",
+    json_schema_type=list[
+        BlockStep
+        | InputStep
+        | CommandStep
+        | WaitStep
+        | TriggerStep
+        | NestedWaitStep
+        | NestedInputStep
+        | NestedBlockStep
+        | NestedCommandStep
+        | NestedTriggerStep
+        | Literal[
+            "block",
+            "manual",
+            "input",
+            "command",
+            "commands",
+            "script",
+            "wait",
+            "waiter",
+        ]
+    ],
+)
+@staticmethod
+def _load_steps(
+    value: list[dict[str, Any] | str],
+) -> NonEmptyList[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep]:
+    # NB: Nested to avoid circular import
+    from ._parse_steps import parse_steps
+
+    # @TODO: Don't allow group steps in here
+    return parse_steps(value)  # type: ignore
+
+
+@GroupStep._json_loader_("notify", json_schema_type=StepNotifyT)
+def _load_notify(
+    value: list[Any],
+) -> StepNotifyT:
+    parsed = parse_notify(value)
+    for elem in parsed:
+        if isinstance(elem, (EmailNotify, WebhookNotify, PagerdutyNotify)):
+            # NB: It IS a valid _build_ notification though
+            keyname = dataclasses.fields(elem)[1].name
+            raise JSONLoadError(f"`{keyname}` is not a valid step notification")
+    return parsed

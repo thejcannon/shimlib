@@ -10,6 +10,15 @@ from shimbboleth._model._validators import ValidationDescriptor, get_validators
 T = TypeVar("T")
 
 
+class _UnionTypeCollector:
+    def __init__(self):
+        self.typemap = {}
+
+    def __getitem__(self, item):
+        self.types.append(item)
+        return item
+
+
 @dataclass_transform(kw_only_default=True, field_specifiers=(dataclasses.field, field))
 class ModelMeta(type):
     __allow_extra_properties__: bool
@@ -38,9 +47,12 @@ class ModelMeta(type):
         return dataclasses.dataclass(slots=True, kw_only=True)(cls)
 
     def __init__(cls, name, bases, namespace, *, extra: bool | None = None):
+        # @TODO: Validate that the attribute types follow the guidelines:
+        # - Only types we expect (mostly JSON types and some nicities like Literal)
+        # - No overlap of types (use a loader)
+
         cls.__allow_extra_properties__ = bool(extra)
 
-        # @TODO: mode="prepend"
         cls.__field_aliases__ = MappingProxyType(
             {
                 **cls.__field_aliases__,

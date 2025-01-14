@@ -51,9 +51,14 @@ class StepBase(Model):
 
     @Model._json_loader_(depends_on)
     @staticmethod
-    def _convert_depends_on(value: str | list[str | Dependency]) -> list[Dependency]:
+    def _convert_depends_on(
+        value: str | list[str | dict[str, Any]],
+    ) -> list[Dependency]:
         if isinstance(value, str):
             return [Dependency(step=value)]
         return [
-            Dependency(step=elem) if isinstance(elem, str) else elem for elem in value
+            Dependency(step=elem)
+            if isinstance(elem, str)
+            else Dependency.model_load(elem)
+            for elem in value
         ]

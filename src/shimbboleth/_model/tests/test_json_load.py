@@ -245,6 +245,9 @@ def test_nested_models():
     pass
 
 
+# @TODO: Test paths
+
+
 def test_field_alias():
     class MyModel(Model):
         field: str

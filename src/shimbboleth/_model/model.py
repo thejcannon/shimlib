@@ -14,10 +14,14 @@ class _ModelBase:
 
 
 class Model(_ModelBase, metaclass=ModelMeta):
-    @staticmethod
+    @classmethod
     def _json_loader_(
-        field, *, json_schema_type: type | None = None
+        cls, field, *, json_schema_type: type | None = None
     ) -> Callable[[T], T]:
+        # @TODO: TEMPORARY
+        if isinstance(field, str):
+            field = cls.__dataclass_fields__[field]
+
         # @TODO: Assert funcname?
         assert isinstance(field, dataclasses.Field), "Did you forget to = field(...)?"
         assert (
@@ -51,6 +55,9 @@ class Model(_ModelBase, metaclass=ModelMeta):
 
         return decorator
 
+    # @TODO: NOTE: This is isn't necessarily a JSON loader (so need to check key types)
+    # But the loader COULD reference JSON types and on loading enforce correctness (since
+    #   JSON types are unambiguous)
     @classmethod
     def model_load(cls: type[Self], value: dict[str, Any]) -> Self:
         from shimbboleth._model.json_load import load_model

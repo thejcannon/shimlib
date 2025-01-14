@@ -6,8 +6,10 @@ import uuid
 import dataclasses
 import logging
 
+from shimbboleth._model.model_meta import ModelMeta
 from shimbboleth._model.model import Model
 from shimbboleth._model._types import AnnotationType, LiteralType, GenericUnionType
+from shimbboleth._model.validation import InvalidValueError
 
 T = TypeVar("T")
 ModelT = TypeVar("ModelT", bound=Model)
@@ -16,28 +18,43 @@ ModelT = TypeVar("ModelT", bound=Model)
 LOG = logging.getLogger()
 
 
-class ExtrasNotAllowedError(TypeError):
+class JSONLoadError(InvalidValueError, TypeError):
     pass
 
 
-class NotAValidUUIDError(TypeError):
-    pass
-
-
-class NotAValidPatternError(TypeError):
-    pass
-
-
-class WrongTypeError(TypeError):
+class WrongTypeError(JSONLoadError):
     def __init__(self, expected, data):
-        # @TODO: Give field name? Type name? jmespath?
-        #   (See also the validation framework)
-        super().__init__(f"Expected {expected}, got '{data}' of type {type(data)}")
+        super().__init__(
+            f"Expected `{expected}`, got `{data!r}` of type `{type(data).__name__}`"
+        )
+
+
+class ExtrasNotAllowedError(JSONLoadError):
+    def __init__(self, model_type: type[Model], extras: dict[str, Any]):
+        super().__init__(
+            f"Extra properties not allowed for `{model_type.__name__}`: {extras}"
+        )
+
+
+class NotAValidUUIDError(JSONLoadError):
+    pass
+
+
+class NotAValidPatternError(JSONLoadError):
+    pass
+
+
+class MissingFieldsError(TypeError):
+    def __init__(self, model_name: str, *fieldnames: str):
+        fieldnames = tuple(f"`{field}`" for field in fieldnames)
+        super().__init__(
+            f"`{model_name}` missing {len(fieldnames)} required fields: {', '.join(fieldnames)}"
+        )
 
 
 def _ensure_is(data, expected: type[T]) -> T:
     if type(data) is not expected:
-        raise WrongTypeError(expected, data)
+        raise WrongTypeError(expected.__name__, data)
     return data
 
 
@@ -74,14 +91,47 @@ def load_generic_alias(field_type: GenericAlias, *, data: Any):
         return load_dict(data, field_type=field_type)
 
 
+def _get_union_typemap(unionT: UnionType):
+    typemap = {}
+    has_literal = False
+    for argT in unionT.__args__:
+        rawtype = argT
+        if isinstance(rawtype, LiteralType):
+            if has_literal:
+                raise TypeError(f"Multiple literals in Union: {unionT}")
+            has_literal = True
+            literal_types = {type(val) for val in rawtype.__args__}
+            if len(literal_types) > 1:
+                raise TypeError(f"Literal args must all be the same type: {unionT}")
+            rawtype = literal_types.pop()
+
+        while hasattr(rawtype, "__origin__"):
+            rawtype = rawtype.__origin__
+
+        if isinstance(rawtype, ModelMeta):
+            rawtype = dict
+
+        if rawtype in typemap:
+            # @TODO: Improve message
+            raise TypeError(f"Overlapping types in Union: {unionT}")
+
+        typemap[rawtype] = argT
+
+    return typemap
+
+
 @load.register
 def load_union_type(field_type: UnionType, *, data: Any):
-    for t in field_type.__args__:
-        try:
-            return load(t, data=data)
-        except TypeError:
-            pass
-    raise WrongTypeError(field_type, data)
+    # @TODO: make this a lookup table (and also disallow overlap (must use loader))
+    #   (overlap would include dict+Model, or Model+Model)
+    # @TODO: (and then) Move this implicit assertion to model declaration time
+
+    typemap = _get_union_typemap(field_type)
+    try:
+        return load(typemap[type(data)], data=data)
+    except KeyError:
+        breakpoint()
+        raise WrongTypeError(field_type, data)
 
 
 @load.register
@@ -92,6 +142,7 @@ def _load_generic_union_type(field_type: GenericUnionType, *, data: Any):
 @load.register
 def load_literal(field_type: LiteralType, *, data: Any):
     # @TODO: This is duplicated in `validation` (for annotated literals)
+    #   (Excpet not anymore? Did I forget some code?)
     for possibility in field_type.__args__:
         # NB: compare bool/int by identity (since `bool` inherits from `int`)
         if data is possibility:
@@ -99,6 +150,7 @@ def load_literal(field_type: LiteralType, *, data: Any):
         if isinstance(possibility, str) and isinstance(data, str):
             if data == possibility:
                 return data
+
     raise WrongTypeError(field_type, data)
 
 
@@ -127,14 +179,20 @@ def load_none(data: Any) -> None:
 def load_list(data: Any, *, field_type: GenericAlias) -> list[T]:
     data = _ensure_is(data, list)
     (argT,) = field_type.__args__
-    return [load(argT, data=item) for item in data]
+    ret = []
+    for index, item in enumerate(data):
+        with JSONLoadError.context(f"[{index}]"):
+            ret.append(load(argT, data=item))
+    return ret
 
 
 def load_dict(data: Any, *, field_type: GenericAlias) -> dict:
     data = _ensure_is(data, dict)
     keyT, valueT = field_type.__args__
     return {
-        load(keyT, data=key): load(valueT, data=value) for key, value in data.items()
+        # @TODO: Mention key vs value in error
+        load(keyT, data=key): load(valueT, data=value)
+        for key, value in data.items()
     }
 
 
@@ -189,8 +247,7 @@ class _LoadModelHelper:
                 extras[data_key] = data.pop(data_key)
 
         if extras and not model_type.__allow_extra_properties__:
-            # @TODO: Include more info in error
-            raise ExtrasNotAllowedError(extras)
+            raise ExtrasNotAllowedError(model_type, extras)
 
         return extras
 
@@ -201,12 +258,25 @@ class _LoadModelHelper:
             json_loader.__annotations__["value"] if json_loader else field.type
         )
 
-        value = load(expected_type, data=data[field.name])
-
-        if json_loader:
-            value = json_loader(value)
+        with JSONLoadError.context(field.name):
+            value = load(expected_type, data=data[field.name])
+            if json_loader:
+                value = json_loader(value)
 
         return value
+
+    @staticmethod
+    def check_required_fields(model_type: type[Model], data: dict[str, Any]):
+        missing_fields = [
+            field.name
+            for field in dataclasses.fields(model_type)
+            if field.init
+            and field.name not in data
+            and field.default is dataclasses.MISSING
+            and field.default_factory is dataclasses.MISSING
+        ]
+        if missing_fields:
+            raise MissingFieldsError(model_type.__name__, *missing_fields)
 
 
 def load_model(model_type: type[ModelT], data: Any) -> ModelT:
@@ -221,6 +291,7 @@ def load_model(model_type: type[ModelT], data: Any) -> ModelT:
         for field in dataclasses.fields(model_type)
         if field.name in data
     }
+    _LoadModelHelper.check_required_fields(model_type, init_kwargs)
 
     instance = model_type(**init_kwargs)
     instance._extra = extras

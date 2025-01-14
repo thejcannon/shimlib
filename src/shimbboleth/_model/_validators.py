@@ -175,9 +175,6 @@ class ValidationDescriptor:
 
     def __set__(self, instance, value):
         for validator in self.validators:
-            try:
+            with ValidationError.context(self.field_descriptor.__name__):
                 validator(value)
-            except ValidationError as e:
-                e.add_context(f"Field: {self.field_descriptor.__name__}")
-                raise
         self.field_descriptor.__set__(instance, value)
