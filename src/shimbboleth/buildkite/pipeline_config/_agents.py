@@ -1,4 +1,3 @@
-
 from shimbboleth._model.jsonT import JSONObject
 
 from ._types import rubystr

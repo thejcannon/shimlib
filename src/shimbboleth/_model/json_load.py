@@ -129,19 +129,38 @@ def _get_union_typemap(unionT: UnionType):
     return typemap
 
 
+def _get_jsontype(field_type) -> type:
+    if isinstance(field_type, LiteralType):
+        literal_types = {type(val) for val in field_type.__args__}
+        if len(literal_types) > 1:
+            raise TypeError(f"Literal args must all be the same type: {field_type}")
+        return literal_types.pop()
+
+    rawtype = field_type
+    while hasattr(rawtype, "__origin__"):
+        rawtype = rawtype.__origin__
+
+    if isinstance(rawtype, ModelMeta):
+        return dict
+    if rawtype is re.Pattern:
+        return str
+    if rawtype is uuid.UUID:
+        return str
+
+    return rawtype
+
 @load.register
 def load_union_type(field_type: UnionType, *, data: Any):
-    # @TODO: Move the typemapping to model declaration time
-    #   (But thats hard because nested unions)
-    #   Make our own Union type?
-    #   Store a nested typemap?
+    # @TODO: Some kind of assertion this is valid/safe
+    #   (E.g. assert no two args are the same JSON type)
+    #   (and put it in `ModelMeta`?)
+    for argT in field_type.__args__:
+        expected_type = _get_jsontype(argT)
+        # NB: Have to use `is` instead of `isinstance` because `bool` inherits from `int`
+        if type(data) is expected_type:
+            return load(argT, data=data)
 
-    typemap = _get_union_typemap(field_type)
-    try:
-        return load(typemap[type(data)], data=data)
-    except KeyError:
-        print(typemap)
-        raise WrongTypeError(field_type, data)
+    raise WrongTypeError(field_type, data)
 
 
 @load.register

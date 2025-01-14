@@ -96,5 +96,5 @@ def _load_fields(value: list[JSONObject]) -> list[TextInput | SelectInput]:
         elif "select" in field_dict:
             ret.append(SelectInput.model_load(field_dict))
         else:
-            raise ValueError("Fields must contain `text`` or `select`")
+            raise ValueError("Input fields must contain `text`` or `select`")
     return ret

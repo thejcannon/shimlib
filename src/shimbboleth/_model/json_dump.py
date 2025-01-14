@@ -2,11 +2,14 @@ import dataclasses
 import uuid
 import re
 
-# NB: JSON must be imported for `singledispatch` to work
 from shimbboleth._model.jsonT import JSONArray, JSONObject
 from shimbboleth._model.model import Model
 from functools import singledispatch
 
+if True:
+    # NB: JSON must be imported for `singledispatch` to work
+    # @TODO: noqa (and what code?)
+    from shimbboleth._model.jsonT import JSON # noqa
 
 @singledispatch
 def dump(obj) -> JSONObject:

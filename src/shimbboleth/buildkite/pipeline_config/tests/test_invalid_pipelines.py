@@ -99,7 +99,7 @@ class Test_ManualStep(_TestBase):
         self.invalid_step(
             {"fields": [{}]},
             steptype_param=STEP_TYPE_PARAMS[step_type],
-            error="Input field must either be 'text' or 'select'",
+            error="Input fields must contain `text`` or `select`",
         )
 
     def test_single_select_list_default(self, step_type):
