@@ -1,6 +1,7 @@
 from typing import Annotated
 import re
 from shimbboleth._model import MatchesRegex, field, Model, NonEmptyList
+from shimbboleth._model.jsonT import JSONObject
 from ._types import bool_from_json
 from ._types import list_str_from_json
 from ._base import StepBase
@@ -84,3 +85,16 @@ class ManualStepBase(StepBase, extra=False):
 
     prompt: str | None = None
     """The instructional message displayed in the dialog box when the unblock step is activated"""
+
+
+@ManualStepBase._json_loader_("fields")
+def _load_fields(value: list[JSONObject]) -> list[TextInput | SelectInput]:
+    ret = []
+    for field_dict in value:
+        if "text" in field_dict:
+            ret.append(TextInput.model_load(field_dict))
+        elif "select" in field_dict:
+            ret.append(SelectInput.model_load(field_dict))
+        else:
+            raise ValueError("Fields must contain `text`` or `select`")
+    return ret

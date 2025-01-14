@@ -1,8 +1,9 @@
-from typing import ClassVar, Any, Literal
+from typing import ClassVar, Literal
 import dataclasses
 
 from shimbboleth._model import field, FieldAlias, NonEmptyList
 from shimbboleth._model.json_load import JSONLoadError
+from shimbboleth._model.jsonT import JSONArray, JSONObject
 from shimbboleth.buildkite.pipeline_config._types import skip_from_json
 
 from ._nested_steps import (
@@ -81,7 +82,7 @@ class GroupStep(StepBase, extra=False):
 )
 @staticmethod
 def _load_steps(
-    value: list[dict[str, Any] | str],
+    value: list[str | JSONObject],
 ) -> NonEmptyList[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep]:
     # NB: Nested to avoid circular import
     from ._parse_steps import parse_steps
@@ -91,9 +92,7 @@ def _load_steps(
 
 
 @GroupStep._json_loader_("notify", json_schema_type=StepNotifyT)
-def _load_notify(
-    value: list[Any],
-) -> StepNotifyT:
+def _load_notify(value: JSONArray) -> StepNotifyT:
     parsed = parse_notify(value)
     for elem in parsed:
         if isinstance(elem, (EmailNotify, WebhookNotify, PagerdutyNotify)):

@@ -11,6 +11,7 @@ from shimbboleth._model import (
     Not,
     NonEmptyList,
 )
+from shimbboleth._model.jsonT import JSONObject
 from shimbboleth._model.json_load import JSONLoadError
 
 from ._base import StepBase
@@ -117,12 +118,12 @@ class Plugin(Model, extra=False):
     spec: str = field()
     """The plugin "spec". Usually in `<org>/<repo>#<tag>` format"""
 
-    config: dict[str, Any] | None = field(default=None)
+    config: JSONObject | None = field(default=None)
     """The configuration to use (or None)"""
 
     # @FEAT: parse the spec and expose properties
 
-    def model_dump(self) -> dict[str, Any]:
+    def model_dump(self) -> JSONObject:
         return {self.spec: self.config}
 
 
@@ -215,6 +216,7 @@ class CommandStep(StepBase, extra=False):
     name: ClassVar = FieldAlias("label", json_mode="prepend")
     commands: ClassVar = FieldAlias("command")
 
+    # @TODO: This should just be `model_load`
     # @model_validator(mode="before")
     # @classmethod
     # def _check_command_commands(cls, data: Any) -> Any:
@@ -239,9 +241,7 @@ def _load_exit_status(
 
 @RetryConditions._json_loader_("automatic")
 def _load_automatic(
-    value: Literal[True, False, "true", "false"]
-    | AutomaticRetry
-    | list[AutomaticRetry],
+    value: bool | Literal["true", "false"] | AutomaticRetry | list[AutomaticRetry],
 ) -> list[AutomaticRetry]:
     if value in (False, "false"):
         return []
@@ -254,7 +254,7 @@ def _load_automatic(
 
 @RetryConditions._json_loader_("manual")
 def _load_manual(
-    value: Literal[True, False, "true", "false"] | ManualRetry,
+    value: bool | Literal["true", "false"] | ManualRetry,
 ) -> ManualRetry:
     if value in (False, "false"):
         return ManualRetry(allowed=False)
@@ -275,7 +275,7 @@ def _convert_cache(value: str | list[str] | CommandCache) -> CommandCache:
 @CommandStep._json_loader_("env")
 def _convert_env(
     # @TODO: Upstream allows value to be anything and ignores non-dict. WTF
-    value: dict[str, Any],
+    value: JSONObject,
 ) -> dict[str, str]:
     return {
         k: rubystr(v)
@@ -283,6 +283,24 @@ def _convert_env(
         # NB: Upstream just ignores invalid types
         if isinstance(v, (str, int, bool))
     }
+
+
+@CommandStep._json_loader_(
+    "matrix",
+    json_schema_type=MatrixArray | SingleDimensionMatrix | MultiDimensionMatrix,
+)
+def _load_matrix(
+    value: MatrixArray | JSONObject | None,
+) -> MatrixArray | SingleDimensionMatrix | MultiDimensionMatrix | None:
+    if value is None:
+        return None
+    if isinstance(value, list):
+        return value
+    if isinstance(value, dict):
+        if "setup" in value:
+            if isinstance(value["setup"], list):
+                return SingleDimensionMatrix.model_load(value)
+        return MultiDimensionMatrix.model_load(value)
 
 
 @CommandStep._json_loader_("notify", json_schema_type=StepNotifyT)
@@ -302,9 +320,7 @@ def _load_notify(
 def _load_plugins(
     # @TODO: the dictionaries should only have one property.
     #   (e.g. `"maxProperties": 1`)
-    # @TODO: (Not Any, but AnyJSON)
-    value: list[str | dict[str, dict[str, Any] | None]]
-    | dict[str, dict[str, Any] | None],
+    value: list[str | dict[str, JSONObject | None]] | dict[str, JSONObject | None],
 ) -> list[Plugin]:
     if isinstance(value, dict):
         return [Plugin(spec=spec, config=config) for spec, config in value.items()]

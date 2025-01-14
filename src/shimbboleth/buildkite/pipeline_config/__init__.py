@@ -1,6 +1,7 @@
 from typing import Any, TypeAlias, Literal
 
 from shimbboleth._model import Model, field
+from shimbboleth._model.jsonT import JSONArray, JSONObject
 from shimbboleth._model.validation import InvalidValueError
 
 from ._agents import agents_from_json
@@ -55,14 +56,14 @@ class BuildkitePipeline(Model, extra=True):
     # @TODO: Missing cache? https://buildkite.com/docs/pipelines/hosted-agents/linux#cache-volumes
 
     @classmethod
-    def model_load(cls, value: dict[str, Any] | list[Any]):
+    def model_load(cls, value: JSONArray | JSONObject):
         # NB: Handle "list of steps" as a pipeline
         if isinstance(value, list):
             try:
                 return super().model_load({"steps": value})
             except InvalidValueError as e:
                 e.path.pop(0)  # Remove the "steps"
-                raise e
+                raise
         return super().model_load(value)
 
 

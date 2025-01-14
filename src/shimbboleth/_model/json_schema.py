@@ -14,13 +14,14 @@ from shimbboleth._model.validation import (
     Ge,
     Le,
 )
+from shimbboleth._model.jsonT import JSONObject
 
 T = TypeVar("T")
 ModelT = TypeVar("ModelT", bound=Model)
 
 
 @singledispatch
-def schema(field_type, *, model_defs: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def schema(field_type, *, model_defs: dict[str, JSONObject]) -> JSONObject:
     if field_type is bool:
         return {"type": "boolean"}
     if field_type is int:
@@ -49,8 +50,8 @@ def schema(field_type, *, model_defs: dict[str, dict[str, Any]]) -> dict[str, An
 
 @schema.register
 def schema_generic_alias(
-    field_type: GenericAlias, *, model_defs: dict[str, dict[str, Any]]
-) -> dict[str, Any]:
+    field_type: GenericAlias, *, model_defs: dict[str, JSONObject]
+) -> JSONObject:
     container_t = field_type.__origin__
     if container_t is list:
         return schema_list(field_type=field_type, model_defs=model_defs)
@@ -61,8 +62,8 @@ def schema_generic_alias(
 
 @schema.register
 def schema_union_type(
-    field_type: UnionType, *, model_defs: dict[str, dict[str, Any]]
-) -> dict[str, Any]:
+    field_type: UnionType, *, model_defs: dict[str, JSONObject]
+) -> JSONObject:
     return {
         "oneOf": [schema(argT, model_defs=model_defs) for argT in field_type.__args__]
     }
@@ -70,19 +71,19 @@ def schema_union_type(
 
 @schema.register
 def _schema_generic_union_type(
-    field_type: GenericUnionType, *, model_defs: dict[str, dict[str, Any]]
-) -> dict[str, Any]:
+    field_type: GenericUnionType, *, model_defs: dict[str, JSONObject]
+) -> JSONObject:
     return schema_union_type(field_type, model_defs=model_defs)
 
 
 @schema.register
 def schema_literal(
-    field_type: LiteralType, *, model_defs: dict[str, dict[str, Any]]
-) -> dict[str, Any]:
+    field_type: LiteralType, *, model_defs: dict[str, JSONObject]
+) -> JSONObject:
     return {"enum": list(field_type.__args__)}
 
 
-def _schema_annotation_type(annotation: Any) -> dict[str, Any]:
+def _schema_annotation_type(annotation: Any) -> JSONObject:
     if isinstance(annotation, MatchesRegex):
         return {"pattern": annotation.regex.pattern}
     elif annotation is NonEmpty:
@@ -99,8 +100,8 @@ def _schema_annotation_type(annotation: Any) -> dict[str, Any]:
 
 @schema.register
 def schema_annotation(
-    field_type: AnnotationType, *, model_defs: dict[str, dict[str, Any]]
-) -> dict[str, Any]:
+    field_type: AnnotationType, *, model_defs: dict[str, JSONObject]
+) -> JSONObject:
     ret = schema(field_type.__origin__, model_defs=model_defs)
     for annotation in field_type.__metadata__:
         ret.update(_schema_annotation_type(annotation))
@@ -108,15 +109,15 @@ def schema_annotation(
 
 
 def schema_list(
-    field_type: GenericAlias, *, model_defs: dict[str, dict[str, Any]]
-) -> dict[str, Any]:
+    field_type: GenericAlias, *, model_defs: dict[str, JSONObject]
+) -> JSONObject:
     (argT,) = field_type.__args__
     return {"type": "array", "items": schema(argT, model_defs=model_defs)}
 
 
 def schema_dict(
-    field_type: GenericAlias, *, model_defs: dict[str, dict[str, Any]]
-) -> dict[str, Any]:
+    field_type: GenericAlias, *, model_defs: dict[str, JSONObject]
+) -> JSONObject:
     keyT, valueT = field_type.__args__
     key_schema = schema(keyT, model_defs=model_defs)
     assert key_schema.pop("type") == "string"
@@ -132,8 +133,8 @@ def schema_dict(
 class _ModelFieldSchemaHelper:
     @staticmethod
     def _get_field_type_schema(
-        field: dataclasses.Field, *, model_defs: dict[str, dict[str, Any]]
-    ) -> dict[str, Any]:
+        field: dataclasses.Field, *, model_defs: dict[str, JSONObject]
+    ) -> JSONObject:
         json_loader = field.metadata.get("json_loader", None)
         if json_loader:
             input_type = getattr(
@@ -148,8 +149,8 @@ class _ModelFieldSchemaHelper:
 
     @staticmethod
     def visit_model_field(
-        field: dataclasses.Field, *, model_defs: dict[str, dict[str, Any]]
-    ) -> dict[str, Any]:
+        field: dataclasses.Field, *, model_defs: dict[str, JSONObject]
+    ) -> JSONObject:
         field_schema = _ModelFieldSchemaHelper._get_field_type_schema(
             field, model_defs=model_defs
         )
@@ -161,8 +162,8 @@ class _ModelFieldSchemaHelper:
 
 
 def schema_model(
-    model_type: type[ModelT], *, model_defs: dict[str, dict[str, Any]]
-) -> dict[str, Any]:
+    model_type: type[ModelT], *, model_defs: dict[str, JSONObject]
+) -> JSONObject:
     model_name = model_type.__name__
     if model_name not in model_defs:
         fields = tuple(field for field in dataclasses.fields(model_type) if field.init)

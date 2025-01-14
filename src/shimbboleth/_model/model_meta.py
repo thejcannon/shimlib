@@ -5,18 +5,10 @@ import dataclasses
 from shimbboleth._model.field import field
 from shimbboleth._model.field_alias import FieldAlias
 from shimbboleth._model._validators import ValidationDescriptor, get_validators
+from shimbboleth._model.jsonT import JSONObject
 
 
 T = TypeVar("T")
-
-
-class _UnionTypeCollector:
-    def __init__(self):
-        self.typemap = {}
-
-    def __getitem__(self, item):
-        self.types.append(item)
-        return item
 
 
 @dataclass_transform(kw_only_default=True, field_specifiers=(dataclasses.field, field))
@@ -82,7 +74,7 @@ class ModelMeta(type):
                 )
 
     @property
-    def model_json_schema(cls) -> dict[str, Any]:
+    def model_json_schema(cls) -> JSONObject:
         from shimbboleth._model.json_schema import schema
 
         model_defs = {}

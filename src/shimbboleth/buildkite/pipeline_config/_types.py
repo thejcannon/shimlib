@@ -35,29 +35,12 @@ def rubystr(value: Any) -> str:
     return _rubystr_inner(value)
 
 
-# NB: This may seem annoying (having to do `any(status == '*' for soft_fail in model.soft_fail)`)
-#   however consider if we allowed `bool`. `if model.soft_fail` would be ambiguous (because a non-empty list is truthy)
-# @TODO: Provide helper method for this
-# class _SoftFailCanonicalizer(
-#     Canonicalizer[LooseBoolT | list[ExitStatus] | None, list[ExitStatus]]
-# ):
-#     @classmethod
-#     def canonicalize(
-#         cls, value: LooseBoolT | list[ExitStatus] | None
-#     ) -> list[ExitStatus]:
-#         # @TODO: Does `_LooseBoolCanonicalizer` already fire?
-#         if value == "true" or value is True:
-#             return [ExitStatus(exit_status="*")]
-#         if value is None or value == "false" or value is False:
-#             return []
-#         return value
-
-
-def bool_from_json(value: Literal[True, False, "true", "false"]) -> bool:
+def bool_from_json(value: bool | Literal["true", "false"]) -> bool:
     return value in (True, "true")
 
 
-def skip_from_json(value: str | Literal[True, False, "true", "false"]) -> str | bool:
+# @TODO: In the Schema, also use a Liteal["true", "false"]
+def skip_from_json(value: str | bool) -> str | bool:
     if value in (True, False, "true", "false"):
         return bool_from_json(value)
     if value == "":
@@ -70,7 +53,7 @@ def list_str_from_json(value: str | list[str]) -> list[str]:
 
 
 def soft_fail_from_json(
-    value: Literal[True, False, "true", "false"] | list[ExitStatus],
+    value: bool | Literal["true", "false"] | list[ExitStatus],
 ) -> bool | NonEmptyList[Annotated[int, Not[Literal[0]]]]:
     if value in (True, "true"):
         return True

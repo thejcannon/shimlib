@@ -1,5 +1,6 @@
 from typing import Any
 
+from shimbboleth._model.jsonT import JSONObject
 from shimbboleth._model.validation import InvalidValueError
 
 from .block_step import BlockStep
@@ -56,7 +57,7 @@ def _parse_step(
 
 
 def parse_steps(
-    steps: list[dict[str, Any] | str],
+    steps: list[str | JSONObject],
 ) -> list[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep | GroupStep]:
     ret = []
     for index, step in enumerate(steps):

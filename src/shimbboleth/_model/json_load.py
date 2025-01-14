@@ -6,6 +6,7 @@ import uuid
 import dataclasses
 import logging
 
+from shimbboleth._model.jsonT import JSONObject, JSON
 from shimbboleth._model.model_meta import ModelMeta
 from shimbboleth._model.model import Model
 from shimbboleth._model._types import AnnotationType, LiteralType, GenericUnionType
@@ -30,7 +31,7 @@ class WrongTypeError(JSONLoadError):
 
 
 class ExtrasNotAllowedError(JSONLoadError):
-    def __init__(self, model_type: type[Model], extras: dict[str, Any]):
+    def __init__(self, model_type: type[Model], extras: JSONObject):
         super().__init__(
             f"Extra properties not allowed for `{model_type.__name__}`: {extras}"
         )
@@ -74,7 +75,11 @@ def load(field_type, *, data):  # type: ignore
     if field_type is uuid.UUID:
         return load_uuid(data)
     if field_type is Any:
+        # @TODO: Remove this
         return data
+    # NB: This is a string because it's a recursively defined type
+    if field_type == "JSON":
+        return load(JSON, data=data)  # type: ignore
     # NB: Dispatched manually, so we can avoid ciruclar definition with `Model.model_load`
     if issubclass(field_type, Model):
         return field_type.model_load(data)
@@ -110,6 +115,10 @@ def _get_union_typemap(unionT: UnionType):
 
         if isinstance(rawtype, ModelMeta):
             rawtype = dict
+        elif rawtype is re.Pattern:
+            rawtype = str
+        elif rawtype is uuid.UUID:
+            rawtype = str
 
         if rawtype in typemap:
             # @TODO: Improve message
@@ -122,15 +131,16 @@ def _get_union_typemap(unionT: UnionType):
 
 @load.register
 def load_union_type(field_type: UnionType, *, data: Any):
-    # @TODO: make this a lookup table (and also disallow overlap (must use loader))
-    #   (overlap would include dict+Model, or Model+Model)
-    # @TODO: (and then) Move this implicit assertion to model declaration time
+    # @TODO: Move the typemapping to model declaration time
+    #   (But thats hard because nested unions)
+    #   Make our own Union type?
+    #   Store a nested typemap?
 
     typemap = _get_union_typemap(field_type)
     try:
         return load(typemap[type(data)], data=data)
     except KeyError:
-        breakpoint()
+        print(typemap)
         raise WrongTypeError(field_type, data)
 
 
@@ -214,7 +224,7 @@ def load_uuid(data: Any) -> uuid.UUID:
 
 class _LoadModelHelper:
     @staticmethod
-    def handle_field_aliases(model_type: type[Model], data: dict[str, Any]) -> dict:
+    def handle_field_aliases(model_type: type[Model], data: JSONObject) -> dict:
         data = data
         for field_alias_name, field_alias in model_type.__field_aliases__.items():
             if field_alias_name in data:
@@ -231,7 +241,7 @@ class _LoadModelHelper:
         return data
 
     @staticmethod
-    def rename_json_aliases(model_type: type[Model], data: dict[str, Any]):
+    def rename_json_aliases(model_type: type[Model], data: JSONObject):
         for field in dataclasses.fields(model_type):
             if not field.init:
                 continue
@@ -240,7 +250,7 @@ class _LoadModelHelper:
                 data[field.name] = data.pop(json_alias)
 
     @staticmethod
-    def get_extras(model_type: type[Model], data: dict[str, Any]) -> dict[str, Any]:
+    def get_extras(model_type: type[Model], data: JSONObject) -> JSONObject:
         extras = {}
         for data_key in frozenset(data.keys()):
             if data_key not in model_type.__json_fieldnames__:
@@ -252,7 +262,7 @@ class _LoadModelHelper:
         return extras
 
     @staticmethod
-    def load_field(field: dataclasses.Field, data: dict[str, Any]):
+    def load_field(field: dataclasses.Field, data: JSONObject):
         json_loader = field.metadata.get("json_loader", None)
         expected_type = (
             json_loader.__annotations__["value"] if json_loader else field.type
@@ -266,7 +276,7 @@ class _LoadModelHelper:
         return value
 
     @staticmethod
-    def check_required_fields(model_type: type[Model], data: dict[str, Any]):
+    def check_required_fields(model_type: type[Model], data: JSONObject):
         missing_fields = [
             field.name
             for field in dataclasses.fields(model_type)
@@ -279,8 +289,8 @@ class _LoadModelHelper:
             raise MissingFieldsError(model_type.__name__, *missing_fields)
 
 
-def load_model(model_type: type[ModelT], data: Any) -> ModelT:
-    data = load(dict[str, Any], data=data)
+def load_model(model_type: type[ModelT], data: JSONObject) -> ModelT:
+    data = load(JSONObject, data=data)
     data = _LoadModelHelper.handle_field_aliases(model_type, data)
 
     extras = _LoadModelHelper.get_extras(model_type, data)
@@ -300,4 +310,4 @@ def load_model(model_type: type[ModelT], data: Any) -> ModelT:
 
 if TYPE_CHECKING:
 
-    def load(field_type: type[T], *, data: Any) -> T: ...
+    def load(field_type: type[T], *, data: JSONObject) -> T: ...

@@ -1,40 +1,42 @@
 import dataclasses
 import uuid
 import re
-from typing import Any
+
+# NB: JSON must be imported for `singledispatch` to work
+from shimbboleth._model.jsonT import JSONArray, JSONObject
 from shimbboleth._model.model import Model
 from functools import singledispatch
 
 
 @singledispatch
-def dump(obj):
+def dump(obj) -> JSONObject:
     # NB: Dispatched manually, so we can avoid ciruclar definition with `Model.model_dump`
     if isinstance(obj, Model):
         return obj.model_dump()
     return obj
 
 
-@dump.register
-def dump_uuid(obj: uuid.UUID):
+@dump.register  # type: ignore
+def dump_uuid(obj: uuid.UUID) -> str:
     return str(obj)
 
 
-@dump.register
-def dump_list(obj: list):
+@dump.register  # type: ignore
+def dump_list(obj: list) -> JSONArray:
     return [dump(item) for item in obj]
 
 
 @dump.register
-def dump_dict(obj: dict):
-    return {dump(key): dump(value) for key, value in obj.items()}
+def dump_dict(obj: dict) -> JSONObject:
+    return {key: dump(value) for key, value in obj.items()}
 
 
-@dump.register
-def dump_pattern(obj: re.Pattern):
+@dump.register  # type: ignore
+def dump_pattern(obj: re.Pattern) -> str:
     return obj.pattern
 
 
-def dump_model(obj: Model) -> dict[str, Any]:
+def dump_model(obj: Model) -> JSONObject:
     ret = {}
     for field in dataclasses.fields(obj):
         value = getattr(obj, field.name)

@@ -1,7 +1,8 @@
-from typing import Literal, ClassVar, Any
+from typing import Literal, ClassVar
 
 
 from shimbboleth._model import field, FieldAlias, Model
+from shimbboleth._model.jsonT import JSONObject
 
 from ._base import StepBase
 from ._types import bool_from_json, list_str_from_json, skip_from_json
@@ -31,8 +32,7 @@ class TriggeredBuild(Model, extra=False):
     NOTE: The upstream default is the label of the trigger step.
     """
 
-    # @TODO: Not "Any" but "any JSON type
-    meta_data: dict[str, Any] = field(default_factory=dict)
+    meta_data: JSONObject = field(default_factory=dict)
     """Meta-data for the build"""
 
 

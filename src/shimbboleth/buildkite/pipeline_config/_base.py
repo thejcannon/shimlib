@@ -3,9 +3,10 @@ Contains the base class for all steps: StepBase.
 """
 
 from shimbboleth._model import Model, field, FieldAlias, Not
+from shimbboleth._model.jsonT import JSONObject
 from ._types import bool_from_json
 from uuid import UUID
-from typing import ClassVar, Any, final, Annotated
+from typing import ClassVar, final, Annotated
 
 
 class Dependency(Model, extra=False):
@@ -40,7 +41,7 @@ class StepBase(Model):
             return type_field.default
         return None  # GroupStep :|
 
-    def model_dump(self) -> dict[str, Any]:
+    def model_dump(self) -> JSONObject:
         val = super().model_dump()
 
         type_tag = self._get_canonical_type()
@@ -51,9 +52,7 @@ class StepBase(Model):
 
     @Model._json_loader_(depends_on)
     @staticmethod
-    def _convert_depends_on(
-        value: str | list[str | dict[str, Any]],
-    ) -> list[Dependency]:
+    def _convert_depends_on(value: str | list[str | JSONObject]) -> list[Dependency]:
         if isinstance(value, str):
             return [Dependency(step=value)]
         return [

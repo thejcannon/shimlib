@@ -2,12 +2,13 @@ from typing import Any, Self, TypeVar, Callable
 import dataclasses
 
 from shimbboleth._model.model_meta import ModelMeta
+from shimbboleth._model.jsonT import JSON, JSONObject
 
 T = TypeVar("T")
 
 
 class _ModelBase:
-    _extra: dict[str, Any]
+    _extra: dict[str, JSON]
     """
     If `extra` is `True`, then this contains any extra fields provided when loading.
     """
@@ -55,16 +56,13 @@ class Model(_ModelBase, metaclass=ModelMeta):
 
         return decorator
 
-    # @TODO: NOTE: This is isn't necessarily a JSON loader (so need to check key types)
-    # But the loader COULD reference JSON types and on loading enforce correctness (since
-    #   JSON types are unambiguous)
     @classmethod
-    def model_load(cls: type[Self], value: dict[str, Any]) -> Self:
+    def model_load(cls: type[Self], value: JSONObject) -> Self:
         from shimbboleth._model.json_load import load_model
 
         return load_model(cls, value)
 
-    def model_dump(self) -> dict[str, Any]:
+    def model_dump(self) -> JSONObject:
         from shimbboleth._model.json_dump import dump_model
 
         return dump_model(self)

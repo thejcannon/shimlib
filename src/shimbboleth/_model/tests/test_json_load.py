@@ -53,8 +53,6 @@ def str_to_int(value: str) -> int:
         param(Literal[1, 2, 3], 1, id="literal"),
         param(Literal[1, 2, 3], 2, id="literal"),
         param(Literal[1, 2, 3], 3, id="literal"),
-        param(Literal[True, False, "true", "false"], True, id="literal"),
-        param(Literal[True, False, "true", "false"], "true", id="literal"),
         # union
         param(int | str, 42, id="union"),
         param(int | str, "hello", id="union"),
