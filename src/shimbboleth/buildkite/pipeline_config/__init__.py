@@ -1,4 +1,5 @@
-from typing import Any, TypeAlias, Literal
+from typing import Any, TypeAlias, Literal, cast
+from functools import lru_cache
 
 from shimbboleth._model import Model, field
 from shimbboleth._model.jsonT import JSONArray, JSONObject
@@ -35,6 +36,25 @@ ALL_STEP_TYPES = (
 StepsT: TypeAlias = list[
     BlockStep | InputStep | CommandStep | WaitStep | TriggerStep | GroupStep
 ]
+
+
+@lru_cache(maxsize=1)
+def get_schema():
+    schema = BuildkitePipeline.model_json_schema
+    pipeline_schema = schema.copy()
+    defs = cast(JSONObject, pipeline_schema.pop("$defs"))
+    return {
+        # @TODO: Draft 2020?
+        # "$schema": "https://json-schema.org/draft-07/schema",
+        "oneOf": [
+            {"$ref": "#/$defs/pipeline"},
+            {"$ref": "#/$defs/pipeline/properties/steps"},
+        ],
+        "$defs": {
+            "pipeline": pipeline_schema,
+            **defs,
+        },
+    }
 
 
 class BuildkitePipeline(Model, extra=True):

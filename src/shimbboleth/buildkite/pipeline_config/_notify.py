@@ -6,7 +6,6 @@ from shimbboleth._model.json_load import JSONLoadError
 
 
 class GitHubCommitStatusInfo(Model, extra=False):
-    # somehow not required?
     context: str | None = None
 
 
@@ -20,7 +19,7 @@ class GitHubCommitStatusNotify(_NotifyBase):
 
 
 class GitHubCheckNotify(Model, extra=False):
-    # @TODO: See https://github.com/buildkite/pipeline-schema/pull/117#issuecomment-2537680177
+    # NB: See https://github.com/buildkite/pipeline-schema/pull/117#issuecomment-2537680177
     github_check: dict[str, str]
 
 
@@ -37,11 +36,17 @@ class SlackNotifyInfo(Model, extra=False):
     message: str | None = None
 
 
+# @TODO When loading `notify`, convert this to just `SlackNotifyInfo`
 class SlackNotify(_NotifyBase):
-    # The `slack` notification is invalid: Each channel should be defined as `#channel-name`, `team-name#channel-name`, 'team-name@user-name', '@user-name', 'U12345678', 'W12345678', or 'S12345678'
-    slack: str | SlackNotifyInfo
+    # @VALIDATE: The `slack` notification is invalid: Each channel should be defined as `#channel-name`, `team-name#channel-name`, 'team-name@user-name', '@user-name', 'U12345678', 'W12345678', or 'S12345678'
+    slack: SlackNotifyInfo
 
-    # @TODO: JSON conversion to SlackNotifyInfo with str -> channels: [string]
+
+@SlackNotify._json_loader_("slack")
+def _load_slack(value: str | SlackNotifyInfo) -> SlackNotifyInfo:
+    if isinstance(value, str):
+        return SlackNotifyInfo(channels=[value], message=None)
+    return value
 
 
 class WebhookNotify(_NotifyBase):

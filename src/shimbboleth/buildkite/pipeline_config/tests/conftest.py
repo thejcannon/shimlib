@@ -27,6 +27,9 @@ class StepTypeParam(Generic[T]):
     def ctor(self, **kwargs) -> T:
         return self.cls(**{**kwargs, **self.ctor_defaults})
 
+    def model_load(self, value: dict[str, Any]) -> T:
+        return self.cls.model_load({**value, **self.dumped_default})
+
     @property
     def dumped_default(self) -> dict[str, Any]:
         return self.ctor().model_dump()
@@ -44,13 +47,22 @@ STEP_TYPE_PARAMS = {
     "trigger": StepTypeParam(TriggerStep, {"type": "trigger", "trigger": "trigger"}),
     "group": StepTypeParam(GroupStep, {"group": "group", "steps": [WaitStep()]}),
 }
+ALL_STEP_TYPE_PARAMS = [
+    pytest.param(step_type_param, id=step_type_param.cls.__name__)
+    for step_type_param in STEP_TYPE_PARAMS.values()
+]
+ALL_SUBSTEP_TYPE_PARAMS = [
+    pytest.param(step_type_param, id=step_type_param.cls.__name__)
+    for step_type_param in STEP_TYPE_PARAMS.values()
+    if step_type_param.stepname != "group"
+]
 
 
-@pytest.fixture(
-    params=[
-        pytest.param(step_type_param, id=step_type_param.cls.__name__)
-        for step_type_param in STEP_TYPE_PARAMS.values()
-    ]
-)
+@pytest.fixture(params=ALL_STEP_TYPE_PARAMS)
 def all_step_types(request) -> StepTypeParam:
+    return request.param
+
+
+@pytest.fixture(params=ALL_SUBSTEP_TYPE_PARAMS)
+def all_substep_types(request) -> StepTypeParam:
     return request.param

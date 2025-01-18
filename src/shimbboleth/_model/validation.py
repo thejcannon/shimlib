@@ -10,24 +10,27 @@ from contextlib import contextmanager
 import re
 
 T = TypeVar("T")
+K = TypeVar("K")
+V = TypeVar("V")
 
 
 class Validator(Protocol):
     def __call__(self, value) -> None: ...
 
 
-# TODO: Does this belogn in another module?
+# TODO: Does this belong in another module?
 class InvalidValueError(Exception):
     def __init__(self, *args):
         super().__init__(*args)
         self.path = []
 
     def __str__(self):
-        return super().__str__() + "\n" + f"Path: {'.'.join(self.path)}"
+        return super().__str__() + "\n" + f"Path: {''.join(self.path)}"
 
     def add_prefix(self, prefix: str):
         self.path.insert(0, prefix)
 
+    # @TODO: instead of "prefix" use either `index`, `key` or `attrname`
     @contextmanager
     @staticmethod
     def context(prefix: str):
@@ -78,8 +81,9 @@ class MatchesRegex(Validator):
         return f"match regex `{self.regex.pattern}`"
 
 
-NonEmptyList = Annotated[list[T], NonEmpty]
 NonEmptyString = Annotated[str, NonEmpty]
+NonEmptyList = Annotated[list[T], NonEmpty]
+NonEmptyDict = Annotated[dict[K, V], NonEmpty]
 
 
 @dataclasses.dataclass(frozen=True, slots=True)

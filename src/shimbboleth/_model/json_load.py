@@ -38,14 +38,16 @@ class ExtrasNotAllowedError(JSONLoadError):
 
 
 class NotAValidUUIDError(JSONLoadError):
-    pass
+    def __init__(self, data):
+        super().__init__(f"Expected a valid UUID, got `{data!r}`")
 
 
 class NotAValidPatternError(JSONLoadError):
-    pass
+    def __init__(self, data):
+        super().__init__(f"Expected a valid regex pattern, got `{data!r}`")
 
 
-class MissingFieldsError(TypeError):
+class MissingFieldsError(JSONLoadError):
     def __init__(self, model_name: str, *fieldnames: str):
         fieldnames = tuple(f"`{field}`" for field in fieldnames)
         super().__init__(
@@ -149,11 +151,13 @@ def _get_jsontype(field_type) -> type:
 
     return rawtype
 
+
 @load.register
 def load_union_type(field_type: UnionType, *, data: Any):
     # @TODO: Some kind of assertion this is valid/safe
     #   (E.g. assert no two args are the same JSON type)
     #   (and put it in `ModelMeta`?)
+
     for argT in field_type.__args__:
         expected_type = _get_jsontype(argT)
         # NB: Have to use `is` instead of `isinstance` because `bool` inherits from `int`
@@ -287,7 +291,8 @@ class _LoadModelHelper:
             json_loader.__annotations__["value"] if json_loader else field.type
         )
 
-        with JSONLoadError.context(field.name):
+        # @TODO: Use the alias in the context?
+        with JSONLoadError.context("." + field.name):
             value = load(expected_type, data=data[field.name])
             if json_loader:
                 value = json_loader(value)

@@ -73,6 +73,7 @@ class ModelMeta(type):
                     ),
                 )
 
+    # @TODO cache this (immutably)
     @property
     def model_json_schema(cls) -> JSONObject:
         from shimbboleth._model.json_schema import schema

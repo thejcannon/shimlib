@@ -40,6 +40,7 @@ def schema(field_type, *, model_defs: dict[str, JSONObject]) -> JSONObject:
         }
     if field_type is Any:
         return {}
+
     # NB: Dispatched manually, so we can avoid ciruclar definition with `Model.model_load`
     if issubclass(field_type, Model):
         schema_model(field_type, model_defs=model_defs)
@@ -94,6 +95,11 @@ def _schema_annotation_type(annotation: Any) -> JSONObject:
         return {"maximum": annotation.bound}
     elif isinstance(annotation, _NotGenericAlias):
         return {"not": _schema_annotation_type(annotation.inner)}
+    elif annotation is uuid.UUID:
+        return {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+        }
     else:
         raise TypeError(f"Unsupported annotation: {annotation}")
 
@@ -137,8 +143,8 @@ class _ModelFieldSchemaHelper:
     ) -> JSONObject:
         json_loader = field.metadata.get("json_loader", None)
         if json_loader:
-            input_type = getattr(
-                json_loader, "json_schema_type", json_loader.__annotations__["value"]
+            input_type = field.metadata.get(
+                "json_schema_type", json_loader.__annotations__["value"]
             )
             output_type = json_loader.__annotations__["return"]
             assert (
@@ -171,7 +177,9 @@ def schema_model(
             "type": "object",
             "properties": {
                 **{
-                    field.name: _ModelFieldSchemaHelper.visit_model_field(
+                    field.metadata.get(
+                        "json_alias", field.name
+                    ): _ModelFieldSchemaHelper.visit_model_field(
                         field, model_defs=model_defs
                     )
                     for field in fields
@@ -184,7 +192,7 @@ def schema_model(
                 },
             },
             "required": [
-                field.name
+                field.metadata.get("json_alias", field.name)
                 for field in fields
                 if (
                     field.default is dataclasses.MISSING

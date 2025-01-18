@@ -26,6 +26,7 @@ source_archive = "https://github.com/thejcannon/shimbboleth/archive/{commit_hash
 [tool.uv]
 dev-dependencies = [
     "jmespath>=1.0.1",
+    "jsonschema>=4.23.0",
     "lefthook>=1.10.1",
     "pydantic",
     "pytest-asyncio>=0.24.0",

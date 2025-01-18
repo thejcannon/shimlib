@@ -2,6 +2,7 @@ from typing import Annotated
 import re
 from shimbboleth._model import MatchesRegex, field, Model, NonEmptyList
 from shimbboleth._model.jsonT import JSONObject
+from shimbboleth._model.validation import InvalidValueError
 from ._types import bool_from_json
 from ._types import list_str_from_json
 from ._base import StepBase
@@ -48,8 +49,6 @@ class SelectOption(Model, extra=False):
     """Whether the field is required for form submission"""
 
 
-# @TODO: If `multiple` is falsey, then `default` cant be a list of strings
-# (however if its truthy, it can be either a string or a list of strings)
 class SelectInput(_OptionBaseModel, extra=False):
     """
     For Input Step: https://buildkite.com/docs/pipelines/input-step#select-input-attributes
@@ -64,10 +63,16 @@ class SelectInput(_OptionBaseModel, extra=False):
 
     # @TODO: (upstream) strangely this doesn't validate if its a valid option
     default: str | list[str] | None = None
-    """The value of the option(s) that will be pre-selected in the dropdown"""
+    """The value(s) of the option(s) that will be pre-selected in the dropdown"""
 
     multiple: bool = field(default=False, json_loader=bool_from_json)
     """Whether more than one option may be selected"""
+
+    def __post_init__(self):
+        if not self.multiple and isinstance(self.default, list):
+            raise InvalidValueError(
+                "`default` cannot be a list when `multiple` is `False`"
+            )
 
 
 class ManualStepBase(StepBase, extra=False):
@@ -78,8 +83,6 @@ class ManualStepBase(StepBase, extra=False):
     branches: list[str] = field(default_factory=list, json_loader=list_str_from_json)
     """Which branches will include this step in their builds"""
 
-    # @TODO: From json, we could do better than trying each union, since we know
-    #   "text" or "select" must be present
     fields: list[TextInput | SelectInput] = field(default_factory=list)
     """A list of input fields required to be filled out before unblocking the step"""
 
@@ -90,11 +93,12 @@ class ManualStepBase(StepBase, extra=False):
 @ManualStepBase._json_loader_("fields")
 def _load_fields(value: list[JSONObject]) -> list[TextInput | SelectInput]:
     ret = []
-    for field_dict in value:
-        if "text" in field_dict:
-            ret.append(TextInput.model_load(field_dict))
-        elif "select" in field_dict:
-            ret.append(SelectInput.model_load(field_dict))
-        else:
-            raise ValueError("Input fields must contain `text`` or `select`")
+    for index, field_dict in enumerate(value):
+        with InvalidValueError.context(prefix=f"[{index}]"):
+            if "text" in field_dict:
+                ret.append(TextInput.model_load(field_dict))
+            elif "select" in field_dict:
+                ret.append(SelectInput.model_load(field_dict))
+            else:
+                raise InvalidValueError("Input fields must contain `text`` or `select`")
     return ret

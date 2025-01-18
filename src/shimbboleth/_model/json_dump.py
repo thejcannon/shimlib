@@ -9,7 +9,8 @@ from functools import singledispatch
 if True:
     # NB: JSON must be imported for `singledispatch` to work
     # @TODO: noqa (and what code?)
-    from shimbboleth._model.jsonT import JSON # noqa
+    from shimbboleth._model.jsonT import JSON  # noqa
+
 
 @singledispatch
 def dump(obj) -> JSONObject:

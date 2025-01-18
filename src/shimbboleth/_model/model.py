@@ -16,12 +16,8 @@ class _ModelBase:
 
 class Model(_ModelBase, metaclass=ModelMeta):
     @classmethod
-    def _json_loader_(
-        cls, field, *, json_schema_type: type | None = None
-    ) -> Callable[[T], T]:
-        # @TODO: TEMPORARY
-        if isinstance(field, str):
-            field = cls.__dataclass_fields__[field]
+    def _json_loader_(cls, field: str, *, json_schema_type=None) -> Callable[[T], T]:
+        field = cls.__dataclass_fields__[field]
 
         # @TODO: Assert funcname?
         assert isinstance(field, dataclasses.Field), "Did you forget to = field(...)?"
@@ -32,11 +28,16 @@ class Model(_ModelBase, metaclass=ModelMeta):
         def decorator(func: T) -> T:
             # NB: `metadata` is immutable, so copy/reassign
             field.metadata = type(field.metadata)(
-                field.metadata | {"json_loader": func}
+                field.metadata
+                | {
+                    "json_loader": func,
+                    "json_schema_type": func.__annotations__["value"]
+                    if json_schema_type is None
+                    else json_schema_type,
+                }
             )
             return func
 
-        decorator.json_schema_type = json_schema_type  # type: ignore
         return decorator
 
     @staticmethod

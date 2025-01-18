@@ -46,7 +46,7 @@ class CommandStepSignature(Model, extra=True):
     algorithm: str | None = None
     """The algorithm used to generate the signature"""
 
-    signed_fields: list[str] | None = None
+    signed_fields: list[str] = field(default_factory=list)
     """The fields that were signed to form the signature value"""
 
     value: str | None = None
@@ -87,6 +87,7 @@ class AutomaticRetry(Model, extra=False):
     exit_status: Literal["*"] | list[int] = field(default="*")
     """The exit status number that will cause this job to retry"""
 
+    # @TODO: Upstram allows 0 (but not 11)
     limit: Annotated[int, Ge(1), Le(10)] | None = None
     """The number of times this job can be retried"""
 
@@ -135,7 +136,11 @@ class CommandStep(StepBase, extra=False):
     """
 
     agents: dict[str, str] = field(default_factory=dict, json_loader=agents_from_json)
-    """Query rules to target specific agents. See https://buildkite.com/docs/agent/v3/cli-start#agent-targeting"""
+    """
+    Query rules to target specific agents.
+
+    See https://buildkite.com/docs/agent/v3/cli-start#agent-targeting
+    """
 
     artifact_paths: list[str] = field(
         default_factory=list, json_loader=list_str_from_json
@@ -154,8 +159,6 @@ class CommandStep(StepBase, extra=False):
     command: list[str] = field(default_factory=list, json_loader=list_str_from_json)
     """The commands to run on the agent"""
 
-    # @TODO: Validate concurrency fields together
-
     concurrency: int | None = None
     """The maximum number of jobs created from this step that are allowed to run at the same time. If you use this attribute, you must also define concurrency_group."""
 
@@ -168,6 +171,7 @@ class CommandStep(StepBase, extra=False):
     env: dict[str, str] = field(default_factory=dict)
     """Environment variables for this step"""
 
+    # @TODO: default_factory=list?
     matrix: MatrixArray | SingleDimensionMatrix | MultiDimensionMatrix | None = None
     """
     Matrix expansions for this step.
@@ -181,7 +185,7 @@ class CommandStep(StepBase, extra=False):
     parallelism: int | None = None
     """The number of parallel jobs that will be created based on this step"""
 
-    # NB: We use a list of plugins, since
+    # NB: We use a list of plugins, since the same plugin can appear multiple times
     plugins: list[Plugin] = field(default_factory=list)
     """An array of plugins for this step."""
 
@@ -192,6 +196,7 @@ class CommandStep(StepBase, extra=False):
     """The conditions for retrying this step."""
 
     signature: CommandStepSignature | None = None
+    """@TODO (missing description)"""
 
     # NB: Passing an empty string is equivalent to false.
     skip: bool | str = field(default=False, json_loader=skip_from_json)
@@ -199,11 +204,13 @@ class CommandStep(StepBase, extra=False):
 
     # NB: This differs from the upstream schema in that we "unpack"
     #  the `exit_status` object into the status.
+    # @TODO: Upstream allows 0
     soft_fail: bool | NonEmptyList[Annotated[int, Not[Literal[0]]]] = field(
         default=False, json_loader=soft_fail_from_json, json_dumper=soft_fail_to_json
     )
     """Allow specified non-zero exit statuses not to fail the build."""
 
+    # @TODO: Zero is OK upstream?
     timeout_in_minutes: Annotated[int, Ge(1)] | None = None
     """The number of minutes to time out a job"""
 
@@ -216,7 +223,8 @@ class CommandStep(StepBase, extra=False):
     name: ClassVar = FieldAlias("label", json_mode="prepend")
     commands: ClassVar = FieldAlias("command")
 
-    # @TODO: This should just be `model_load`
+    # @TODO: This should just be `model_load`, but that maybe too late?
+    #   (We can add this support to FieldAlias)
     # @model_validator(mode="before")
     # @classmethod
     # def _check_command_commands(cls, data: Any) -> Any:
@@ -226,6 +234,10 @@ class CommandStep(StepBase, extra=False):
     #                 "Step type is ambiguous: use only one of `command` or `commands`"
     #             )
     #     return data
+
+    def __post_init__(self):
+        # @TODO: Verify the concurrency_group fields (together)
+        pass
 
 
 @AutomaticRetry._json_loader_("exit_status")
@@ -297,10 +309,11 @@ def _load_matrix(
     if isinstance(value, list):
         return value
     if isinstance(value, dict):
-        if "setup" in value:
-            if isinstance(value["setup"], list):
-                return SingleDimensionMatrix.model_load(value)
+        if isinstance(value["setup"], list):
+            return SingleDimensionMatrix.model_load(value)
         return MultiDimensionMatrix.model_load(value)
+
+    # @TODO: Error on wrong type
 
 
 @CommandStep._json_loader_("notify", json_schema_type=StepNotifyT)
@@ -320,8 +333,9 @@ def _load_notify(
 def _load_plugins(
     # @TODO: the dictionaries should only have one property.
     #   (e.g. `"maxProperties": 1`)
-    value: list[str | dict[str, JSONObject | None]] | dict[str, JSONObject | None],
+    value: dict[str, JSONObject | None] | list[str | dict[str, JSONObject | None]],
 ) -> list[Plugin]:
+    # @TODO: Should use `model_load`
     if isinstance(value, dict):
         return [Plugin(spec=spec, config=config) for spec, config in value.items()]
     return [

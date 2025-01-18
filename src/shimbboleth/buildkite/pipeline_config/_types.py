@@ -55,6 +55,7 @@ def list_str_from_json(value: str | list[str]) -> list[str]:
 def soft_fail_from_json(
     value: bool | Literal["true", "false"] | list[ExitStatus],
 ) -> bool | NonEmptyList[Annotated[int, Not[Literal[0]]]]:
+    # Non-zero?
     if value in (True, "true"):
         return True
     elif value in (False, "false"):

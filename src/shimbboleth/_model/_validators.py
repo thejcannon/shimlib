@@ -30,14 +30,10 @@ class ListElementsValidator:
     element_validators: tuple[Validator, ...]
 
     def __call__(self, value: list):
-        # @TODO: Add note on exception
-        for element in value:
+        for index, element in enumerate(value):
             for validator in self.element_validators:
-                try:
+                with ValidationError.context(f"[{index}]"):
                     validator(element)
-                except ValidationError as e:
-                    e.add_context("Where: value is a list element")
-                    raise
 
 
 @dataclasses.dataclass(slots=True, frozen=True)
@@ -48,18 +44,12 @@ class DictValidator:
     def __call__(self, value: dict[K, Any]):
         for validator in self.keys_validators:
             for key in value.keys():
-                try:
+                with ValidationError.context(f" (key {key!r})"):
                     validator(key)
-                except ValidationError as e:
-                    e.add_context("Where: value is a dict key")
-                    raise
         for validator in self.values_validators:
-            for value in value.values():
-                try:
+            for key, value in value.items():
+                with ValidationError.context(f"[{key!r}]"):
                     validator(value)
-                except ValidationError as e:
-                    e.add_context("Where: value is a dict value")
-                    raise
 
 
 @dataclasses.dataclass(slots=True, frozen=True)
@@ -175,6 +165,6 @@ class ValidationDescriptor:
 
     def __set__(self, instance, value):
         for validator in self.validators:
-            with ValidationError.context(self.field_descriptor.__name__):
+            with ValidationError.context("." + self.field_descriptor.__name__):
                 validator(value)
         self.field_descriptor.__set__(instance, value)
