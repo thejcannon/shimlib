@@ -315,6 +315,7 @@ def _load_notify(
     value: list[Any],
 ) -> StepNotifyT:
     from shimbboleth.buildkite.pipeline_config._notify import parse_step_notify
+
     return parse_step_notify(value)
 
 

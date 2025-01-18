@@ -113,6 +113,7 @@ def parse_build_notify(
             ret.append(_parse_notification(elem))
     return ret
 
+
 def parse_step_notify(
     value: list[Any],
 ) -> StepNotifyT:
