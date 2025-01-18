@@ -1,5 +1,4 @@
 from typing import Literal, Any, Annotated, ClassVar
-import dataclasses
 
 from shimbboleth._model import (
     Model,
@@ -12,7 +11,6 @@ from shimbboleth._model import (
     NonEmptyList,
 )
 from shimbboleth._model.jsonT import JSONObject
-from shimbboleth._model.json_load import JSONLoadError
 
 from ._base import StepBase
 from ._agents import agents_from_json
@@ -25,11 +23,7 @@ from ._types import (
     soft_fail_to_json,
 )
 from ._notify import (
-    EmailNotify,
     StepNotifyT,
-    WebhookNotify,
-    parse_notify,
-    PagerdutyNotify,
 )
 from ._matrix import (
     MatrixArray,
@@ -320,13 +314,8 @@ def _load_matrix(
 def _load_notify(
     value: list[Any],
 ) -> StepNotifyT:
-    parsed = parse_notify(value)
-    for elem in parsed:
-        if isinstance(elem, (EmailNotify, WebhookNotify, PagerdutyNotify)):
-            # NB: It IS a valid _build_ notification though
-            keyname = dataclasses.fields(elem)[1].name
-            raise JSONLoadError(f"`{keyname}` is not a valid step notification")
-    return parsed
+    from shimbboleth.buildkite.pipeline_config._notify import parse_step_notify
+    return parse_step_notify(value)
 
 
 @CommandStep._json_loader_("plugins")

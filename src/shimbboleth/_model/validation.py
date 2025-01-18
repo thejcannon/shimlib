@@ -20,6 +20,7 @@ class Validator(Protocol):
 
 # TODO: Does this belong in another module?
 class InvalidValueError(Exception):
+    # @TODO: Allow `index`/`key`/`attr` so we don't have to use the context manager
     def __init__(self, *args):
         super().__init__(*args)
         self.path = []

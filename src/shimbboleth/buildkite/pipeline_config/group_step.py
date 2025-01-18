@@ -1,8 +1,7 @@
 from typing import ClassVar, Literal
-import dataclasses
+
 
 from shimbboleth._model import field, FieldAlias, NonEmptyList
-from shimbboleth._model.json_load import JSONLoadError
 from shimbboleth._model.jsonT import JSONArray, JSONObject
 from shimbboleth.buildkite.pipeline_config._types import skip_from_json
 
@@ -20,10 +19,6 @@ from .trigger_step import TriggerStep
 from .command_step import CommandStep
 from ._notify import (
     StepNotifyT,
-    parse_notify,
-    EmailNotify,
-    WebhookNotify,
-    PagerdutyNotify,
 )
 from ._base import StepBase
 
@@ -93,10 +88,6 @@ def _load_steps(
 
 @GroupStep._json_loader_("notify", json_schema_type=StepNotifyT)
 def _load_notify(value: JSONArray) -> StepNotifyT:
-    parsed = parse_notify(value)
-    for elem in parsed:
-        if isinstance(elem, (EmailNotify, WebhookNotify, PagerdutyNotify)):
-            # NB: It IS a valid _build_ notification though
-            keyname = dataclasses.fields(elem)[1].name
-            raise JSONLoadError(f"`{keyname}` is not a valid step notification")
-    return parsed
+    from shimbboleth.buildkite.pipeline_config._notify import parse_step_notify
+
+    return parse_step_notify(value)

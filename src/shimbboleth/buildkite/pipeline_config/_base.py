@@ -4,6 +4,7 @@ Contains the base class for all steps: StepBase.
 
 from shimbboleth._model import Model, field, FieldAlias, Not
 from shimbboleth._model.jsonT import JSONObject
+from shimbboleth._model.json_load import JSONLoadError
 from ._types import bool_from_json
 from uuid import UUID
 from typing import ClassVar, final, Annotated
@@ -56,7 +57,13 @@ class StepBase(Model):
 def _load_depends_on(value: str | list[str | JSONObject]) -> list[Dependency]:
     if isinstance(value, str):
         return [Dependency(step=value)]
-    return [
-        Dependency(step=elem) if isinstance(elem, str) else Dependency.model_load(elem)
-        for elem in value
-    ]
+    ret = []
+    for index, elem in enumerate(value):
+        with JSONLoadError.context(f"[{index}]"):
+            ret.append(
+                Dependency(step=elem)
+                if isinstance(elem, str)
+                # HERES THE BUG
+                else Dependency.model_load(elem)
+            )
+    return ret

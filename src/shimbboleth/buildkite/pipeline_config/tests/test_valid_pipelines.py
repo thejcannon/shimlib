@@ -199,7 +199,6 @@ class Test_AnyStepType(StepTestBase):
             },
             id="stepname_label_name",
         ),
-        # param(lambda steptype: {steptype.stepname: steptype.ctor_defaults}, id="nested"),
     ],
 )
 class Test_AnySubstepType(StepTestBase):

@@ -1,7 +1,7 @@
-from typing import Literal, Annotated, TypeAlias, Any
+from typing import Literal, TypeAlias, Any
+import dataclasses
 
-
-from shimbboleth._model import Model, field, NonEmpty
+from shimbboleth._model import Model, field, NonEmptyList
 from shimbboleth._model.json_load import JSONLoadError
 
 
@@ -32,7 +32,7 @@ class BasecampCampfireNotify(_NotifyBase):
 
 
 class SlackNotifyInfo(Model, extra=False):
-    channels: Annotated[list[str], NonEmpty] = field()
+    channels: NonEmptyList[str]
     message: str | None = None
 
 
@@ -102,9 +102,25 @@ def _parse_notification(value: Any) -> Any:
     raise JSONLoadError(f"Unrecognizable notification: `{value}`")
 
 
-def parse_notify(
+def parse_build_notify(
     value: list[Any],
 ) -> BuildNotifyT:
     # NB: Every notification option has one required key
     #   and they don't overlap.
-    return [_parse_notification(elem) for elem in value]
+    ret = []
+    for index, elem in enumerate(value):
+        with JSONLoadError.context(f"[{index}]"):
+            ret.append(_parse_notification(elem))
+    return ret
+
+def parse_step_notify(
+    value: list[Any],
+) -> StepNotifyT:
+    parsed = parse_build_notify(value)
+    for index, elem in enumerate(parsed):
+        with JSONLoadError.context(f"[{index}]"):
+            if isinstance(elem, (EmailNotify, WebhookNotify, PagerdutyNotify)):
+                keyname = dataclasses.fields(elem)[1].name
+                # NB: It IS a valid _build_ notification though
+                raise JSONLoadError(f"`{keyname}` is not a valid step notification")
+    return parsed

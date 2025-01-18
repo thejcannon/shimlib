@@ -44,8 +44,7 @@ def get_schema():
     pipeline_schema = schema.copy()
     defs = cast(JSONObject, pipeline_schema.pop("$defs"))
     return {
-        # @TODO: Draft 2020?
-        # "$schema": "https://json-schema.org/draft-07/schema",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "oneOf": [
             {"$ref": "#/$defs/pipeline"},
             {"$ref": "#/$defs/pipeline/properties/steps"},
@@ -127,6 +126,6 @@ def _load_env(
 
 @BuildkitePipeline._json_loader_("notify", json_schema_type=BuildNotifyT)
 def _load_notify(value: list[Any]) -> BuildNotifyT:
-    from ._notify import parse_notify
+    from ._notify import parse_build_notify
 
-    return parse_notify(value)
+    return parse_build_notify(value)

@@ -84,17 +84,20 @@ def schema_literal(
     return {"enum": list(field_type.__args__)}
 
 
-def _schema_annotation_type(annotation: Any) -> JSONObject:
+def _schema_annotation_type(annotation: Any, *, outer: Any) -> JSONObject:
     if isinstance(annotation, MatchesRegex):
         return {"pattern": annotation.regex.pattern}
     elif annotation is NonEmpty:
+        outer = getattr(outer, "__origin__", outer)
+        if outer is list:
+            return {"minItems": 1}
         return {"minLength": 1}
     elif isinstance(annotation, Ge):
         return {"minimum": annotation.bound}
     elif isinstance(annotation, Le):
         return {"maximum": annotation.bound}
     elif isinstance(annotation, _NotGenericAlias):
-        return {"not": _schema_annotation_type(annotation.inner)}
+        return {"not": _schema_annotation_type(annotation.inner, outer=outer)}
     elif annotation is uuid.UUID:
         return {
             "type": "string",
@@ -110,7 +113,7 @@ def schema_annotation(
 ) -> JSONObject:
     ret = schema(field_type.__origin__, model_defs=model_defs)
     for annotation in field_type.__metadata__:
-        ret.update(_schema_annotation_type(annotation))
+        ret.update(_schema_annotation_type(annotation, outer=field_type.__origin__))
     return ret
 
 
