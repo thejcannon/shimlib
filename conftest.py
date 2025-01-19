@@ -18,11 +18,15 @@ def pytest_addoption(parser):
         help="Run integration tests",
     )
 
+
 def pytest_configure(config):
     config.addinivalue_line(
         "markers", "integration: mark test as integration (run with `--integration`)"
     )
 
+
 def pytest_runtest_setup(item):
-    if not item.config.getoption("--integration") and item.get_closest_marker("integration"):
+    if not item.config.getoption("--integration") and item.get_closest_marker(
+        "integration"
+    ):
         pytest.skip("Integration test; use `-m integration` to run")

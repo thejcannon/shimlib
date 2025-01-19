@@ -68,7 +68,6 @@ class PipelineTestBase:
         pass
 
 
-
 class StepTestBase:
     def get_step(self, step, steptype_param):
         """
@@ -95,6 +94,7 @@ class StepTestBase:
     @pytest.mark.integration
     def test_upstream_API(self, step, steptype_param):
         pass  # @TODO: Implement
+
 
 @pytest.mark.parametrize(
     "config",
