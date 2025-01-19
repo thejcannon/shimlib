@@ -61,6 +61,6 @@ def parse_steps(
 ) -> list[BlockStep | InputStep | CommandStep | WaitStep | TriggerStep | GroupStep]:
     ret = []
     for index, step in enumerate(steps):
-        with InvalidValueError.context(f"[{index}]"):
+        with InvalidValueError.context(index=index):
             ret.append(_parse_step(step))
     return ret

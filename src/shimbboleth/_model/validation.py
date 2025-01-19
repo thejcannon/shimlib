@@ -4,7 +4,7 @@ Validation of model fields.
 NOTE: This only handles Annotated validations (E.g. `Annotated[int, Ge(10)]`)
 """
 
-from typing import TypeVar, ClassVar, Annotated, Protocol
+from typing import TypeVar, ClassVar, Annotated, Protocol, overload
 import dataclasses
 from contextlib import contextmanager
 import re
@@ -18,38 +18,76 @@ class Validator(Protocol):
     def __call__(self, value) -> None: ...
 
 
-# TODO: Does this belong in another module?
+# @TODO: Does this belong in another module?
+# @TODO: The distinction between this and Validation is a bit blurry,
+#   (at least document it).
 class InvalidValueError(Exception):
     # @TODO: Allow `index`/`key`/`attr` so we don't have to use the context manager
-    def __init__(self, *args):
+    @overload
+    def __init__(self, *args): ...
+
+    @overload
+    def __init__(self, *args, index: int): ...
+
+    @overload
+    def __init__(self, *args, key: str): ...
+
+    @overload
+    def __init__(self, *args, attr: str): ...
+
+    def __init__(
+        self,
+        *args,
+        index: int | None = None,
+        key: str | None = None,
+        attr: str | None = None,
+    ):
         super().__init__(*args)
         self.path = []
+        self.add_context(index=index, key=key, attr=attr)
 
     def __str__(self):
         return super().__str__() + "\n" + f"Path: {''.join(self.path)}"
 
-    def add_prefix(self, prefix: str):
-        self.path.insert(0, prefix)
+    def add_context(
+        self,
+        *,
+        index: int | None = None,
+        key: str | None = None,
+        attr: str | None = None,
+    ):
+        if index is not None:
+            self.path.insert(0, f"[{index}]")
+        if key is not None:
+            self.path.insert(0, f"[{key!r}]")
+        if attr is not None:
+            self.path.insert(0, f".{attr}")
 
-    # @TODO: instead of "prefix" use either `index`, `key` or `attrname`
     @contextmanager
     @staticmethod
-    def context(prefix: str):
+    def context(
+        *, index: int | None = None, key: str | None = None, attr: str | None = None
+    ):
         try:
             yield
         except InvalidValueError as e:
-            e.add_prefix(prefix)
+            e.add_context(index=index, key=key, attr=attr)
             raise
 
 
 class ValidationError(InvalidValueError, ValueError):
-    def __init__(self, value, expectation: str):
-        super().__init__()
+    def __init__(self, value, expectation: str, **kwargs):
+        super().__init__(**kwargs)
         self.value = value
         self.expectation = expectation
+        self.qualifier = ""
 
     def __str__(self):
-        return f"Expected `{self.value!r}` to {self.expectation}" + super().__str__()
+        qualifier = f"{self.qualifier} " if self.qualifier else ""
+        return (
+            f"Expected {qualifier}`{self.value!r}` to {self.expectation}"
+            + super().__str__()
+        )
 
 
 class _NonEmptyT(Validator):
@@ -85,6 +123,22 @@ class MatchesRegex(Validator):
 NonEmptyString = Annotated[str, NonEmpty]
 NonEmptyList = Annotated[list[T], NonEmpty]
 NonEmptyDict = Annotated[dict[K, V], NonEmpty]
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class MaxLength:
+    limit: int
+
+    def __call__(self, value: dict):
+        if len(value) > self.limit:
+            raise ValidationError(value, self.description)
+
+    @property
+    def description(self) -> str:
+        return f"have a length less than `{self.limit}`"
+
+
+SingleKeyDict = Annotated[dict[K, V], MaxLength(1)]
 
 
 @dataclasses.dataclass(frozen=True, slots=True)

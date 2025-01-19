@@ -1,9 +1,30 @@
 """
-@TODO: ...
+Tests using valid pipelines (according to the schema).
+
+This module is respionsible for as much testing as possible
+using schema-valid pipelines. As its jsut for schema-valid pipelines,
+there isn't any tests that test what happens _after_ the pipeline is loaded.
+Just that it is loadable.
+
+For logic-centric tests, see `test_json_loading_logic.py`.
+
+This module itself tries to make it easy to define new test cases, and have
+those case be tested against:
+    - Model loading in Python
+    - generated JSON Schema
+    - Upstream JSON Schema (TODO: link)
+    - Upstream Buildkite API
+
+(I aim to to be at least as correct (if not more correct) than upstream)
+
+NOTE: Because of the "multiple ways to test a valid pipeline" this module is a bit wonky.
+    This is mostly a conflict with how I want to express the code and pytest's ability to
+    declare parameterized tests. Eventually I hope to make this even easier to express
+    (likely involving pytest hooks for test collection/generation).
 """
 
-# @TODO: Add IDs to steptype_param
-# @TODO: Test actual nulls in the pipeline
+# @TODOs:
+#   - Test actual nulls in the pipeline
 from typing import cast
 
 import jsonschema
@@ -29,19 +50,35 @@ SKIP_VALS = (True, "true", False, "false", "", "reason")
 
 
 class PipelineTestBase:
-    def test_load_pipeline(self, config):
+    def test_model_load(self, config):
         BuildkitePipeline.model_load(config)
 
-    def test_pipeline_valid(self, config):
+    def test_generated_json_schema(self, config):
         jsonschema.validate(config, get_schema())
 
-    # (mark these)
-    # @TODO: Test upstream schema
-    # @TODO: Test upstream API
+    def test_upstream_json_schema(self, config, pinned_bk_schema):
+        # @UPSTREAM: No support for non-object pipelines
+        if not isinstance(config, dict):
+            config = {"steps": config}
+        jsonschema.validate(config, pinned_bk_schema)
+
+    # @TODO: What do I wanna name this? Integration? Upstream? Internet?
+    @pytest.mark.integration
+    def test_upstream_API(self, config):
+        pass
+
 
 
 class StepTestBase:
     def get_step(self, step, steptype_param):
+        """
+        Helper to get the (full) step.
+
+        This makes it so tests can parameterize on less-than-a-full-step
+        (for brevity) and we fill in the blanks.
+
+        (Can be redefined in child classes)
+        """
         return {**step, **steptype_param.dumped_default}
 
     def test_load_pipeline(self, step, steptype_param):
@@ -52,6 +89,12 @@ class StepTestBase:
         step = self.get_step(step, steptype_param)
         jsonschema.validate({"steps": [step]}, get_schema())
 
+    def test_upstream_json_schema(self, step, steptype_param, pinned_bk_schema):
+        jsonschema.validate({"steps": [step]}, pinned_bk_schema)
+
+    @pytest.mark.integration
+    def test_upstream_API(self, step, steptype_param):
+        pass  # @TODO: Implement
 
 @pytest.mark.parametrize(
     "config",
@@ -66,6 +109,7 @@ class StepTestBase:
         param(["wait"], id="string-wait"),
         param(["waiter"], id="string-waiter"),
         param([{"block": None}], id="block-null"),
+        # param([{"command": None}], id="command-null"),
         param([{"input": None}], id="input-null"),
         param([{"wait": None}], id="wait-null"),
         param(
@@ -160,7 +204,7 @@ class Test_AnyStepType(StepTestBase):
 
 @pytest.mark.parametrize("steptype_param", ALL_SUBSTEP_TYPE_PARAMS)
 @pytest.mark.parametrize(
-    "step",
+    "step",  # NB: type is `Step` or `Callable[StepTypeParam], Step]`
     [
         param({"branches": "master"}, id="branches"),
         param({"branches": ["master"]}, id="branches"),
@@ -210,7 +254,7 @@ class Test_AnySubstepType(StepTestBase):
 
 @pytest.mark.parametrize("steptype_param", ALL_SUBSTEP_TYPE_PARAMS)
 @pytest.mark.parametrize(
-    "step",
+    "step",  # NB: type is `Callable[StepTypeParam], Step]`
     [param(lambda steptype: {steptype.stepname: steptype.ctor_defaults}, id="nested")],
 )
 class Test_NestedSubstep(StepTestBase):
@@ -222,7 +266,6 @@ class Test_NestedSubstep(StepTestBase):
 @pytest.mark.parametrize(
     "step",
     [
-        # param({"block": None}, id="null"),
         param({"blocked_state": "passed"}, id="blocked_state"),
         param({"blocked_state": "failed"}, id="blocked_state"),
         param({"blocked_state": "running"}, id="blocked_state"),
@@ -513,19 +556,14 @@ class Test_InputStep(StepTestBase):
     [param({"prompt": "prompt"}, id="prompt")],
 )
 class Test_ManualStep(StepTestBase):
-    def get_step(self, step, steptype_param):
-        return {
-            "type": steptype_param.stepname,
-            **step,
-            "fields": [],
-        }
+    pass
 
 
 @pytest.mark.parametrize(
     "steptype_param", [STEP_TYPE_PARAMS["block"], STEP_TYPE_PARAMS["input"]]
 )
 @pytest.mark.parametrize(
-    "step",
+    "step",  # NB: `step` is a misnomer, its actually the field's extra keys/values
     [
         param({}, id="bare"),
         param({"default": "default"}, id="default"),
@@ -553,7 +591,7 @@ class Test_ManualStep__SelectField(StepTestBase):
     "steptype_param", [STEP_TYPE_PARAMS["block"], STEP_TYPE_PARAMS["input"]]
 )
 @pytest.mark.parametrize(
-    "step",
+    "step",  # NB: `step` is a misnomer, its actually the field's' option's extra keys/values.
     [
         param({}, id="bare"),
         param({"hint": "hint"}, id="hint"),
@@ -578,7 +616,7 @@ class Test_ManualStep__SelectField__Option(StepTestBase):
     "steptype_param", [STEP_TYPE_PARAMS["block"], STEP_TYPE_PARAMS["input"]]
 )
 @pytest.mark.parametrize(
-    "step",
+    "step",  # NB: `step` is a misnomer, its actually the field's' extra keys/values.
     [
         param({}, id="bare"),
         param({"hint": "hint"}, id="hint"),

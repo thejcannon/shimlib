@@ -1,0 +1,1 @@
+- Rename this to `shimbboleth.internal.modelkit (and then expose it as a single module)

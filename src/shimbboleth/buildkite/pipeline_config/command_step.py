@@ -11,6 +11,7 @@ from shimbboleth._model import (
     NonEmptyList,
 )
 from shimbboleth._model.jsonT import JSONObject
+from shimbboleth._model.validation import SingleKeyDict, ValidationError
 
 from ._base import StepBase
 from ._agents import agents_from_json
@@ -321,16 +322,20 @@ def _load_notify(
 
 @CommandStep._json_loader_("plugins")
 def _load_plugins(
-    # @TODO: the dictionaries should only have one property.
-    #   (e.g. `"maxProperties": 1`)
-    value: dict[str, JSONObject | None] | list[str | dict[str, JSONObject | None]],
+    value: dict[str, JSONObject | None]
+    | list[str | SingleKeyDict[str, JSONObject | None]],
 ) -> list[Plugin]:
-    # @TODO: Should use `model_load`
     if isinstance(value, dict):
         return [Plugin(spec=spec, config=config) for spec, config in value.items()]
-    return [
-        Plugin(spec=elem, config=None)
-        if isinstance(elem, str)
-        else Plugin(spec=list(elem.keys())[0], config=list(elem.values())[0])
-        for elem in value
-    ]
+    ret = []
+    for index, elem in enumerate(value):
+        if isinstance(elem, str):
+            ret.append(Plugin(spec=elem, config=None))
+        else:
+            # NB: Because we aren't _assigning_ to a 'SingleKeyDict`, the validation doesn't
+            #   kick in. (Womp Womp)
+            if len(elem) > 1:
+                raise ValidationError(elem, "have only one key", index=index)
+            spec, config = next(iter(elem.items()))
+            ret.append(Plugin(spec=spec, config=config))
+    return ret

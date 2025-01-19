@@ -1,3 +1,10 @@
+"""
+Tests for the logic of JSON loading (e.g. `FieldAlias` usage or `json_loader` semantics).
+
+There's some overlap here with `test_schema_valid_pipelines.py`, but that's OK.
+Each module tests different things.
+"""
+
 from shimbboleth.buildkite.pipeline_config import BuildkitePipeline, Dependency
 
 from shimbboleth.buildkite.pipeline_config.command_step import (

@@ -109,7 +109,7 @@ def parse_build_notify(
     #   and they don't overlap.
     ret = []
     for index, elem in enumerate(value):
-        with JSONLoadError.context(f"[{index}]"):
+        with JSONLoadError.context(index=index):
             ret.append(_parse_notification(elem))
     return ret
 
@@ -119,9 +119,10 @@ def parse_step_notify(
 ) -> StepNotifyT:
     parsed = parse_build_notify(value)
     for index, elem in enumerate(parsed):
-        with JSONLoadError.context(f"[{index}]"):
-            if isinstance(elem, (EmailNotify, WebhookNotify, PagerdutyNotify)):
-                keyname = dataclasses.fields(elem)[1].name
-                # NB: It IS a valid _build_ notification though
-                raise JSONLoadError(f"`{keyname}` is not a valid step notification")
+        if isinstance(elem, (EmailNotify, WebhookNotify, PagerdutyNotify)):
+            keyname = dataclasses.fields(elem)[1].name
+            # NB: It IS a valid _build_ notification though
+            raise JSONLoadError(
+                f"`{keyname}` is not a valid step notification", index=index
+            )
     return parsed

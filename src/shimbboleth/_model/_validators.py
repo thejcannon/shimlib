@@ -16,6 +16,7 @@ from shimbboleth._model.validation import (
     Not,
     Ge,
     Le,
+    MaxLength,
     NonEmpty,
     Validator,
 )
@@ -31,8 +32,8 @@ class ListElementsValidator:
 
     def __call__(self, value: list):
         for index, element in enumerate(value):
-            for validator in self.element_validators:
-                with ValidationError.context(f"[{index}]"):
+            with ValidationError.context(index=index):
+                for validator in self.element_validators:
                     validator(element)
 
 
@@ -44,11 +45,15 @@ class DictValidator:
     def __call__(self, value: dict[K, Any]):
         for validator in self.keys_validators:
             for key in value.keys():
-                with ValidationError.context(f" (key {key!r})"):
+                try:
                     validator(key)
+                except ValidationError as e:
+                    e.qualifier = "key"
+                    raise
         for validator in self.values_validators:
             for key, value in value.items():
-                with ValidationError.context(f"[{key!r}]"):
+                assert isinstance(key, str)
+                with ValidationError.context(key=key):
                     validator(value)
 
 
@@ -128,7 +133,7 @@ def _get_generic_union_type_validators(
 
 
 def _get_annotation_arg_validators(argT) -> Iterable[Validator]:
-    if argT is NonEmpty or isinstance(argT, (MatchesRegex, Ge, Le)):
+    if argT is NonEmpty or isinstance(argT, (MatchesRegex, Ge, Le, MaxLength)):
         yield argT
     elif isinstance(argT, _NotGenericAlias):
         yield Not(list(_get_annotation_arg_validators(argT.inner)))
@@ -165,6 +170,7 @@ class ValidationDescriptor:
 
     def __set__(self, instance, value):
         for validator in self.validators:
-            with ValidationError.context("." + self.field_descriptor.__name__):
+            # @TODO: From JSON, this should be the JSON alias
+            with ValidationError.context(attr=self.field_descriptor.__name__):
                 validator(value)
         self.field_descriptor.__set__(instance, value)

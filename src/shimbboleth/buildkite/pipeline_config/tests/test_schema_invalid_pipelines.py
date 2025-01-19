@@ -1,6 +1,12 @@
 """
-@TODO: ...
+Tests using invalid pipelines (according to the schema).
 
+Most of this module is best described by reading `test_schema_valid_pipelines.py`'s docstring
+and flipping "valid" for "invalid". However there are some additions to this one:
+    - We test the error's given message
+    - We test the error's given "Path: "
+
+NOTE: (Same NOTE as in `test_schema_valid_pipelines.py`)
 """
 
 from shimbboleth.buildkite.pipeline_config import (
@@ -22,7 +28,7 @@ from pytest import param
 
 class PipelineTestBase:
     def test_fails_to_load(self, config, *, error, path):
-        # @TODO: ValidationError
+        # @TODO: ValidationError? InvalidValueError?
         with pytest.raises(Exception) as e:
             print(BuildkitePipeline.model_load(config))
         assert error in str(e.value)
@@ -30,7 +36,11 @@ class PipelineTestBase:
 
     def test_pipeline_invalid(self, config, *, error, path):
         with pytest.raises(jsonschema.exceptions.ValidationError):
-            jsonschema.validate(config, get_schema())
+            jsonschema.validate(
+                config,
+                get_schema(),
+                format_checker=jsonschema.Draft202012Validator.FORMAT_CHECKER,
+            )
 
 
 class StepTestBase(PipelineTestBase):
@@ -43,7 +53,6 @@ class StepTestBase(PipelineTestBase):
             {"steps": [step]}, error=error, path=f".steps[0]{path}"
         )
 
-    @pytest.mark.skip()
     def test_pipeline_invalid(self, step, steptype_param, *, error, path):  # type: ignore
         step = self.get_step(step, steptype_param)
         super().test_pipeline_invalid({"steps": [step]}, error=error, path=path)
@@ -243,10 +252,9 @@ class Test_ManualStep__InvalidSelectField(StepTestBase):
     [
         param(
             {"plugins": [{"key1": {}, "key2": {}}]},
-            "...",
+            "Expected `{'key1': {}, 'key2': {}}` to have only one key",
             ".plugins[0]",
             id="plugins_multiple_props",
-            marks=pytest.mark.xfail(reason="not implemented yet"),
         ),
         param(
             {"cache": {}},
@@ -324,6 +332,12 @@ class Test_CommandStep__Notify(StepTestBase):
             id="matrix_empty_setup",
         ),
         param(
+            {"setup": {}},
+            "Expected `{}` to be non-empty",
+            ".matrix.setup",
+            id="matrix_empty_setup",
+        ),
+        param(
             {"setup": [""], "adjustments": [{"with": {"": ""}}]},
             "Expected `str`, got `{'': ''}` of type `dict`",
             ".matrix.adjustments[0].with_value",
@@ -334,12 +348,6 @@ class Test_CommandStep__Notify(StepTestBase):
             "Expected `dict`, got `[]` of type `list`",
             ".matrix.adjustments[0].with_value",
             id="matrix_multi_mismatched_adj",
-        ),
-        param(
-            {"setup": {}},
-            "Expected `{}` to be non-empty",
-            ".matrix.setup",
-            id="matrix_empty_setup_dict",
         ),
         param(
             {"setup": [""], "adjustments": [{}]},
@@ -355,8 +363,8 @@ class Test_CommandStep__Notify(StepTestBase):
         ),
         param(
             {"setup": {"": []}},
-            "Expected `''` to match regex `^[a-zA-Z0-9_]+$",
-            ".matrix.setup (key '')",
+            "Expected key `''` to match regex `^[a-zA-Z0-9_]+$",
+            ".matrix.setup",
             id="matrix_bad_key",
         ),
     ],

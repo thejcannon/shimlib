@@ -52,14 +52,14 @@ class StepBase(Model):
         return val
 
 
-@StepBase._json_loader_("depends_on")
+@StepBase._json_loader_("depends_on", json_schema_type=str | list[str | Dependency])
 @staticmethod
 def _load_depends_on(value: str | list[str | JSONObject]) -> list[Dependency]:
     if isinstance(value, str):
         return [Dependency(step=value)]
     ret = []
     for index, elem in enumerate(value):
-        with JSONLoadError.context(f"[{index}]"):
+        with JSONLoadError.context(index=index):
             ret.append(
                 Dependency(step=elem)
                 if isinstance(elem, str)

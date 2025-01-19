@@ -1,4 +1,6 @@
 import pytest
+import json
+import httpx
 from dataclasses import dataclass
 from typing import TypeVar, Generic, Any
 
@@ -13,6 +15,9 @@ from shimbboleth.buildkite.pipeline_config import (
 from shimbboleth._model import Model
 
 T = TypeVar("T", bound=Model)
+
+UPSTREAM_JSON_SCHEMA_COMMIT = "2fbbfc199bd66c0ff64303a2d9c7072ad24f3ce3"
+UPSTREAM_JSON_SCHEMA_URL = f"https://raw.githubusercontent.com/buildkite/pipeline-schema/{UPSTREAM_JSON_SCHEMA_COMMIT}/schema.json"
 
 
 @dataclass(slots=True, frozen=True)
@@ -40,23 +45,30 @@ class StepTypeParam(Generic[T]):
 
 
 STEP_TYPE_PARAMS = {
-    "block": StepTypeParam(BlockStep, {"type": "block"}),
-    "command": StepTypeParam(CommandStep, {"type": "command"}),
-    "input": StepTypeParam(InputStep, {"type": "input"}),
-    "wait": StepTypeParam(WaitStep, {"type": "wait"}),
-    "trigger": StepTypeParam(TriggerStep, {"type": "trigger", "trigger": "trigger"}),
-    "group": StepTypeParam(GroupStep, {"group": "group", "steps": [WaitStep()]}),
+    "block": pytest.param(StepTypeParam(BlockStep, {"type": "block"}), id="block"),
+    "command": pytest.param(
+        StepTypeParam(CommandStep, {"type": "command"}), id="command"
+    ),
+    "input": pytest.param(StepTypeParam(InputStep, {"type": "input"}), id="input"),
+    "wait": pytest.param(StepTypeParam(WaitStep, {"type": "wait"}), id="wait"),
+    "trigger": pytest.param(
+        StepTypeParam(TriggerStep, {"type": "trigger", "trigger": "trigger"}),
+        id="trigger",
+    ),
+    "group": pytest.param(
+        StepTypeParam(GroupStep, {"group": "group", "steps": [WaitStep()]}), id="group"
+    ),
 }
 ALL_STEP_TYPE_PARAMS = [
-    pytest.param(step_type_param, id=step_type_param.cls.__name__)
-    for step_type_param in STEP_TYPE_PARAMS.values()
+    step_type_param for step_type_param in STEP_TYPE_PARAMS.values()
 ]
 ALL_SUBSTEP_TYPE_PARAMS = [
-    pytest.param(step_type_param, id=step_type_param.cls.__name__)
+    step_type_param
     for step_type_param in STEP_TYPE_PARAMS.values()
-    if step_type_param.stepname != "group"
+    if step_type_param.id != "group"
 ]
 
+# === Fixtures ===
 
 @pytest.fixture(params=ALL_STEP_TYPE_PARAMS)
 def all_step_types(request) -> StepTypeParam:
@@ -66,3 +78,18 @@ def all_step_types(request) -> StepTypeParam:
 @pytest.fixture(params=ALL_SUBSTEP_TYPE_PARAMS)
 def all_substep_types(request) -> StepTypeParam:
     return request.param
+
+
+# NB: Technically because of the caching this fixture is cache-scoped
+@pytest.fixture(scope="session")
+def pinned_bk_schema(pytestconfig) -> dict[str, Any]:
+    cache_key = f"BKSchema/schema.{UPSTREAM_JSON_SCHEMA_COMMIT}.json"
+    cached_schema = pytestconfig.cache.get(cache_key, None)
+    if cached_schema:
+        return cached_schema
+
+    response = httpx.get(UPSTREAM_JSON_SCHEMA_URL)
+    response.raise_for_status()
+    schema = response.json()
+    pytestconfig.cache.set(cache_key, schema)
+    return schema

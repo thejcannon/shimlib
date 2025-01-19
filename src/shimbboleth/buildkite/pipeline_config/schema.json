@@ -141,8 +141,7 @@
                     "type": "string"
                   },
                   {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/$defs/Dependency"
                   }
                 ]
               },
@@ -153,8 +152,17 @@
         "fields": {
           "default": [],
           "items": {
-            "additionalProperties": true,
-            "type": "object"
+            "oneOf": [
+              {
+                "$ref": "#/$defs/TextInput"
+              },
+              {
+                "$ref": "#/$defs/SingleSelectInput"
+              },
+              {
+                "$ref": "#/$defs/MultiSelectInput"
+              }
+            ]
           },
           "type": "array"
         },
@@ -415,8 +423,7 @@
                     "type": "string"
                   },
                   {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/$defs/Dependency"
                   }
                 ]
               },
@@ -574,6 +581,7 @@
                         }
                       ]
                     },
+                    "maxProperties": 1,
                     "type": "object"
                   }
                 ]
@@ -706,6 +714,32 @@
       "required": [],
       "type": "object"
     },
+    "Dependency": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_failure": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "step"
+      ],
+      "type": "object"
+    },
     "EmailNotify": {
       "additionalProperties": false,
       "properties": {
@@ -836,8 +870,7 @@
                     "type": "string"
                   },
                   {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/$defs/Dependency"
                   }
                 ]
               },
@@ -977,6 +1010,7 @@
               }
             ]
           },
+          "minItems": 1,
           "type": "array"
         }
       },
@@ -1030,8 +1064,7 @@
                     "type": "string"
                   },
                   {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/$defs/Dependency"
                   }
                 ]
               },
@@ -1042,8 +1075,17 @@
         "fields": {
           "default": [],
           "items": {
-            "additionalProperties": true,
-            "type": "object"
+            "oneOf": [
+              {
+                "$ref": "#/$defs/TextInput"
+              },
+              {
+                "$ref": "#/$defs/SingleSelectInput"
+              },
+              {
+                "$ref": "#/$defs/MultiSelectInput"
+              }
+            ]
           },
           "type": "array"
         },
@@ -1190,7 +1232,7 @@
             },
             "type": "array"
           },
-          "minLength": 1,
+          "minProperties": 1,
           "propertyNames": {
             "pattern": "^[a-zA-Z0-9_]+$"
           },
@@ -1255,6 +1297,80 @@
       },
       "required": [
         "with"
+      ],
+      "type": "object"
+    },
+    "MultiSelectInput": {
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hint": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key": {
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "type": "string"
+        },
+        "multiple": {
+          "enum": [
+            true,
+            "true"
+          ]
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/SelectOption"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "required": {
+          "default": true,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "select": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "select",
+        "options",
+        "multiple"
       ],
       "type": "object"
     },
@@ -1447,6 +1563,47 @@
       ],
       "type": "object"
     },
+    "SelectOption": {
+      "additionalProperties": false,
+      "properties": {
+        "hint": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ],
+      "type": "object"
+    },
     "SingleDimensionMatrix": {
       "additionalProperties": false,
       "properties": {
@@ -1471,12 +1628,80 @@
               }
             ]
           },
-          "minLength": 1,
+          "minItems": 1,
           "type": "array"
         }
       },
       "required": [
         "setup"
+      ],
+      "type": "object"
+    },
+    "SingleSelectInput": {
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hint": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key": {
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "type": "string"
+        },
+        "multiple": {
+          "default": false,
+          "enum": [
+            false,
+            "false"
+          ]
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/SelectOption"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "required": {
+          "default": true,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "select": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "select",
+        "options"
       ],
       "type": "object"
     },
@@ -1517,7 +1742,7 @@
           "items": {
             "type": "string"
           },
-          "minLength": 1,
+          "minItems": 1,
           "type": "array"
         },
         "message": {
@@ -1534,6 +1759,71 @@
       },
       "required": [
         "channels"
+      ],
+      "type": "object"
+    },
+    "TextInput": {
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "format": {
+          "default": null,
+          "oneOf": [
+            {
+              "format": "regex",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hint": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key": {
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "text"
       ],
       "type": "object"
     },
@@ -1606,8 +1896,7 @@
                     "type": "string"
                   },
                   {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/$defs/Dependency"
                   }
                 ]
               },
@@ -1814,8 +2103,7 @@
                     "type": "string"
                   },
                   {
-                    "additionalProperties": true,
-                    "type": "object"
+                    "$ref": "#/$defs/Dependency"
                   }
                 ]
               },
@@ -2035,6 +2323,7 @@
       "type": "object"
     }
   },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "oneOf": [
     {
       "$ref": "#/$defs/pipeline"

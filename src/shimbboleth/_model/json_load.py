@@ -214,7 +214,7 @@ def load_list(data: Any, *, field_type: GenericAlias) -> list[T]:
     (argT,) = field_type.__args__
     ret = []
     for index, item in enumerate(data):
-        with JSONLoadError.context(f"[{index}]"):
+        with JSONLoadError.context(index=index):
             ret.append(load(argT, data=item))
     return ret
 
@@ -222,10 +222,9 @@ def load_list(data: Any, *, field_type: GenericAlias) -> list[T]:
 def load_dict(data: Any, *, field_type: GenericAlias) -> dict:
     data = _ensure_is(data, dict)
     keyT, valueT = field_type.__args__
+    # @TODO: Context?
     return {
-        # @TODO: Mention key vs value in error
-        load(keyT, data=key): load(valueT, data=value)
-        for key, value in data.items()
+        load(keyT, data=key): load(valueT, data=value) for key, value in data.items()
     }
 
 
@@ -292,7 +291,7 @@ class _LoadModelHelper:
         )
 
         # @TODO: Use the alias in the context?
-        with JSONLoadError.context("." + field.name):
+        with JSONLoadError.context(attr=field.name):
             value = load(expected_type, data=data[field.name])
             if json_loader:
                 value = json_loader(value)

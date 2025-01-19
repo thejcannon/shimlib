@@ -6,10 +6,12 @@ import uuid
 import dataclasses
 
 from shimbboleth._model.model import Model
+from shimbboleth._model.json_dump import dump
 from shimbboleth._model._types import AnnotationType, LiteralType, GenericUnionType
 from shimbboleth._model.validation import (
     MatchesRegex,
     _NotGenericAlias,
+    MaxLength,
     NonEmpty,
     Ge,
     Le,
@@ -91,6 +93,8 @@ def _schema_annotation_type(annotation: Any, *, outer: Any) -> JSONObject:
         outer = getattr(outer, "__origin__", outer)
         if outer is list:
             return {"minItems": 1}
+        elif outer is dict:
+            return {"minProperties": 1}
         return {"minLength": 1}
     elif isinstance(annotation, Ge):
         return {"minimum": annotation.bound}
@@ -98,6 +102,9 @@ def _schema_annotation_type(annotation: Any, *, outer: Any) -> JSONObject:
         return {"maximum": annotation.bound}
     elif isinstance(annotation, _NotGenericAlias):
         return {"not": _schema_annotation_type(annotation.inner, outer=outer)}
+    elif isinstance(annotation, MaxLength):
+        # @TODO: List and str support
+        return {"maxProperties": annotation.limit}
     elif annotation is uuid.UUID:
         return {
             "type": "string",
@@ -164,9 +171,9 @@ class _ModelFieldSchemaHelper:
             field, model_defs=model_defs
         )
         if field.default is not dataclasses.MISSING:
-            field_schema["default"] = field.default
+            field_schema["default"] = dump(field.default)
         elif field.default_factory is not dataclasses.MISSING:
-            field_schema["default"] = field.default_factory()
+            field_schema["default"] = dump(field.default_factory())
         return field_schema
 
 

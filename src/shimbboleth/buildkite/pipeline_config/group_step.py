@@ -52,7 +52,7 @@ class GroupStep(StepBase, extra=False):
 
 @GroupStep._json_loader_(
     "steps",
-    json_schema_type=list[
+    json_schema_type=NonEmptyList[
         BlockStep
         | InputStep
         | CommandStep
