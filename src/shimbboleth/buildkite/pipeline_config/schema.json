@@ -1,0 +1,2335 @@
+{
+  "$defs": {
+    "AutomaticRetry": {
+      "additionalProperties": false,
+      "properties": {
+        "exit_status": {
+          "default": "*",
+          "oneOf": [
+            {
+              "enum": [
+                "*"
+              ]
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "limit": {
+          "default": null,
+          "oneOf": [
+            {
+              "maximum": 10,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "signal": {
+          "default": "*",
+          "type": "string"
+        },
+        "signal_reason": {
+          "default": "*",
+          "enum": [
+            "*",
+            "none",
+            "agent_refused",
+            "agent_stop",
+            "cancel",
+            "process_run_error",
+            "signature_rejected"
+          ]
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "BasecampCampfireNotify": {
+      "additionalProperties": false,
+      "properties": {
+        "basecamp_campfire": {
+          "type": "string"
+        },
+        "if": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "basecamp_campfire"
+      ],
+      "type": "object"
+    },
+    "BlockStep": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_dependency_failure": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "block": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "blocked_state": {
+          "default": "passed",
+          "enum": [
+            "passed",
+            "failed",
+            "running"
+          ]
+        },
+        "branches": {
+          "default": [],
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "depends_on": {
+          "default": [],
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/$defs/Dependency"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "fields": {
+          "default": [],
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/TextInput"
+              },
+              {
+                "$ref": "#/$defs/SingleSelectInput"
+              },
+              {
+                "$ref": "#/$defs/MultiSelectInput"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "id": {
+          "$ref": "#/$defs/BlockStep/properties/key"
+        },
+        "identifier": {
+          "$ref": "#/$defs/BlockStep/properties/key"
+        },
+        "if": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key": {
+          "default": null,
+          "oneOf": [
+            {
+              "not": {
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "type": "string"
+              },
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label": {
+          "$ref": "#/$defs/BlockStep/properties/block"
+        },
+        "name": {
+          "$ref": "#/$defs/BlockStep/properties/block"
+        },
+        "prompt": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": {
+          "default": "block",
+          "enum": [
+            "block",
+            "manual"
+          ]
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "CommandCache": {
+      "additionalProperties": true,
+      "properties": {
+        "name": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "size": {
+          "default": null,
+          "oneOf": [
+            {
+              "pattern": "^\\d+g$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "paths"
+      ],
+      "type": "object"
+    },
+    "CommandStep": {
+      "additionalProperties": false,
+      "properties": {
+        "agents": {
+          "default": {},
+          "oneOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "additionalProperties": true,
+              "type": "object"
+            }
+          ]
+        },
+        "allow_dependency_failure": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "artifact_paths": {
+          "default": [],
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "branches": {
+          "default": [],
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "cache": {
+          "default": {
+            "paths": []
+          },
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/CommandCache"
+            }
+          ]
+        },
+        "cancel_on_build_failing": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "command": {
+          "default": [],
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "commands": {
+          "$ref": "#/$defs/CommandStep/properties/command"
+        },
+        "concurrency": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "concurrency_group": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "concurrency_method": {
+          "default": null,
+          "oneOf": [
+            {
+              "enum": [
+                "ordered",
+                "eager"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "depends_on": {
+          "default": [],
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/$defs/Dependency"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "env": {
+          "additionalProperties": true,
+          "default": {},
+          "type": "object"
+        },
+        "id": {
+          "$ref": "#/$defs/CommandStep/properties/key"
+        },
+        "identifier": {
+          "$ref": "#/$defs/CommandStep/properties/key"
+        },
+        "if": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key": {
+          "default": null,
+          "oneOf": [
+            {
+              "not": {
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "type": "string"
+              },
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "matrix": {
+          "default": null,
+          "oneOf": [
+            {
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "boolean"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/SingleDimensionMatrix"
+            },
+            {
+              "$ref": "#/$defs/MultiDimensionMatrix"
+            }
+          ]
+        },
+        "name": {
+          "$ref": "#/$defs/CommandStep/properties/label"
+        },
+        "notify": {
+          "default": [],
+          "items": {
+            "oneOf": [
+              {
+                "enum": [
+                  "github_check",
+                  "github_commit_status"
+                ]
+              },
+              {
+                "$ref": "#/$defs/BasecampCampfireNotify"
+              },
+              {
+                "$ref": "#/$defs/SlackNotify"
+              },
+              {
+                "$ref": "#/$defs/GitHubCommitStatusNotify"
+              },
+              {
+                "$ref": "#/$defs/GitHubCheckNotify"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "parallelism": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plugins": {
+          "default": [],
+          "oneOf": [
+            {
+              "additionalProperties": {
+                "oneOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            {
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "additionalProperties": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": true,
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "maxProperties": 1,
+                    "type": "object"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "priority": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retry": {
+          "default": null,
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RetryConditions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "signature": {
+          "default": null,
+          "oneOf": [
+            {
+              "$ref": "#/$defs/CommandStepSignature"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "skip": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "soft_fail": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/ExitStatus"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "timeout_in_minutes": {
+          "default": null,
+          "oneOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": {
+          "default": "command",
+          "enum": [
+            "script",
+            "command",
+            "commands"
+          ]
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "CommandStepSignature": {
+      "additionalProperties": true,
+      "properties": {
+        "algorithm": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "signed_fields": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "value": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "Dependency": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_failure": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "step": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "step"
+      ],
+      "type": "object"
+    },
+    "EmailNotify": {
+      "additionalProperties": false,
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "if": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "email"
+      ],
+      "type": "object"
+    },
+    "ExitStatus": {
+      "additionalProperties": true,
+      "properties": {
+        "exit_status": {
+          "oneOf": [
+            {
+              "enum": [
+                "*"
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        }
+      },
+      "required": [
+        "exit_status"
+      ],
+      "type": "object"
+    },
+    "GitHubCheckNotify": {
+      "additionalProperties": false,
+      "properties": {
+        "github_check": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "github_check"
+      ],
+      "type": "object"
+    },
+    "GitHubCommitStatusInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "context": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "GitHubCommitStatusNotify": {
+      "additionalProperties": false,
+      "properties": {
+        "github_commit_status": {
+          "$ref": "#/$defs/GitHubCommitStatusInfo"
+        },
+        "if": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "github_commit_status"
+      ],
+      "type": "object"
+    },
+    "GroupStep": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_dependency_failure": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "depends_on": {
+          "default": [],
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/$defs/Dependency"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "group": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/GroupStep/properties/key"
+        },
+        "identifier": {
+          "$ref": "#/$defs/GroupStep/properties/key"
+        },
+        "if": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key": {
+          "default": null,
+          "oneOf": [
+            {
+              "not": {
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "type": "string"
+              },
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label": {
+          "$ref": "#/$defs/GroupStep/properties/group"
+        },
+        "name": {
+          "$ref": "#/$defs/GroupStep/properties/group"
+        },
+        "notify": {
+          "default": [],
+          "items": {
+            "oneOf": [
+              {
+                "enum": [
+                  "github_check",
+                  "github_commit_status"
+                ]
+              },
+              {
+                "$ref": "#/$defs/BasecampCampfireNotify"
+              },
+              {
+                "$ref": "#/$defs/SlackNotify"
+              },
+              {
+                "$ref": "#/$defs/GitHubCommitStatusNotify"
+              },
+              {
+                "$ref": "#/$defs/GitHubCheckNotify"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "skip": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "steps": {
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/BlockStep"
+              },
+              {
+                "$ref": "#/$defs/InputStep"
+              },
+              {
+                "$ref": "#/$defs/CommandStep"
+              },
+              {
+                "$ref": "#/$defs/WaitStep"
+              },
+              {
+                "$ref": "#/$defs/TriggerStep"
+              },
+              {
+                "$ref": "#/$defs/NestedWaitStep"
+              },
+              {
+                "$ref": "#/$defs/NestedInputStep"
+              },
+              {
+                "$ref": "#/$defs/NestedBlockStep"
+              },
+              {
+                "$ref": "#/$defs/NestedCommandStep"
+              },
+              {
+                "$ref": "#/$defs/NestedTriggerStep"
+              },
+              {
+                "enum": [
+                  "block",
+                  "manual",
+                  "input",
+                  "command",
+                  "commands",
+                  "script",
+                  "wait",
+                  "waiter"
+                ]
+              }
+            ]
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "group",
+        "steps"
+      ],
+      "type": "object"
+    },
+    "InputStep": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_dependency_failure": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "branches": {
+          "default": [],
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "depends_on": {
+          "default": [],
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/$defs/Dependency"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "fields": {
+          "default": [],
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/TextInput"
+              },
+              {
+                "$ref": "#/$defs/SingleSelectInput"
+              },
+              {
+                "$ref": "#/$defs/MultiSelectInput"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "id": {
+          "$ref": "#/$defs/InputStep/properties/key"
+        },
+        "identifier": {
+          "$ref": "#/$defs/InputStep/properties/key"
+        },
+        "if": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "input": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key": {
+          "default": null,
+          "oneOf": [
+            {
+              "not": {
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "type": "string"
+              },
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label": {
+          "$ref": "#/$defs/InputStep/properties/input"
+        },
+        "name": {
+          "$ref": "#/$defs/InputStep/properties/input"
+        },
+        "prompt": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": {
+          "default": "input",
+          "enum": [
+            "input"
+          ]
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "ManualRetry": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed": {
+          "default": true,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "permit_on_passed": {
+          "default": true,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "reason": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "MultiDimensionMatrix": {
+      "additionalProperties": false,
+      "properties": {
+        "adjustments": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MultiDimensionMatrixAdjustment"
+          },
+          "type": "array"
+        },
+        "setup": {
+          "additionalProperties": {
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[a-zA-Z0-9_]+$"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "setup"
+      ],
+      "type": "object"
+    },
+    "MultiDimensionMatrixAdjustment": {
+      "additionalProperties": false,
+      "properties": {
+        "skip": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "soft_fail": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/ExitStatus"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "with": {
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "with"
+      ],
+      "type": "object"
+    },
+    "MultiSelectInput": {
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hint": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key": {
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "type": "string"
+        },
+        "multiple": {
+          "enum": [
+            true,
+            "true"
+          ]
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/SelectOption"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "required": {
+          "default": true,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "select": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "select",
+        "options",
+        "multiple"
+      ],
+      "type": "object"
+    },
+    "NestedBlockStep": {
+      "additionalProperties": false,
+      "properties": {
+        "block": {
+          "$ref": "#/$defs/BlockStep"
+        },
+        "manual": {
+          "$ref": "#/$defs/NestedBlockStep/properties/block"
+        }
+      },
+      "required": [
+        "block"
+      ],
+      "type": "object"
+    },
+    "NestedCommandStep": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "$ref": "#/$defs/CommandStep"
+        },
+        "commands": {
+          "$ref": "#/$defs/NestedCommandStep/properties/command"
+        },
+        "script": {
+          "$ref": "#/$defs/NestedCommandStep/properties/command"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    "NestedInputStep": {
+      "additionalProperties": false,
+      "properties": {
+        "input": {
+          "$ref": "#/$defs/InputStep"
+        }
+      },
+      "required": [
+        "input"
+      ],
+      "type": "object"
+    },
+    "NestedTriggerStep": {
+      "additionalProperties": false,
+      "properties": {
+        "trigger": {
+          "$ref": "#/$defs/TriggerStep"
+        }
+      },
+      "required": [
+        "trigger"
+      ],
+      "type": "object"
+    },
+    "NestedWaitStep": {
+      "additionalProperties": false,
+      "properties": {
+        "wait": {
+          "$ref": "#/$defs/WaitStep"
+        },
+        "waiter": {
+          "$ref": "#/$defs/NestedWaitStep/properties/wait"
+        }
+      },
+      "required": [
+        "wait"
+      ],
+      "type": "object"
+    },
+    "PagerdutyNotify": {
+      "additionalProperties": false,
+      "properties": {
+        "if": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pagerduty_change_event": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "pagerduty_change_event"
+      ],
+      "type": "object"
+    },
+    "RetryConditions": {
+      "additionalProperties": false,
+      "properties": {
+        "automatic": {
+          "default": [
+            {
+              "limit": 2
+            }
+          ],
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            {
+              "$ref": "#/$defs/AutomaticRetry"
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/AutomaticRetry"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "manual": {
+          "default": {},
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            {
+              "$ref": "#/$defs/ManualRetry"
+            }
+          ]
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "ScalarAdjustment": {
+      "additionalProperties": false,
+      "properties": {
+        "skip": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "soft_fail": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/ExitStatus"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "with": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "with"
+      ],
+      "type": "object"
+    },
+    "SelectOption": {
+      "additionalProperties": false,
+      "properties": {
+        "hint": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ],
+      "type": "object"
+    },
+    "SingleDimensionMatrix": {
+      "additionalProperties": false,
+      "properties": {
+        "adjustments": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ScalarAdjustment"
+          },
+          "type": "array"
+        },
+        "setup": {
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "setup"
+      ],
+      "type": "object"
+    },
+    "SingleSelectInput": {
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hint": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key": {
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "type": "string"
+        },
+        "multiple": {
+          "default": false,
+          "enum": [
+            false,
+            "false"
+          ]
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/SelectOption"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "required": {
+          "default": true,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "select": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "select",
+        "options"
+      ],
+      "type": "object"
+    },
+    "SlackNotify": {
+      "additionalProperties": false,
+      "properties": {
+        "if": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "slack": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/SlackNotifyInfo"
+            }
+          ]
+        }
+      },
+      "required": [
+        "slack"
+      ],
+      "type": "object"
+    },
+    "SlackNotifyInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "channels": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "message": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "channels"
+      ],
+      "type": "object"
+    },
+    "TextInput": {
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "format": {
+          "default": null,
+          "oneOf": [
+            {
+              "format": "regex",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hint": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key": {
+          "pattern": "^[a-zA-Z0-9-_]+$",
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "text"
+      ],
+      "type": "object"
+    },
+    "TriggerStep": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_dependency_failure": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "async": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "branches": {
+          "default": [],
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "build": {
+          "default": null,
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TriggeredBuild"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "depends_on": {
+          "default": [],
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/$defs/Dependency"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/TriggerStep/properties/key"
+        },
+        "identifier": {
+          "$ref": "#/$defs/TriggerStep/properties/key"
+        },
+        "if": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key": {
+          "default": null,
+          "oneOf": [
+            {
+              "not": {
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "type": "string"
+              },
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "$ref": "#/$defs/TriggerStep/properties/label"
+        },
+        "skip": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "soft_fail": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "trigger": {
+          "type": "string"
+        },
+        "type": {
+          "default": "trigger",
+          "enum": [
+            "trigger"
+          ]
+        }
+      },
+      "required": [
+        "trigger"
+      ],
+      "type": "object"
+    },
+    "TriggeredBuild": {
+      "additionalProperties": false,
+      "properties": {
+        "branch": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "commit": {
+          "default": "HEAD",
+          "type": "string"
+        },
+        "env": {
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "default": {},
+          "type": "object"
+        },
+        "message": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "meta_data": {
+          "additionalProperties": true,
+          "default": {},
+          "type": "object"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "WaitStep": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_dependency_failure": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "branches": {
+          "default": [],
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "continue_on_failure": {
+          "default": false,
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          ]
+        },
+        "depends_on": {
+          "default": [],
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/$defs/Dependency"
+                  }
+                ]
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/WaitStep/properties/key"
+        },
+        "identifier": {
+          "$ref": "#/$defs/WaitStep/properties/key"
+        },
+        "if": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "key": {
+          "default": null,
+          "oneOf": [
+            {
+              "not": {
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "type": "string"
+              },
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "label": {
+          "$ref": "#/$defs/WaitStep/properties/wait"
+        },
+        "name": {
+          "$ref": "#/$defs/WaitStep/properties/wait"
+        },
+        "type": {
+          "default": "wait",
+          "enum": [
+            "wait",
+            "waiter"
+          ]
+        },
+        "wait": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "WebhookNotify": {
+      "additionalProperties": false,
+      "properties": {
+        "if": {
+          "default": null,
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "webhook": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "webhook"
+      ],
+      "type": "object"
+    },
+    "pipeline": {
+      "additionalProperties": true,
+      "properties": {
+        "agents": {
+          "default": {},
+          "oneOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "additionalProperties": true,
+              "type": "object"
+            }
+          ]
+        },
+        "env": {
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "default": {},
+          "type": "object"
+        },
+        "notify": {
+          "default": [],
+          "items": {
+            "oneOf": [
+              {
+                "enum": [
+                  "github_check",
+                  "github_commit_status"
+                ]
+              },
+              {
+                "$ref": "#/$defs/EmailNotify"
+              },
+              {
+                "$ref": "#/$defs/BasecampCampfireNotify"
+              },
+              {
+                "$ref": "#/$defs/SlackNotify"
+              },
+              {
+                "$ref": "#/$defs/WebhookNotify"
+              },
+              {
+                "$ref": "#/$defs/PagerdutyNotify"
+              },
+              {
+                "$ref": "#/$defs/GitHubCommitStatusNotify"
+              },
+              {
+                "$ref": "#/$defs/GitHubCheckNotify"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "steps": {
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/BlockStep"
+              },
+              {
+                "$ref": "#/$defs/InputStep"
+              },
+              {
+                "$ref": "#/$defs/CommandStep"
+              },
+              {
+                "$ref": "#/$defs/WaitStep"
+              },
+              {
+                "$ref": "#/$defs/TriggerStep"
+              },
+              {
+                "$ref": "#/$defs/GroupStep"
+              },
+              {
+                "$ref": "#/$defs/NestedWaitStep"
+              },
+              {
+                "$ref": "#/$defs/NestedInputStep"
+              },
+              {
+                "$ref": "#/$defs/NestedBlockStep"
+              },
+              {
+                "$ref": "#/$defs/NestedCommandStep"
+              },
+              {
+                "$ref": "#/$defs/NestedTriggerStep"
+              },
+              {
+                "enum": [
+                  "block",
+                  "manual",
+                  "input",
+                  "command",
+                  "commands",
+                  "script",
+                  "wait",
+                  "waiter"
+                ]
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "steps"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/pipeline"
+    },
+    {
+      "$ref": "#/$defs/pipeline/properties/steps"
+    }
+  ]
+}
