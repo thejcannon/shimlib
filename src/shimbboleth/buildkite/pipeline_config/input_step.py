@@ -2,7 +2,7 @@ from typing import Literal
 from typing_extensions import ClassVar
 
 from shimbboleth.internal.clay import FieldAlias
-from ._manual_step import ManualStepBase, field
+from shimbboleth.buildkite.pipeline_config._manual_step import ManualStepBase, field
 
 
 class InputStep(ManualStepBase, extra=False):

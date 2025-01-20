@@ -3,13 +3,13 @@ from typing import Any
 from shimbboleth.internal.clay.jsonT import JSONObject
 from shimbboleth.internal.clay.validation import InvalidValueError
 
-from .block_step import BlockStep
-from .input_step import InputStep
-from .wait_step import WaitStep
-from .trigger_step import TriggerStep
-from .command_step import CommandStep
-from .group_step import GroupStep
-from ._nested_steps import (
+from shimbboleth.buildkite.pipeline_config.block_step import BlockStep
+from shimbboleth.buildkite.pipeline_config.input_step import InputStep
+from shimbboleth.buildkite.pipeline_config.wait_step import WaitStep
+from shimbboleth.buildkite.pipeline_config.trigger_step import TriggerStep
+from shimbboleth.buildkite.pipeline_config.command_step import CommandStep
+from shimbboleth.buildkite.pipeline_config.group_step import GroupStep
+from shimbboleth.buildkite.pipeline_config._nested_steps import (
     NestedWaitStep,
     NestedInputStep,
     NestedBlockStep,

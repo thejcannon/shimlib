@@ -11,7 +11,11 @@ from typing import TypeAlias, Literal, Annotated
 
 from shimbboleth.internal.clay import Model, field, NonEmptyList, Not, NonEmptyDict
 from shimbboleth.internal.clay.validation import MatchesRegex
-from ._types import skip_from_json, soft_fail_from_json, soft_fail_to_json
+from shimbboleth.buildkite.pipeline_config._types import (
+    skip_from_json,
+    soft_fail_from_json,
+    soft_fail_to_json,
+)
 
 
 MatrixElementT: TypeAlias = str | int | bool

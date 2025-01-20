@@ -1,9 +1,8 @@
 from shimbboleth.internal.clay.jsonT import JSONObject
 
-from ._types import rubystr
+from shimbboleth.buildkite.pipeline_config._types import rubystr
 
 
-# @TODO: "Any" == JSON
 # @TODO: "list[str]" seems to just ignore non-strings? (on command)
 # @TODO: BK stores things in "k=v" format. What if there's duplicate keys?
 #   Oh God, I think they just pass those right along...

@@ -13,9 +13,9 @@ from shimbboleth.internal.clay import (
 from shimbboleth.internal.clay.jsonT import JSONObject
 from shimbboleth.internal.clay.validation import SingleKeyDict, ValidationError
 
-from ._base import StepBase
-from ._agents import agents_from_json
-from ._types import (
+from shimbboleth.buildkite.pipeline_config._base import StepBase
+from shimbboleth.buildkite.pipeline_config._agents import agents_from_json
+from shimbboleth.buildkite.pipeline_config._types import (
     list_str_from_json,
     bool_from_json,
     rubystr,
@@ -23,10 +23,8 @@ from ._types import (
     soft_fail_from_json,
     soft_fail_to_json,
 )
-from ._notify import (
-    StepNotifyT,
-)
-from ._matrix import (
+from shimbboleth.buildkite.pipeline_config._notify import StepNotifyT
+from shimbboleth.buildkite.pipeline_config._matrix import (
     MatrixArray,
     SingleDimensionMatrix,
     MultiDimensionMatrix,

@@ -5,22 +5,20 @@ from shimbboleth.internal.clay import field, FieldAlias, NonEmptyList
 from shimbboleth.internal.clay.jsonT import JSONArray, JSONObject
 from shimbboleth.buildkite.pipeline_config._types import skip_from_json
 
-from ._nested_steps import (
+from shimbboleth.buildkite.pipeline_config._nested_steps import (
     NestedWaitStep,
     NestedInputStep,
     NestedBlockStep,
     NestedCommandStep,
     NestedTriggerStep,
 )
-from .block_step import BlockStep
-from .input_step import InputStep
-from .wait_step import WaitStep
-from .trigger_step import TriggerStep
-from .command_step import CommandStep
-from ._notify import (
-    StepNotifyT,
-)
-from ._base import StepBase
+from shimbboleth.buildkite.pipeline_config.block_step import BlockStep
+from shimbboleth.buildkite.pipeline_config.input_step import InputStep
+from shimbboleth.buildkite.pipeline_config.wait_step import WaitStep
+from shimbboleth.buildkite.pipeline_config.trigger_step import TriggerStep
+from shimbboleth.buildkite.pipeline_config.command_step import CommandStep
+from shimbboleth.buildkite.pipeline_config._notify import StepNotifyT
+from shimbboleth.buildkite.pipeline_config._base import StepBase
 
 
 class GroupStep(StepBase, extra=False):

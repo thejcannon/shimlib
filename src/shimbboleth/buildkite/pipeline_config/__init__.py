@@ -5,24 +5,24 @@ from shimbboleth.internal.clay import Model, field
 from shimbboleth.internal.clay.jsonT import JSONArray, JSONObject
 from shimbboleth.internal.clay.validation import InvalidValueError
 
-from ._agents import agents_from_json
-from .block_step import BlockStep
-from .input_step import InputStep
-from .wait_step import WaitStep
-from .trigger_step import TriggerStep
-from .command_step import CommandStep
-from ._types import rubystr
-from .group_step import GroupStep
-from ._notify import BuildNotifyT
-from ._nested_steps import (
+from shimbboleth.buildkite.pipeline_config._agents import agents_from_json
+from shimbboleth.buildkite.pipeline_config.block_step import BlockStep
+from shimbboleth.buildkite.pipeline_config.input_step import InputStep
+from shimbboleth.buildkite.pipeline_config.wait_step import WaitStep
+from shimbboleth.buildkite.pipeline_config.trigger_step import TriggerStep
+from shimbboleth.buildkite.pipeline_config.command_step import CommandStep
+from shimbboleth.buildkite.pipeline_config._types import rubystr
+from shimbboleth.buildkite.pipeline_config.group_step import GroupStep
+from shimbboleth.buildkite.pipeline_config._notify import BuildNotifyT
+from shimbboleth.buildkite.pipeline_config._nested_steps import (
     NestedWaitStep,
     NestedInputStep,
     NestedBlockStep,
     NestedCommandStep,
     NestedTriggerStep,
 )
-from ._parse_steps import parse_steps
-from ._base import Dependency as Dependency
+from shimbboleth.buildkite.pipeline_config._parse_steps import parse_steps
+from shimbboleth.buildkite.pipeline_config._base import Dependency as Dependency
 
 ALL_STEP_TYPES = (
     BlockStep,

@@ -1,12 +1,11 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, overload
 import re
-from typing_extensions import overload
 from shimbboleth.internal.clay import MatchesRegex, field, Model, NonEmptyList
 from shimbboleth.internal.clay.jsonT import JSONObject
 from shimbboleth.internal.clay.validation import InvalidValueError
-from ._types import bool_from_json
-from ._types import list_str_from_json
-from ._base import StepBase
+from shimbboleth.buildkite.pipeline_config._types import bool_from_json
+from shimbboleth.buildkite.pipeline_config._types import list_str_from_json
+from shimbboleth.buildkite.pipeline_config._base import StepBase
 
 
 class _OptionBaseModel(Model):

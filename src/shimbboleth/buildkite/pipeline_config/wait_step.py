@@ -3,8 +3,11 @@ from typing import ClassVar, Literal
 
 from shimbboleth.internal.clay import FieldAlias, field
 
-from ._types import list_str_from_json, bool_from_json
-from ._base import StepBase
+from shimbboleth.buildkite.pipeline_config._types import (
+    list_str_from_json,
+    bool_from_json,
+)
+from shimbboleth.buildkite.pipeline_config._base import StepBase
 
 
 class WaitStep(StepBase, extra=False):

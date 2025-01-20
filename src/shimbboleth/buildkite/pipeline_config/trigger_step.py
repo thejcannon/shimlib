@@ -4,8 +4,12 @@ from typing import Literal, ClassVar
 from shimbboleth.internal.clay import field, FieldAlias, Model
 from shimbboleth.internal.clay.jsonT import JSONObject
 
-from ._base import StepBase
-from ._types import bool_from_json, list_str_from_json, skip_from_json
+from shimbboleth.buildkite.pipeline_config._base import StepBase
+from shimbboleth.buildkite.pipeline_config._types import (
+    bool_from_json,
+    list_str_from_json,
+    skip_from_json,
+)
 
 
 class TriggeredBuild(Model, extra=False):
