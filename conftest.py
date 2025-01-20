@@ -23,6 +23,7 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "integration: mark test as integration (run with `--integration`)"
     )
+    config.addinivalue_line("markers", "meta(**kwargs): Attach metadata to a test")
 
 
 def pytest_runtest_setup(item):

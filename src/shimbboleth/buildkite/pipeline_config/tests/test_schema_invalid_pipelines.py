@@ -25,20 +25,36 @@ from pytest import param
 
 # @TODO: Tests for extra keys!
 
+UPSTREAM_SCHEMA_INVALID = pytest.mark.meta(upstream_schema_valid=False)
+
 
 class PipelineTestBase:
-    def test_fails_to_load(self, config, *, error, path):
+    def test_model_load(self, config, *, error, path):
         # @TODO: ValidationError? InvalidValueError?
         with pytest.raises(Exception) as e:
             print(BuildkitePipeline.model_load(config))
         assert error in str(e.value)
         assert f"Path: {path}\n" in str(e.value) + "\n"
 
-    def test_pipeline_invalid(self, config, *, error, path):
+    def test_generated_json_schema(self, config, *, error, path):
         with pytest.raises(jsonschema.exceptions.ValidationError):
             jsonschema.validate(
                 config,
                 get_schema(),
+                format_checker=jsonschema.Draft202012Validator.FORMAT_CHECKER,
+            )
+
+    def test_upstream_json_schema(
+        self, config, pinned_bk_schema, request, *, error, path
+    ):
+        meta = request.node.get_closest_marker("meta")
+        if meta and not meta.kwargs.get("upstream_schema_valid", True):
+            pytest.xfail("Upstream bug")
+
+        with pytest.raises(jsonschema.exceptions.ValidationError):
+            jsonschema.validate(
+                config,
+                pinned_bk_schema,
                 format_checker=jsonschema.Draft202012Validator.FORMAT_CHECKER,
             )
 
@@ -47,15 +63,25 @@ class StepTestBase(PipelineTestBase):
     def get_step(self, step, steptype_param):
         return {**step, "type": steptype_param.stepname}
 
-    def test_fails_to_load(self, step, steptype_param, *, error, path):  # type: ignore
+    def test_model_load(self, step, steptype_param, *, error, path):  # type: ignore
         step = self.get_step(step, steptype_param)
-        super().test_fails_to_load(
-            {"steps": [step]}, error=error, path=f".steps[0]{path}"
-        )
+        super().test_model_load({"steps": [step]}, error=error, path=f".steps[0]{path}")
 
-    def test_pipeline_invalid(self, step, steptype_param, *, error, path):  # type: ignore
+    def test_generated_json_schema(self, step, steptype_param, *, error, path):  # type: ignore
         step = self.get_step(step, steptype_param)
-        super().test_pipeline_invalid({"steps": [step]}, error=error, path=path)
+        super().test_generated_json_schema({"steps": [step]}, error=error, path=path)
+
+    def test_upstream_json_schema(  # type: ignore
+        self, step, steptype_param, pinned_bk_schema, request, *, error, path
+    ):
+        step = self.get_step(step, steptype_param)
+        super().test_upstream_json_schema(
+            {"steps": [step]},
+            pinned_bk_schema=pinned_bk_schema,
+            request=request,
+            error=error,
+            path=path,
+        )
 
 
 @pytest.mark.parametrize(
@@ -94,6 +120,7 @@ class StepTestBase(PipelineTestBase):
             "Expected `[]` to be non-empty",
             ".notify[0].slack.channels",
             id="notify_slack_empty_channels",
+            marks=UPSTREAM_SCHEMA_INVALID,
         ),
     ],
 )
@@ -116,6 +143,7 @@ class Test_InvalidPipeline(PipelineTestBase):
             "`Dependency` missing 1 required fields: `step`",
             ".depends_on[0]",
             id="depends_on_missing_step",
+            marks=UPSTREAM_SCHEMA_INVALID,
         ),
     ],
 )
@@ -220,6 +248,7 @@ class Test_ManualStep__InvalidTextField(StepTestBase):
             "`default` cannot be a list when `multiple` is `False`",
             ".fields[0]",
             id="single_select_list_default",
+            marks=UPSTREAM_SCHEMA_INVALID,
         ),
         param(
             {"select": "select", "options": [{"label": "label", "value": "value"}]},
@@ -313,6 +342,7 @@ class Test_CommandStep(StepTestBase):
             "Expected `[]` to be non-empty",
             ".notify[0].slack.channels",
             id="notify_slack_empty",
+            marks=UPSTREAM_SCHEMA_INVALID,
         ),
     ],
 )
@@ -330,18 +360,21 @@ class Test_CommandStep__Notify(StepTestBase):
             "Expected `[]` to be non-empty",
             ".matrix.setup",
             id="matrix_empty_setup",
+            marks=UPSTREAM_SCHEMA_INVALID,
         ),
         param(
             {"setup": {}},
             "Expected `{}` to be non-empty",
             ".matrix.setup",
             id="matrix_empty_setup",
+            marks=UPSTREAM_SCHEMA_INVALID,
         ),
         param(
             {"setup": [""], "adjustments": [{"with": {"": ""}}]},
             "Expected `str`, got `{'': ''}` of type `dict`",
             ".matrix.adjustments[0].with_value",
             id="matrix_single_mismatched_adj",
+            marks=UPSTREAM_SCHEMA_INVALID,
         ),
         param(
             {"setup": {"": []}, "adjustments": [{"with": []}]},
@@ -422,24 +455,28 @@ class Test_GroupStep(StepTestBase):
             "`email` is not a valid step notification",
             ".notify[0]",
             id="notify_email",
+            marks=UPSTREAM_SCHEMA_INVALID,
         ),
         param(
             [{"webhook": "https://example.com"}],
             "`webhook` is not a valid step notification",
             ".notify[0]",
             id="notify_webhook",
+            marks=UPSTREAM_SCHEMA_INVALID,
         ),
         param(
             [{"pagerduty_change_event": "pagerduty_change_event"}],
             "`pagerduty_change_event` is not a valid step notification",
             ".notify[0]",
             id="notify_pagerduty",
+            marks=UPSTREAM_SCHEMA_INVALID,
         ),
         param(
             [{"slack": {"channels": []}}],
             "Expected `[]` to be non-empty",
             ".notify[0].slack.channels",
             id="notify_slack_empty",
+            marks=UPSTREAM_SCHEMA_INVALID,
         ),
     ],
 )

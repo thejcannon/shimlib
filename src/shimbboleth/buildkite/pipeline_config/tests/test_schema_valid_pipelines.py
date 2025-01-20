@@ -48,6 +48,8 @@ BASECAMP_CAMPFIRE_URL = "https://3.basecamp.com/1234567/integrations/qwertyuiop/
 BOOLVALS = ("true", "false", True, False)
 SKIP_VALS = (True, "true", False, "false", "", "reason")
 
+UPSTREAM_SCHEMA_INVALID = pytest.mark.meta(upstream_schema_valid=False)
+
 
 class PipelineTestBase:
     def test_model_load(self, config):
@@ -56,16 +58,19 @@ class PipelineTestBase:
     def test_generated_json_schema(self, config):
         jsonschema.validate(config, get_schema())
 
-    def test_upstream_json_schema(self, config, pinned_bk_schema):
+    def test_upstream_json_schema(self, config, pinned_bk_schema, request):
+        meta = request.node.get_closest_marker("meta")
+        if meta and not meta.kwargs.get("upstream_schema_valid", True):
+            pytest.xfail("Upstream bug")
+
         # @UPSTREAM: No support for non-object pipelines
         if not isinstance(config, dict):
             config = {"steps": config}
         jsonschema.validate(config, pinned_bk_schema)
 
-    # @TODO: What do I wanna name this? Integration? Upstream? Internet?
     @pytest.mark.integration
     def test_upstream_API(self, config):
-        pass
+        pass  # @TODO: Implement
 
 
 class StepTestBase:
@@ -80,15 +85,22 @@ class StepTestBase:
         """
         return {**step, **steptype_param.dumped_default}
 
-    def test_load_pipeline(self, step, steptype_param):
+    def test_model_load(self, step, steptype_param):
         step = self.get_step(step, steptype_param)
         BuildkitePipeline.model_load({"steps": [step]})
 
-    def test_pipeline_valid(self, step, steptype_param):
+    def test_generated_json_schema(self, step, steptype_param):
         step = self.get_step(step, steptype_param)
         jsonschema.validate({"steps": [step]}, get_schema())
 
-    def test_upstream_json_schema(self, step, steptype_param, pinned_bk_schema):
+    def test_upstream_json_schema(
+        self, step, steptype_param, pinned_bk_schema, request
+    ):
+        meta = request.node.get_closest_marker("meta")
+        if meta and not meta.kwargs.get("upstream_schema_valid", True):
+            pytest.xfail("Upstream bug")
+
+        step = self.get_step(step, steptype_param)
         jsonschema.validate({"steps": [step]}, pinned_bk_schema)
 
     @pytest.mark.integration
@@ -101,17 +113,18 @@ class StepTestBase:
     [
         param([], id="empty-steps"),
         param(["block"], id="string-block"),
-        param(["manual"], id="string-manual"),
-        param(["command"], id="string-manual"),
-        param(["commands"], id="string-commands"),
-        param(["script"], id="string-script"),
+        param(["manual"], id="string-manual", marks=UPSTREAM_SCHEMA_INVALID),
+        param(["command"], id="string-command", marks=UPSTREAM_SCHEMA_INVALID),
+        param(["commands"], id="string-commands", marks=UPSTREAM_SCHEMA_INVALID),
+        param(["script"], id="string-script", marks=UPSTREAM_SCHEMA_INVALID),
         param(["input"], id="string-input"),
         param(["wait"], id="string-wait"),
         param(["waiter"], id="string-waiter"),
-        param([{"block": None}], id="block-null"),
+        param([{"block": None}], id="block-null", marks=UPSTREAM_SCHEMA_INVALID),
+        # @TODO: Is this valid?
         # param([{"command": None}], id="command-null"),
-        param([{"input": None}], id="input-null"),
-        param([{"wait": None}], id="wait-null"),
+        param([{"input": None}], id="input-null", marks=UPSTREAM_SCHEMA_INVALID),
+        param([{"wait": None}], id="wait-null", marks=UPSTREAM_SCHEMA_INVALID),
         param(
             {
                 "steps": [],
@@ -378,6 +391,7 @@ class Test_BlockStep(StepTestBase):
         param(
             {"matrix": {"setup": ["value"], "adjustments": [{"with": "newvalue"}]}},
             id="matrix",
+            marks=UPSTREAM_SCHEMA_INVALID,
         ),
         param(
             {
@@ -387,6 +401,7 @@ class Test_BlockStep(StepTestBase):
                 }
             },
             id="matrix",
+            marks=UPSTREAM_SCHEMA_INVALID,
         ),
         *(
             param(
@@ -396,7 +411,8 @@ class Test_BlockStep(StepTestBase):
                         "adjustments": [{"with": "newvalue", "skip": input}],
                     }
                 },
-                id=f"matrix{input}",
+                id="matrix",
+                marks=UPSTREAM_SCHEMA_INVALID,
             )
             for input in SKIP_VALS
         ),

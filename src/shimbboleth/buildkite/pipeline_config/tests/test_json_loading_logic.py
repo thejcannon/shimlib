@@ -161,23 +161,23 @@ class Test_CommandStep:
             Plugin(spec="pluginobj", config={"key": "value"}),
         ]
 
-        @pytest.mark.parametrize(["input", "expected"], SKIP_VALS.items())
-        def test_matrix__single_dimension__skip_bool(self, input, expected):
-            assert (
-                CommandStep.model_load(
-                    {
-                        "matrix": {
-                            "setup": ["value"],
-                            "adjustments": [{"with": "newvalue", "skip": input}],
-                        }
+    @pytest.mark.parametrize(["input", "expected"], SKIP_VALS.items())
+    def test_matrix__single_dimension__skip_bool(self, input, expected):
+        assert (
+            CommandStep.model_load(
+                {
+                    "matrix": {
+                        "setup": ["value"],
+                        "adjustments": [{"with": "newvalue", "skip": input}],
                     }
-                )
-                .matrix.adjustments[0]  # type: ignore
-                .skip
-                == expected
+                }
             )
+            .matrix.adjustments[0]  # type: ignore
+            .skip
+            == expected
+        )
 
-    @pytest.mark.parametrize(["input", "expected"], SKIP_VALS)
+    @pytest.mark.parametrize(["input", "expected"], SKIP_VALS.items())
     def test_matrix__multi_dimension__skip_bool(self, input, expected):
         assert (
             CommandStep.model_load(
@@ -193,7 +193,7 @@ class Test_CommandStep:
             == expected
         )
 
-    @pytest.mark.parametrize(["input", "expected"], SKIP_VALS)
+    @pytest.mark.parametrize(["input", "expected"], SKIP_VALS.items())
     def test_skip(self, input, expected):
         assert CommandStep.model_load({"skip": input}).skip == expected
 
@@ -201,12 +201,20 @@ class Test_CommandStep:
 class TestGroupStep:
     def test_label_name(self):
         assert (
-            GroupStep.model_load({"group": "group", "label": "label"}).label == "group"
+            GroupStep.model_load(
+                {"group": "group", "label": "label", "steps": ["wait"]}
+            ).label
+            == "group"
         )
-        assert GroupStep.model_load({"group": "group", "name": "name"}).label == "group"
         assert (
             GroupStep.model_load(
-                {"group": "group", "label": "label", "name": "name"}
+                {"group": "group", "name": "name", "steps": ["wait"]}
+            ).label
+            == "group"
+        )
+        assert (
+            GroupStep.model_load(
+                {"group": "group", "label": "label", "name": "name", "steps": ["wait"]}
             ).label
             == "group"
         )
