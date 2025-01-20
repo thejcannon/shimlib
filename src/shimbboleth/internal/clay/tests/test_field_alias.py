@@ -1,5 +1,5 @@
-from shimbboleth._model.field_alias import FieldAlias
-from shimbboleth._model.model import Model
+from shimbboleth.internal.clay.field_alias import FieldAlias
+from shimbboleth.internal.clay.model import Model
 from typing import ClassVar
 
 

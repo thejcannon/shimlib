@@ -1,8 +1,8 @@
 from typing import Any, Self, TypeVar, Callable
 import dataclasses
 
-from shimbboleth._model.model_meta import ModelMeta
-from shimbboleth._model.jsonT import JSON, JSONObject
+from shimbboleth.internal.clay.model_meta import ModelMeta
+from shimbboleth.internal.clay.jsonT import JSON, JSONObject
 
 T = TypeVar("T")
 
@@ -59,12 +59,12 @@ class Model(_ModelBase, metaclass=ModelMeta):
 
     @classmethod
     def model_load(cls: type[Self], value: JSONObject) -> Self:
-        from shimbboleth._model.json_load import load_model
+        from shimbboleth.internal.clay.json_load import load_model
 
         return load_model(cls, value)
 
     def model_dump(self) -> JSONObject:
-        from shimbboleth._model.json_dump import dump_model
+        from shimbboleth.internal.clay.json_dump import dump_model
 
         return dump_model(self)
 

@@ -9,8 +9,8 @@ See: https://buildkite.com/docs/pipelines/configure/step-types/command-step#matr
 
 from typing import TypeAlias, Literal, Annotated
 
-from shimbboleth._model import Model, field, NonEmptyList, Not, NonEmptyDict
-from shimbboleth._model.validation import MatchesRegex
+from shimbboleth.internal.clay import Model, field, NonEmptyList, Not, NonEmptyDict
+from shimbboleth.internal.clay.validation import MatchesRegex
 from ._types import skip_from_json, soft_fail_from_json, soft_fail_to_json
 
 

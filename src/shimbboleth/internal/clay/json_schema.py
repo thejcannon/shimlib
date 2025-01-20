@@ -5,10 +5,14 @@ import re
 import uuid
 import dataclasses
 
-from shimbboleth._model.model import Model
-from shimbboleth._model.json_dump import dump
-from shimbboleth._model._types import AnnotationType, LiteralType, GenericUnionType
-from shimbboleth._model.validation import (
+from shimbboleth.internal.clay.model import Model
+from shimbboleth.internal.clay.json_dump import dump
+from shimbboleth.internal.clay._types import (
+    AnnotationType,
+    LiteralType,
+    GenericUnionType,
+)
+from shimbboleth.internal.clay.validation import (
     MatchesRegex,
     _NotGenericAlias,
     MaxLength,
@@ -16,7 +20,7 @@ from shimbboleth._model.validation import (
     Ge,
     Le,
 )
-from shimbboleth._model.jsonT import JSONObject
+from shimbboleth.internal.clay.jsonT import JSONObject
 
 T = TypeVar("T")
 ModelT = TypeVar("ModelT", bound=Model)

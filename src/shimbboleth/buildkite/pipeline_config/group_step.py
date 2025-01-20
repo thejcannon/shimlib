@@ -1,8 +1,8 @@
 from typing import ClassVar, Literal
 
 
-from shimbboleth._model import field, FieldAlias, NonEmptyList
-from shimbboleth._model.jsonT import JSONArray, JSONObject
+from shimbboleth.internal.clay import field, FieldAlias, NonEmptyList
+from shimbboleth.internal.clay.jsonT import JSONArray, JSONObject
 from shimbboleth.buildkite.pipeline_config._types import skip_from_json
 
 from ._nested_steps import (

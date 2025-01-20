@@ -1,9 +1,9 @@
 from typing import Any, TypeAlias, Literal, cast
 from functools import lru_cache
 
-from shimbboleth._model import Model, field
-from shimbboleth._model.jsonT import JSONArray, JSONObject
-from shimbboleth._model.validation import InvalidValueError
+from shimbboleth.internal.clay import Model, field
+from shimbboleth.internal.clay.jsonT import JSONArray, JSONObject
+from shimbboleth.internal.clay.validation import InvalidValueError
 
 from ._agents import agents_from_json
 from .block_step import BlockStep

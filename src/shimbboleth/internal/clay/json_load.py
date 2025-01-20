@@ -6,11 +6,15 @@ import uuid
 import dataclasses
 import logging
 
-from shimbboleth._model.jsonT import JSONObject, JSON
-from shimbboleth._model.model_meta import ModelMeta
-from shimbboleth._model.model import Model
-from shimbboleth._model._types import AnnotationType, LiteralType, GenericUnionType
-from shimbboleth._model.validation import InvalidValueError
+from shimbboleth.internal.clay.jsonT import JSONObject, JSON
+from shimbboleth.internal.clay.model_meta import ModelMeta
+from shimbboleth.internal.clay.model import Model
+from shimbboleth.internal.clay._types import (
+    AnnotationType,
+    LiteralType,
+    GenericUnionType,
+)
+from shimbboleth.internal.clay.validation import InvalidValueError
 
 T = TypeVar("T")
 ModelT = TypeVar("ModelT", bound=Model)

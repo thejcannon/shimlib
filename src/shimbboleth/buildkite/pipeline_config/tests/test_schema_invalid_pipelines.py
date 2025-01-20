@@ -11,7 +11,6 @@ NOTE: (Same NOTE as in `test_schema_valid_pipelines.py`)
 
 from shimbboleth.buildkite.pipeline_config import (
     BuildkitePipeline,
-    get_schema,
 )
 from shimbboleth.buildkite.pipeline_config.tests.conftest import (
     STEP_TYPE_PARAMS,
@@ -36,27 +35,19 @@ class PipelineTestBase:
         assert error in str(e.value)
         assert f"Path: {path}\n" in str(e.value) + "\n"
 
-    def test_generated_json_schema(self, config, *, error, path):
+    def test_generated_json_schema(self, config, generated_schema, *, error, path):
         with pytest.raises(jsonschema.exceptions.ValidationError):
-            jsonschema.validate(
-                config,
-                get_schema(),
-                format_checker=jsonschema.Draft202012Validator.FORMAT_CHECKER,
-            )
+            generated_schema.validate(config)
 
     def test_upstream_json_schema(
-        self, config, pinned_bk_schema, request, *, error, path
+        self, config, upstream_schema, request, *, error, path
     ):
         meta = request.node.get_closest_marker("meta")
         if meta and not meta.kwargs.get("upstream_schema_valid", True):
             pytest.xfail("Upstream bug")
 
         with pytest.raises(jsonschema.exceptions.ValidationError):
-            jsonschema.validate(
-                config,
-                pinned_bk_schema,
-                format_checker=jsonschema.Draft202012Validator.FORMAT_CHECKER,
-            )
+            upstream_schema.validate(config)
 
 
 class StepTestBase(PipelineTestBase):
@@ -67,17 +58,21 @@ class StepTestBase(PipelineTestBase):
         step = self.get_step(step, steptype_param)
         super().test_model_load({"steps": [step]}, error=error, path=f".steps[0]{path}")
 
-    def test_generated_json_schema(self, step, steptype_param, *, error, path):  # type: ignore
+    def test_generated_json_schema(  # type: ignore
+        self, step, steptype_param, generated_schema, *, error, path
+    ):
         step = self.get_step(step, steptype_param)
-        super().test_generated_json_schema({"steps": [step]}, error=error, path=path)
+        super().test_generated_json_schema(
+            {"steps": [step]}, generated_schema=generated_schema, error=error, path=path
+        )
 
     def test_upstream_json_schema(  # type: ignore
-        self, step, steptype_param, pinned_bk_schema, request, *, error, path
+        self, step, steptype_param, upstream_schema, request, *, error, path
     ):
         step = self.get_step(step, steptype_param)
         super().test_upstream_json_schema(
             {"steps": [step]},
-            pinned_bk_schema=pinned_bk_schema,
+            upstream_schema=upstream_schema,
             request=request,
             error=error,
             path=path,

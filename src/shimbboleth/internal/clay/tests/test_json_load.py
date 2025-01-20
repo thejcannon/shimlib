@@ -3,11 +3,11 @@ from typing import Literal, Annotated, ClassVar
 import uuid
 from pytest import param
 
-from shimbboleth._model.model import Model
-from shimbboleth._model.validation import MatchesRegex, NonEmpty
-from shimbboleth._model.field import field
-from shimbboleth._model.json_load import load
-from shimbboleth._model.field_alias import FieldAlias
+from shimbboleth.internal.clay.model import Model
+from shimbboleth.internal.clay.validation import MatchesRegex, NonEmpty
+from shimbboleth.internal.clay.field import field
+from shimbboleth.internal.clay.json_load import load
+from shimbboleth.internal.clay.field_alias import FieldAlias
 
 
 def make_model(attrs, **kwargs):

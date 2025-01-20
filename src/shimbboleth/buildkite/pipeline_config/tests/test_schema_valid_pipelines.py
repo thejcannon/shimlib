@@ -27,10 +27,8 @@ NOTE: Because of the "multiple ways to test a valid pipeline" this module is a b
 #   - Test actual nulls in the pipeline
 from typing import cast
 
-import jsonschema
 from shimbboleth.buildkite.pipeline_config import (
     BuildkitePipeline,
-    get_schema,
 )
 
 from shimbboleth.buildkite.pipeline_config.tests.conftest import (
@@ -55,10 +53,10 @@ class PipelineTestBase:
     def test_model_load(self, config):
         BuildkitePipeline.model_load(config)
 
-    def test_generated_json_schema(self, config):
-        jsonschema.validate(config, get_schema())
+    def test_generated_json_schema(self, config, generated_schema):
+        generated_schema.validate(config)
 
-    def test_upstream_json_schema(self, config, pinned_bk_schema, request):
+    def test_upstream_json_schema(self, config, upstream_schema, request):
         meta = request.node.get_closest_marker("meta")
         if meta and not meta.kwargs.get("upstream_schema_valid", True):
             pytest.xfail("Upstream bug")
@@ -66,7 +64,7 @@ class PipelineTestBase:
         # @UPSTREAM: No support for non-object pipelines
         if not isinstance(config, dict):
             config = {"steps": config}
-        jsonschema.validate(config, pinned_bk_schema)
+        upstream_schema.validate(config)
 
     @pytest.mark.integration
     def test_upstream_API(self, config):
@@ -89,19 +87,17 @@ class StepTestBase:
         step = self.get_step(step, steptype_param)
         BuildkitePipeline.model_load({"steps": [step]})
 
-    def test_generated_json_schema(self, step, steptype_param):
+    def test_generated_json_schema(self, step, steptype_param, generated_schema):
         step = self.get_step(step, steptype_param)
-        jsonschema.validate({"steps": [step]}, get_schema())
+        generated_schema.validate({"steps": [step]})
 
-    def test_upstream_json_schema(
-        self, step, steptype_param, pinned_bk_schema, request
-    ):
+    def test_upstream_json_schema(self, step, steptype_param, upstream_schema, request):
         meta = request.node.get_closest_marker("meta")
         if meta and not meta.kwargs.get("upstream_schema_valid", True):
             pytest.xfail("Upstream bug")
 
         step = self.get_step(step, steptype_param)
-        jsonschema.validate({"steps": [step]}, pinned_bk_schema)
+        upstream_schema.validate({"steps": [step]})
 
     @pytest.mark.integration
     def test_upstream_API(self, step, steptype_param):

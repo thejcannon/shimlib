@@ -2,14 +2,14 @@ import dataclasses
 import uuid
 import re
 
-from shimbboleth._model.jsonT import JSONArray, JSONObject
-from shimbboleth._model.model import Model
+from shimbboleth.internal.clay.jsonT import JSONArray, JSONObject
+from shimbboleth.internal.clay.model import Model
 from functools import singledispatch
 
 if True:
     # NB: JSON must be imported for `singledispatch` to work
     # @TODO: noqa (and what code?)
-    from shimbboleth._model.jsonT import JSON  # noqa
+    from shimbboleth.internal.clay.jsonT import JSON  # noqa
 
 
 @singledispatch

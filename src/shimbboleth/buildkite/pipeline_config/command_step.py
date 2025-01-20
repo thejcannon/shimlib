@@ -1,6 +1,6 @@
 from typing import Literal, Any, Annotated, ClassVar
 
-from shimbboleth._model import (
+from shimbboleth.internal.clay import (
     Model,
     field,
     MatchesRegex,
@@ -10,8 +10,8 @@ from shimbboleth._model import (
     Not,
     NonEmptyList,
 )
-from shimbboleth._model.jsonT import JSONObject
-from shimbboleth._model.validation import SingleKeyDict, ValidationError
+from shimbboleth.internal.clay.jsonT import JSONObject
+from shimbboleth.internal.clay.validation import SingleKeyDict, ValidationError
 
 from ._base import StepBase
 from ._agents import agents_from_json

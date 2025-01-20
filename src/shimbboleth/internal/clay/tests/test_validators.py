@@ -1,5 +1,5 @@
-from shimbboleth._model._validators import get_validators
-from shimbboleth._model.validation import (
+from shimbboleth.internal.clay._validators import get_validators
+from shimbboleth.internal.clay.validation import (
     ValidationError,
     NonEmpty,
     MatchesRegex,

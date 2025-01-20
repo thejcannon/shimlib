@@ -8,8 +8,8 @@ from typing import (
 from types import MemberDescriptorType, GenericAlias, UnionType
 import dataclasses
 import uuid
-from shimbboleth._model._types import AnnotationType, GenericUnionType
-from shimbboleth._model.validation import (
+from shimbboleth.internal.clay._types import AnnotationType, GenericUnionType
+from shimbboleth.internal.clay.validation import (
     ValidationError,
     _NotGenericAlias,
     MatchesRegex,

@@ -10,8 +10,10 @@ from shimbboleth.buildkite.pipeline_config import (
     WaitStep,
     TriggerStep,
     GroupStep,
+    get_schema,
 )
-from shimbboleth._model import Model
+from shimbboleth.internal.clay import Model
+import jsonschema
 
 T = TypeVar("T", bound=Model)
 
@@ -80,16 +82,24 @@ def all_substep_types(request) -> StepTypeParam:
     return request.param
 
 
+@pytest.fixture(scope="session")
+def generated_schema():
+    return jsonschema.Draft202012Validator(
+        get_schema(), format_checker=jsonschema.Draft202012Validator.FORMAT_CHECKER
+    )
+
+
 # NB: Technically because of the caching this fixture is cache-scoped
 @pytest.fixture(scope="session")
-def pinned_bk_schema(pytestconfig) -> dict[str, Any]:
+def upstream_schema(pytestconfig) -> jsonschema.Draft202012Validator:
     cache_key = f"BKSchema/schema.{UPSTREAM_JSON_SCHEMA_COMMIT}.json"
-    cached_schema = pytestconfig.cache.get(cache_key, None)
-    if cached_schema:
-        return cached_schema
+    schema = pytestconfig.cache.get(cache_key, None)
+    if not schema:
+        response = httpx.get(UPSTREAM_JSON_SCHEMA_URL)
+        response.raise_for_status()
+        schema = response.json()
+        pytestconfig.cache.set(cache_key, schema)
 
-    response = httpx.get(UPSTREAM_JSON_SCHEMA_URL)
-    response.raise_for_status()
-    schema = response.json()
-    pytestconfig.cache.set(cache_key, schema)
-    return schema
+    return jsonschema.Draft202012Validator(
+        schema, format_checker=jsonschema.Draft202012Validator.FORMAT_CHECKER
+    )

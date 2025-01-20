@@ -2,9 +2,9 @@
 Contains the base class for all steps: StepBase.
 """
 
-from shimbboleth._model import Model, field, FieldAlias, Not
-from shimbboleth._model.jsonT import JSONObject
-from shimbboleth._model.json_load import JSONLoadError
+from shimbboleth.internal.clay import Model, field, FieldAlias, Not
+from shimbboleth.internal.clay.jsonT import JSONObject
+from shimbboleth.internal.clay.json_load import JSONLoadError
 from ._types import bool_from_json
 from uuid import UUID
 from typing import ClassVar, final, Annotated

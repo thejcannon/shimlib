@@ -1,6 +1,6 @@
 from typing import ClassVar
 
-from shimbboleth._model import Model, FieldAlias
+from shimbboleth.internal.clay import Model, FieldAlias
 
 from .block_step import BlockStep
 from .input_step import InputStep

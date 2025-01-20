@@ -2,10 +2,10 @@ from typing import dataclass_transform, Any, ClassVar, TypeVar
 from types import MappingProxyType
 import dataclasses
 
-from shimbboleth._model.field import field
-from shimbboleth._model.field_alias import FieldAlias
-from shimbboleth._model._validators import ValidationDescriptor, get_validators
-from shimbboleth._model.jsonT import JSONObject
+from shimbboleth.internal.clay.field import field
+from shimbboleth.internal.clay.field_alias import FieldAlias
+from shimbboleth.internal.clay._validators import ValidationDescriptor, get_validators
+from shimbboleth.internal.clay.jsonT import JSONObject
 
 
 T = TypeVar("T")
@@ -76,7 +76,7 @@ class ModelMeta(type):
     # @TODO cache this (immutably)
     @property
     def model_json_schema(cls) -> JSONObject:
-        from shimbboleth._model.json_schema import schema
+        from shimbboleth.internal.clay.json_schema import schema
 
         model_defs = {}
         schema(cls, model_defs=model_defs)

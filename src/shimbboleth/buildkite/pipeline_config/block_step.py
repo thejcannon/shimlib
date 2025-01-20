@@ -1,7 +1,7 @@
 from typing import Literal, ClassVar
 
 
-from shimbboleth._model import field, FieldAlias
+from shimbboleth.internal.clay import field, FieldAlias
 
 
 from ._manual_step import ManualStepBase

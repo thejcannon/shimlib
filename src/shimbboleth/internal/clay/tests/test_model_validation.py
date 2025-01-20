@@ -1,5 +1,5 @@
-from shimbboleth._model.model import Model
-from shimbboleth._model.validation import NonEmptyString, ValidationError
+from shimbboleth.internal.clay.model import Model
+from shimbboleth.internal.clay.validation import NonEmptyString, ValidationError
 
 import pytest
 

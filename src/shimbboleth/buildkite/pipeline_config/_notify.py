@@ -1,8 +1,8 @@
 from typing import Literal, TypeAlias, Any
 import dataclasses
 
-from shimbboleth._model import Model, field, NonEmptyList
-from shimbboleth._model.json_load import JSONLoadError
+from shimbboleth.internal.clay import Model, field, NonEmptyList
+from shimbboleth.internal.clay.json_load import JSONLoadError
 
 
 class GitHubCommitStatusInfo(Model, extra=False):

@@ -1,7 +1,7 @@
 from typing import Any
 
-from shimbboleth._model.jsonT import JSONObject
-from shimbboleth._model.validation import InvalidValueError
+from shimbboleth.internal.clay.jsonT import JSONObject
+from shimbboleth.internal.clay.validation import InvalidValueError
 
 from .block_step import BlockStep
 from .input_step import InputStep
